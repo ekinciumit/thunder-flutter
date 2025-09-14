@@ -1,0 +1,728 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/event_model.dart';
+import '../viewmodels/event_viewmodel.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
+import 'widgets/app_card.dart';
+import 'widgets/app_gradient_container.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
+import 'user_profile_page.dart';
+import '../models/user_model.dart';
+
+class EventDetailPage extends StatefulWidget {
+  final EventModel event;
+  const EventDetailPage({super.key, required this.event});
+
+  @override
+  State<EventDetailPage> createState() => _EventDetailPageState();
+}
+
+class _EventDetailPageState extends State<EventDetailPage> {
+  late EventModel event;
+  bool isEditing = false;
+  bool isUploading = false;
+  File? newPhotoFile;
+  String? uploadedPhotoUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    event = widget.event;
+    uploadedPhotoUrl = event.coverPhotoUrl;
+  }
+
+  Future<void> _pickPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) {
+      setState(() { isUploading = true; });
+      newPhotoFile = File(picked.path);
+      final fileName = 'event_${event.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final ref = FirebaseStorage.instance.ref().child('event_photos').child(fileName);
+      await ref.putFile(newPhotoFile!);
+      uploadedPhotoUrl = await ref.getDownloadURL();
+      setState(() { isUploading = false; });
+    }
+  }
+
+  void _showEditDialog(BuildContext context, EventViewModel eventViewModel) {
+    final titleController = TextEditingController(text: event.title);
+    final descController = TextEditingController(text: event.description);
+    final addressController = TextEditingController(text: event.address);
+    final quotaController = TextEditingController(text: event.quota.toString());
+    DateTime tempDate = event.datetime;
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Etkinliği Düzenle'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: isUploading ? null : () async {
+                    await _pickPhoto();
+                    setState(() {});
+                  },
+                  child: Container(
+                    height: 120,
+                    width: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.deepPurple.withAlpha(40)),
+                      color: Colors.deepPurple.withAlpha(10),
+                    ),
+                    child: isUploading
+                        ? const Center(child: CircularProgressIndicator())
+                        : (uploadedPhotoUrl != null && uploadedPhotoUrl!.isNotEmpty)
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.network(
+                                  uploadedPhotoUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                                ),
+                              )
+                            : const Center(
+                                child: Icon(Icons.add_a_photo, size: 48, color: Colors.deepPurple),
+                              ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Başlık'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(labelText: 'Açıklama'),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: addressController,
+                  decoration: const InputDecoration(labelText: 'Adres'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: quotaController,
+                  decoration: const InputDecoration(labelText: 'Kota'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.calendar_today),
+                  label: Text('${tempDate.day}.${tempDate.month}.${tempDate.year} - ${tempDate.hour.toString().padLeft(2, '0')}:${tempDate.minute.toString().padLeft(2, '0')}'),
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: tempDate,
+                      firstDate: DateTime(DateTime.now().year - 1),
+                      lastDate: DateTime(DateTime.now().year + 2),
+                    );
+                    if (picked != null) {
+                      final pickedTime = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.fromDateTime(tempDate),
+                      );
+                      if (pickedTime != null) {
+                        setState(() {
+                          tempDate = DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
+                        });
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: isUploading ? null : () async {
+                final updatedEvent = event.copyWith(
+                  title: titleController.text.trim(),
+                  description: descController.text.trim(),
+                  address: addressController.text.trim(),
+                  quota: int.tryParse(quotaController.text.trim()) ?? event.quota,
+                  coverPhotoUrl: uploadedPhotoUrl,
+                  datetime: tempDate,
+                );
+                await eventViewModel.updateEvent(updatedEvent);
+                if (!mounted) return;
+                setState(() { event = updatedEvent; });
+                if (context.mounted) Navigator.of(context).pop();
+              },
+              child: const Text('Kaydet'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final eventViewModel = Provider.of<EventViewModel>(context);
+    final authViewModel = Provider.of<AuthViewModel>(context);
+    final userId = authViewModel.user?.uid ?? '';
+    final userName = authViewModel.user?.displayName ?? 'Kullanıcı';
+    final isParticipant = event.participants.contains(userId);
+    final isFull = event.participants.length >= event.quota;
+    final isOwner = event.createdBy == userId;
+    final isApproved = event.approvedParticipants.contains(userId);
+    final theme = Theme.of(context);
+
+    return AppGradientContainer(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(event.title),
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          actions: [
+            if (isOwner)
+              IconButton(
+                icon: const Icon(Icons.edit),
+                tooltip: 'Etkinliği Düzenle',
+                onPressed: () => _showEditDialog(context, eventViewModel),
+              ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Kapak fotoğrafı ve overlay
+              if (event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty)
+                Stack(
+                  children: [
+                    Image.network(
+                      event.coverPhotoUrl!,
+                      height: 260,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                    Container(
+                      height: 260,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withAlpha((0.45 * 255).toInt()),
+                            Colors.transparent,
+                            Colors.black.withAlpha((0.25 * 255).toInt()),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: 24,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.85),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  event.category,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(Icons.calendar_today, color: Colors.white, size: 18),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${event.datetime.day}.${event.datetime.month}.${event.datetime.year} - ${event.datetime.hour.toString().padLeft(2, '0')}:${event.datetime.minute.toString().padLeft(2, '0')}',
+                                style: theme.textTheme.bodySmall?.copyWith(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            event.title,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              shadows: [Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 8)],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Container(
+                  height: 180,
+                  color: theme.colorScheme.primary.withAlpha(30),
+                  child: const Center(child: Icon(Icons.image, size: 64, color: Colors.grey)),
+                ),
+              const SizedBox(height: 16),
+              AppCard(
+                borderRadius: 28,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, color: theme.colorScheme.primary),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            event.address,
+                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      event.description,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Icon(Icons.people, color: theme.colorScheme.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${event.participants.length}/${event.quota}',
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 12),
+                        if (isFull)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withAlpha((0.15 * 255).toInt()),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text('Kota Dolu', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+                          ),
+                        const Spacer(),
+                        _DistanceToEventWidget(eventLat: event.location.latitude, eventLng: event.location.longitude),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${event.location.latitude},${event.location.longitude}');
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      icon: const Icon(Icons.directions),
+                      label: const Text('Rota Oluştur'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (!isParticipant && !isFull)
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          await eventViewModel.joinEvent(event, userId);
+                          if (!context.mounted) return;
+                          setState(() {});
+                        },
+                        icon: const Icon(Icons.check),
+                        label: const Text('Katıl'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.secondary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    if (isParticipant)
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          await eventViewModel.leaveEvent(event, userId);
+                          if (!context.mounted) return;
+                          setState(() {});
+                        },
+                        icon: const Icon(Icons.exit_to_app),
+                        label: const Text('Ayrıl'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              AppCard(
+                borderRadius: 20,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Katılımcılar:', style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      _ParticipantChips(participantUids: event.participants),
+                      // Katılma İstekleri bölümünü katılımcıların hemen altına ekle
+                      if ((isOwner /*|| (event.moderators?.contains(userId) ?? false)*/) && event.pendingRequests.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text('Katılma İstekleri:', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        Column(
+                          children: event.pendingRequests.map((uid) => FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData || !snapshot.data!.exists) {
+                                return ListTile(title: Text('Kullanıcı: $uid'));
+                              }
+                              final data = snapshot.data!.data() as Map<String, dynamic>;
+                              final displayName = data['displayName'] ?? 'Kullanıcı';
+                              final photoUrl = data['photoUrl'] ?? '';
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                child: ListTile(
+                                  leading: photoUrl.isNotEmpty
+                                      ? CircleAvatar(backgroundImage: NetworkImage(photoUrl))
+                                      : CircleAvatar(child: Text(displayName[0].toUpperCase())),
+                                  title: Text(displayName),
+                                  subtitle: Text(data['email'] ?? ''),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.check, color: Colors.green),
+                                        tooltip: 'Kabul Et',
+                                        onPressed: () async {
+                                          await eventViewModel.approveJoinRequest(event, uid);
+                                          if (!context.mounted) return;
+                                          setState(() {});
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.close, color: Colors.red),
+                                        tooltip: 'Reddet',
+                                        onPressed: () async {
+                                          await eventViewModel.rejectJoinRequest(event, uid);
+                                          if (!context.mounted) return;
+                                          setState(() {});
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          )).toList(),
+                        ),
+                      ],
+                      // TODO: event.moderators desteği ekle (ör: if (event.moderators?.contains(userId) ?? false))
+                    ],
+                  ),
+                ),
+              ),
+              AppCard(
+                borderRadius: 20,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Yorumlar / Sohbet', style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 12),
+                      if (isOwner || isApproved)
+                        _CommentsSection(eventId: event.id, userId: userId, userName: userName)
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withAlpha((0.08 * 255).toInt()),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Sohbeti görmek ve katılmak için etkinlik sahibi tarafından onaylanmalısınız.',
+                            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CommentsSection extends StatefulWidget {
+  final String eventId;
+  final String userId;
+  final String userName;
+  const _CommentsSection({required this.eventId, required this.userId, required this.userName});
+
+  @override
+  State<_CommentsSection> createState() => _CommentsSectionState();
+}
+
+class _CommentsSectionState extends State<_CommentsSection> {
+  final TextEditingController _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty) return;
+    await FirebaseFirestore.instance
+        .collection('events')
+        .doc(widget.eventId)
+        .collection('comments')
+        .add({
+      'text': text,
+      'userId': widget.userId,
+      'userName': widget.userName,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+    _commentController.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          height: 220,
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.deepPurple.withAlpha(40)),
+          ),
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('events')
+                .doc(widget.eventId)
+                .collection('comments')
+                .orderBy('timestamp', descending: false)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final docs = snapshot.data?.docs ?? [];
+              if (docs.isEmpty) {
+                return const Center(child: Text('Henüz yorum yok. İlk yorumu sen yaz!'));
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          child: Text(data['userName'] != null && data['userName'].toString().isNotEmpty
+                              ? data['userName'].toString()[0].toUpperCase()
+                              : '?'),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.deepPurple.withAlpha(30)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      data['userName'] ?? 'Kullanıcı',
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    if (data['timestamp'] != null)
+                                      Text(
+                                        (data['timestamp'] as Timestamp).toDate().toString().substring(0, 16),
+                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(data['text'] ?? ''),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _commentController,
+                decoration: InputDecoration(
+                  hintText: 'Yorum yaz...'
+                ),
+                minLines: 1,
+                maxLines: 3,
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.send, color: Colors.deepPurple),
+              onPressed: _sendComment,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// Mesafe gösterimi için widget
+class _DistanceToEventWidget extends StatefulWidget {
+  final double eventLat;
+  final double eventLng;
+  const _DistanceToEventWidget({required this.eventLat, required this.eventLng});
+
+  @override
+  State<_DistanceToEventWidget> createState() => _DistanceToEventWidgetState();
+}
+
+class _DistanceToEventWidgetState extends State<_DistanceToEventWidget> {
+  double? distanceKm;
+  @override
+  void initState() {
+    super.initState();
+    _getDistance();
+  }
+
+  Future<void> _getDistance() async {
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      final d = Geolocator.distanceBetween(
+        pos.latitude, pos.longitude, widget.eventLat, widget.eventLng
+      ) / 1000.0;
+      setState(() { distanceKm = d; });
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (distanceKm == null) {
+      return const Text('Mesafe hesaplanıyor...', style: TextStyle(color: Colors.blueGrey));
+    }
+    return Text('Etkinliğe uzaklık: ${distanceKm!.toStringAsFixed(2)} km', style: const TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.w600));
+  }
+}
+
+class _ParticipantChips extends StatelessWidget {
+  final List<String> participantUids;
+  const _ParticipantChips({required this.participantUids});
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUserId = Provider.of<AuthViewModel>(context, listen: false).user?.uid ?? '';
+    if (participantUids.isEmpty) {
+      return const Text('Katılımcı yok.');
+    }
+    return Wrap(
+      spacing: 8,
+      children: participantUids.map((uid) => FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox(
+              width: 32, height: 32,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            );
+          }
+          if (snapshot.hasError) {
+            return Chip(label: Text('Hata'));
+          }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return Chip(label: Text(uid.substring(0, 6)));
+          }
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final displayName = data['displayName'] ?? 'Kullanıcı';
+          final photoUrl = data['photoUrl'] ?? '';
+          return GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => UserProfilePage(
+                    user: UserModel.fromMap(data, uid),
+                    currentUserId: currentUserId,
+                  ),
+                ),
+              );
+            },
+            child: Chip(
+              avatar: photoUrl.isNotEmpty
+                  ? CircleAvatar(backgroundImage: NetworkImage(photoUrl))
+                  : CircleAvatar(child: Text(displayName[0].toUpperCase())),
+              label: Text(displayName, overflow: TextOverflow.ellipsis),
+            ),
+          );
+        },
+      )).toList(),
+    );
+  }
+} 

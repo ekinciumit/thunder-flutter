@@ -1,0 +1,266 @@
+{
+  "@@locale": "en",
+  "appTitle": "Thunder",
+  "@appTitle": {
+    "description": "Application title"
+  },
+  
+  "login": "Sign In",
+  "@login": {
+    "description": "Sign in button"
+  },
+  "signUp": "Sign Up",
+  "@signUp": {
+    "description": "Sign up button"
+  },
+  "email": "Email",
+  "@email": {
+    "description": "Email field label"
+  },
+  "password": "Password",
+  "@password": {
+    "description": "Password field label"
+  },
+  "noAccount": "Don't have an account? Sign up",
+  "@noAccount": {
+    "description": "Sign up link"
+  },
+  "hasAccount": "Already have an account? Sign in",
+  "@hasAccount": {
+    "description": "Sign in link"
+  },
+  
+  "completeProfile": "Complete Profile",
+  "@completeProfile": {
+    "description": "Complete profile title"
+  },
+  "name": "Full Name",
+  "@name": {
+    "description": "Name field label"
+  },
+  "bio": "Bio",
+  "@bio": {
+    "description": "Bio field label"
+  },
+  "saveAndContinue": "Save and Continue",
+  "@saveAndContinue": {
+    "description": "Save profile button"
+  },
+  
+  "home": "Home",
+  "@home": {
+    "description": "Home tab label"
+  },
+  "map": "Map",
+  "@map": {
+    "description": "Map tab label"
+  },
+  "profile": "Profile",
+  "@profile": {
+    "description": "Profile tab label"
+  },
+  "searchUsers": "Search Users",
+  "@searchUsers": {
+    "description": "Search users button"
+  },
+  
+  "events": "Events",
+  "@events": {
+    "description": "Events title"
+  },
+  "createEvent": "Create Event",
+  "@createEvent": {
+    "description": "Create event button"
+  },
+  "eventTitle": "Title",
+  "@eventTitle": {
+    "description": "Event title field"
+  },
+  "eventDescription": "Description",
+  "@eventDescription": {
+    "description": "Event description field"
+  },
+  "eventAddress": "Address",
+  "@eventAddress": {
+    "description": "Event address field"
+  },
+  "eventQuota": "Quota",
+  "@eventQuota": {
+    "description": "Event quota field"
+  },
+  "eventCategory": "Category",
+  "@eventCategory": {
+    "description": "Event category field"
+  },
+  "eventDateTime": "Date/Time",
+  "@eventDateTime": {
+    "description": "Event date/time field"
+  },
+  "eventLocation": "Location",
+  "@eventLocation": {
+    "description": "Event location field"
+  },
+  "selectLocation": "Select Location on Map",
+  "@selectLocation": {
+    "description": "Select location button"
+  },
+  "locationSelected": "Location Selected",
+  "@locationSelected": {
+    "description": "Location selected message"
+  },
+  
+  "join": "Join",
+  "@join": {
+    "description": "Join event button"
+  },
+  "leave": "Leave",
+  "@leave": {
+    "description": "Leave event button"
+  },
+  "participants": "Participants",
+  "@participants": {
+    "description": "Participants title"
+  },
+  "quotaFull": "Quota Full",
+  "@quotaFull": {
+    "description": "Quota full status"
+  },
+  "distance": "Distance",
+  "@distance": {
+    "description": "Distance label"
+  },
+  "km": "km",
+  "@km": {
+    "description": "Kilometer unit"
+  },
+  
+  "search": "Search",
+  "@search": {
+    "description": "Search button"
+  },
+  "filter": "Filter",
+  "@filter": {
+    "description": "Filter button"
+  },
+  "all": "All",
+  "@all": {
+    "description": "All filter"
+  },
+  "music": "Music",
+  "@music": {
+    "description": "Music category"
+  },
+  "sport": "Sport",
+  "@sport": {
+    "description": "Sport category"
+  },
+  "food": "Food",
+  "@food": {
+    "description": "Food category"
+  },
+  "art": "Art",
+  "@art": {
+    "description": "Art category"
+  },
+  "party": "Party",
+  "@party": {
+    "description": "Party category"
+  },
+  "technology": "Technology",
+  "@technology": {
+    "description": "Technology category"
+  },
+  "nature": "Nature",
+  "@nature": {
+    "description": "Nature category"
+  },
+  "education": "Education",
+  "@education": {
+    "description": "Education category"
+  },
+  "game": "Game",
+  "@game": {
+    "description": "Game category"
+  },
+  "other": "Other",
+  "@other": {
+    "description": "Other category"
+  },
+  
+  "chat": "Chat",
+  "@chat": {
+    "description": "Chat title"
+  },
+  "sendMessage": "Send Message",
+  "@sendMessage": {
+    "description": "Send message button"
+  },
+  "typeMessage": "Type a message...",
+  "@typeMessage": {
+    "description": "Type message field placeholder"
+  },
+  
+  "followers": "Followers",
+  "@followers": {
+    "description": "Followers count"
+  },
+  "following": "Following",
+  "@following": {
+    "description": "Following count"
+  },
+  "follow": "Follow",
+  "@follow": {
+    "description": "Follow button"
+  },
+  "unfollow": "Unfollow",
+  "@unfollow": {
+    "description": "Unfollow button"
+  },
+  "startChat": "Start Chat",
+  "@startChat": {
+    "description": "Start chat button"
+  },
+  
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button"
+  },
+  "logout": "Logout",
+  "@logout": {
+    "description": "Logout button"
+  },
+  
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading message"
+  },
+  "error": "Error",
+  "@error": {
+    "description": "Error title"
+  },
+  "success": "Success",
+  "@success": {
+    "description": "Success message"
+  },
+  "noData": "No data found",
+  "@noData": {
+    "description": "No data message"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button"
+  }
+}
+

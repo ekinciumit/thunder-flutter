@@ -1,0 +1,266 @@
+{
+  "@@locale": "tr",
+  "appTitle": "Thunder",
+  "@appTitle": {
+    "description": "Uygulama başlığı"
+  },
+  
+  "login": "Giriş Yap",
+  "@login": {
+    "description": "Giriş yap butonu"
+  },
+  "signUp": "Kayıt Ol",
+  "@signUp": {
+    "description": "Kayıt ol butonu"
+  },
+  "email": "E-posta",
+  "@email": {
+    "description": "E-posta alanı etiketi"
+  },
+  "password": "Şifre",
+  "@password": {
+    "description": "Şifre alanı etiketi"
+  },
+  "noAccount": "Hesabın yok mu? Kayıt ol",
+  "@noAccount": {
+    "description": "Kayıt ol linki"
+  },
+  "hasAccount": "Zaten hesabın var mı? Giriş yap",
+  "@hasAccount": {
+    "description": "Giriş yap linki"
+  },
+  
+  "completeProfile": "Profilini Tamamla",
+  "@completeProfile": {
+    "description": "Profil tamamlama başlığı"
+  },
+  "name": "İsim Soyisim",
+  "@name": {
+    "description": "İsim alanı etiketi"
+  },
+  "bio": "Biyografi",
+  "@bio": {
+    "description": "Biyografi alanı etiketi"
+  },
+  "saveAndContinue": "Kaydet ve Devam Et",
+  "@saveAndContinue": {
+    "description": "Profil kaydet butonu"
+  },
+  
+  "home": "Ana Sayfa",
+  "@home": {
+    "description": "Ana sayfa tab etiketi"
+  },
+  "map": "Harita",
+  "@map": {
+    "description": "Harita tab etiketi"
+  },
+  "profile": "Profil",
+  "@profile": {
+    "description": "Profil tab etiketi"
+  },
+  "searchUsers": "Kullanıcı Ara",
+  "@searchUsers": {
+    "description": "Kullanıcı arama butonu"
+  },
+  
+  "events": "Etkinlikler",
+  "@events": {
+    "description": "Etkinlikler başlığı"
+  },
+  "createEvent": "Etkinlik Oluştur",
+  "@createEvent": {
+    "description": "Etkinlik oluştur butonu"
+  },
+  "eventTitle": "Başlık",
+  "@eventTitle": {
+    "description": "Etkinlik başlığı alanı"
+  },
+  "eventDescription": "Açıklama",
+  "@eventDescription": {
+    "description": "Etkinlik açıklaması alanı"
+  },
+  "eventAddress": "Adres",
+  "@eventAddress": {
+    "description": "Etkinlik adresi alanı"
+  },
+  "eventQuota": "Kota",
+  "@eventQuota": {
+    "description": "Etkinlik kotası alanı"
+  },
+  "eventCategory": "Kategori",
+  "@eventCategory": {
+    "description": "Etkinlik kategorisi alanı"
+  },
+  "eventDateTime": "Tarih/Saat",
+  "@eventDateTime": {
+    "description": "Etkinlik tarih/saat alanı"
+  },
+  "eventLocation": "Konum",
+  "@eventLocation": {
+    "description": "Etkinlik konumu alanı"
+  },
+  "selectLocation": "Haritadan Konum Seç",
+  "@selectLocation": {
+    "description": "Konum seç butonu"
+  },
+  "locationSelected": "Konum Seçildi",
+  "@locationSelected": {
+    "description": "Konum seçildi mesajı"
+  },
+  
+  "join": "Katıl",
+  "@join": {
+    "description": "Etkinliğe katıl butonu"
+  },
+  "leave": "Ayrıl",
+  "@leave": {
+    "description": "Etkinlikten ayrıl butonu"
+  },
+  "participants": "Katılımcılar",
+  "@participants": {
+    "description": "Katılımcılar başlığı"
+  },
+  "quotaFull": "Kota Dolu",
+  "@quotaFull": {
+    "description": "Kota dolu durumu"
+  },
+  "distance": "Mesafe",
+  "@distance": {
+    "description": "Mesafe etiketi"
+  },
+  "km": "km",
+  "@km": {
+    "description": "Kilometre birimi"
+  },
+  
+  "search": "Ara",
+  "@search": {
+    "description": "Arama butonu"
+  },
+  "filter": "Filtrele",
+  "@filter": {
+    "description": "Filtrele butonu"
+  },
+  "all": "Tümü",
+  "@all": {
+    "description": "Tümü filtresi"
+  },
+  "music": "Müzik",
+  "@music": {
+    "description": "Müzik kategorisi"
+  },
+  "sport": "Spor",
+  "@sport": {
+    "description": "Spor kategorisi"
+  },
+  "food": "Yemek",
+  "@food": {
+    "description": "Yemek kategorisi"
+  },
+  "art": "Sanat",
+  "@art": {
+    "description": "Sanat kategorisi"
+  },
+  "party": "Parti",
+  "@party": {
+    "description": "Parti kategorisi"
+  },
+  "technology": "Teknoloji",
+  "@technology": {
+    "description": "Teknoloji kategorisi"
+  },
+  "nature": "Doğa",
+  "@nature": {
+    "description": "Doğa kategorisi"
+  },
+  "education": "Eğitim",
+  "@education": {
+    "description": "Eğitim kategorisi"
+  },
+  "game": "Oyun",
+  "@game": {
+    "description": "Oyun kategorisi"
+  },
+  "other": "Diğer",
+  "@other": {
+    "description": "Diğer kategorisi"
+  },
+  
+  "chat": "Sohbet",
+  "@chat": {
+    "description": "Sohbet başlığı"
+  },
+  "sendMessage": "Mesaj Gönder",
+  "@sendMessage": {
+    "description": "Mesaj gönder butonu"
+  },
+  "typeMessage": "Mesaj yaz...",
+  "@typeMessage": {
+    "description": "Mesaj yazma alanı placeholder"
+  },
+  
+  "followers": "Takipçi",
+  "@followers": {
+    "description": "Takipçi sayısı"
+  },
+  "following": "Takip",
+  "@following": {
+    "description": "Takip edilen sayısı"
+  },
+  "follow": "Takip Et",
+  "@follow": {
+    "description": "Takip et butonu"
+  },
+  "unfollow": "Takibi Bırak",
+  "@unfollow": {
+    "description": "Takibi bırak butonu"
+  },
+  "startChat": "Sohbet Başlat",
+  "@startChat": {
+    "description": "Sohbet başlat butonu"
+  },
+  
+  "edit": "Düzenle",
+  "@edit": {
+    "description": "Düzenle butonu"
+  },
+  "save": "Kaydet",
+  "@save": {
+    "description": "Kaydet butonu"
+  },
+  "cancel": "İptal",
+  "@cancel": {
+    "description": "İptal butonu"
+  },
+  "delete": "Sil",
+  "@delete": {
+    "description": "Sil butonu"
+  },
+  "logout": "Çıkış Yap",
+  "@logout": {
+    "description": "Çıkış yap butonu"
+  },
+  
+  "loading": "Yükleniyor...",
+  "@loading": {
+    "description": "Yükleniyor mesajı"
+  },
+  "error": "Hata",
+  "@error": {
+    "description": "Hata başlığı"
+  },
+  "success": "Başarılı",
+  "@success": {
+    "description": "Başarı mesajı"
+  },
+  "noData": "Veri bulunamadı",
+  "@noData": {
+    "description": "Veri yok mesajı"
+  },
+  "retry": "Tekrar Dene",
+  "@retry": {
+    "description": "Tekrar dene butonu"
+  }
+}
+

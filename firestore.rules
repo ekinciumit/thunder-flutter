@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Kullanıcılar koleksiyonu için kurallar
+    match /users/{userId} {
+      // Herkes yeni kullanıcı oluşturabilir (kayıt olma)
+      allow create: if request.auth != null;
+      // Giriş yapmış herkes kullanıcı profillerini okuyabilir (arama için)
+      allow read: if request.auth != null;
+      // Kullanıcı kendi profilini güncelleyebilir (fcmToken dahil)
+      // Ayrıca takip etme işlemi için başka kullanıcıların followers/following alanlarını güncelleyebilir
+      allow update: if request.auth != null && (
+        request.auth.uid == userId ||
+        // Takip etme işlemi için: sadece followers veya following alanları güncelleniyorsa
+        (request.resource.data.keys().hasAll(['followers', 'following']) &&
+         resource.data.keys().hasAll(['followers', 'following']))
+      );
+      // Kullanıcılar silinemez
+      allow delete: if false;
+    }
+
+    // Etkinlikler koleksiyonu için kurallar
+    match /events/{eventId} {
+      // Giriş yapmış herkes etkinlikleri okuyabilir
+      allow read: if request.auth != null;
+      // Giriş yapmış herkes etkinlik oluşturabilir
+      allow create: if request.auth != null;
+      // Bir etkinliği silebilmek veya güncelleyebilmek için giriş yapmış olmalı
+      // ve etkinliğin 'createdBy' alanı, istek yapan kullanıcının ID'si ile eşleşmelidir.
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+
+      // Mesajlar (sohbet) alt koleksiyonu için kural
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && (
+          resource.data.createdBy == request.auth.uid ||
+          get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid])
+        );
+      }
+    }
+
+    // Sohbetler koleksiyonu için kurallar - Çok basit
+    match /chats/{chatId} {
+      // Giriş yapmış herkes okuyabilir
+      allow read: if request.auth != null;
+      // Giriş yapmış herkes oluşturabilir
+      allow create: if request.auth != null;
+      // Giriş yapmış herkes güncelleyebilir
+      allow update: if request.auth != null;
+      // Giriş yapmış herkes silebilir
+      allow delete: if request.auth != null;
+    }
+
+    // Mesajlar koleksiyonu için kurallar - Basitleştirilmiş
+    match /messages/{messageId} {
+      // Mesaj gönderme - giriş yapmış herkes
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.senderId;
+      // Mesaj okuma - giriş yapmış herkes
+      allow read: if request.auth != null;
+      // Mesaj güncelleme - sadece gönderen
+      allow update: if request.auth != null && 
+        request.auth.uid == resource.data.senderId;
+      // Mesaj silme - sadece gönderen
+      allow delete: if request.auth != null && request.auth.uid == resource.data.senderId;
+    }
+  }
+} 

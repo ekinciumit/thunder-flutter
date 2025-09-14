@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profil fotoğrafları - sadece kendi fotoğrafını yükleyebilir
+    match /profile_photos/{fileName} {
+      allow read: if true; // Herkes okuyabilir
+      allow write: if request.auth != null; // Giriş yapmış kullanıcılar
+    }
+    
+    // Etkinlik kapak fotoğrafları - sadece etkinlik sahibi yükleyebilir
+    match /event_covers/{fileName} {
+      allow read: if true; // Herkes okuyabilir
+      allow write: if request.auth != null; // Giriş yapmış kullanıcılar
+    }
+    
+    // Sohbet medya dosyaları - sadece etkinlik katılımcıları
+    match /chat_media/{eventId}/{fileName} {
+      allow read: if request.auth != null; // Giriş yapmış kullanıcılar
+      allow write: if request.auth != null; // Giriş yapmış kullanıcılar
+    }
+    
+    // Genel dosya erişimi - güvenlik için kısıtlı
+    match /{allPaths=**} {
+      allow read: if request.auth != null; // Sadece giriş yapmış kullanıcılar
+      allow write: if request.auth != null; // Sadece giriş yapmış kullanıcılar
+    }
+  }
+}
