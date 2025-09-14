@@ -84,15 +84,6 @@ dependencies:
   flutter_localizations: ^3.24.3
 ```
 
-## 📱 Ekran Görüntüleri
-
-<div align="center">
-  <img src="https://via.placeholder.com/300x600/02569B/FFFFFF?text=Login+Screen" alt="Login Screen" width="150">
-  <img src="https://via.placeholder.com/300x600/FF6B6B/FFFFFF?text=Chat+Screen" alt="Chat Screen" width="150">
-  <img src="https://via.placeholder.com/300x600/4ECDC4/FFFFFF?text=Events+Screen" alt="Events Screen" width="150">
-  <img src="https://via.placeholder.com/300x600/FFE66D/000000?text=Map+Screen" alt="Map Screen" width="150">
-</div>
-
 ## 🚀 Kurulum
 
 ### **Gereksinimler**
@@ -104,8 +95,8 @@ dependencies:
 
 ### **Adım 1: Repository'yi Klonlayın**
 ```bash
-git clone https://github.com/username/thunder.git
-cd thunder
+git clone https://github.com/ekinciumit/thunder-flutter.git
+cd thunder-flutter
 ```
 
 ### **Adım 2: Dependencies'leri Yükleyin**
@@ -244,15 +235,13 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 ## 👥 Ekip
 
-- **Geliştirici**: [Your Name](https://github.com/username)
+- **Geliştirici**: [Umit Ekinci](https://github.com/ekinciumit)
 - **Tasarım**: Material Design 3
 - **Backend**: Firebase
 
 ## 📞 İletişim
 
-- **Email**: your.email@example.com
-- **GitHub**: [@username](https://github.com/username)
-- **LinkedIn**: [Your LinkedIn](https://linkedin.com/in/username)
+- **GitHub**: [@ekinciumit](https://github.com/ekinciumit)
 
 ## 🎉 Teşekkürler
 
