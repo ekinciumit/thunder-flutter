@@ -14,6 +14,7 @@ import 'views/auth_page.dart';
 import 'views/complete_profile_page.dart';
 import 'services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'core/di/service_locator.dart';
 
 // Arka plan bildirimleri için handler (üst düzey bir fonksiyon olmalı)
 @pragma('vm:entry-point')
@@ -28,7 +29,31 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  
+  // Service Locator'ı başlat ve servisleri kaydet
+  _setupServiceLocator();
+  
   runApp(const MyApp());
+}
+
+/// Service Locator'ı başlatır ve tüm servisleri kaydeder
+/// 
+/// ŞU AN: Bu fonksiyon sadece servisleri kaydediyor, mevcut kod çalışmaya devam ediyor
+/// İleride Service Locator'dan servisleri alacağız
+void _setupServiceLocator() {
+  final sl = ServiceLocator();
+  
+  // Auth servisini kaydet
+  sl.registerSingleton<IAuthService>(AuthService());
+  
+  // Event servisini kaydet
+  sl.registerSingleton<IEventService>(EventService());
+  
+  // Language servisini kaydet
+  sl.registerSingleton<LanguageService>(LanguageService());
+  
+  // ŞU AN: Mevcut kod hala direkt servisleri kullanıyor
+  // İleride Service Locator'dan alacağız: sl.get<IAuthService>()
 }
 
 class MyApp extends StatelessWidget {
