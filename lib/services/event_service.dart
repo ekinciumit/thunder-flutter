@@ -4,6 +4,8 @@ import '../models/event_model.dart';
 abstract class IEventService {
   Future<void> addEvent(EventModel event);
   Stream<List<EventModel>> getEventsStream();
+  Stream<List<EventModel>> getUserEventsStream(String userId);
+  Future<List<EventModel>> fetchNextEvents({DateTime? startAfter, int limit});
   Future<void> updateEvent(EventModel event);
   Future<void> deleteEvent(String eventId);
   Future<void> joinEvent(String eventId, String userId);
@@ -11,6 +13,7 @@ abstract class IEventService {
   Future<void> sendJoinRequest(String eventId, String userId);
   Future<void> approveJoinRequest(String eventId, String userId);
   Future<void> rejectJoinRequest(String eventId, String userId);
+  Future<void> cancelJoinRequest(String eventId, String userId);
 }
 
 class EventService implements IEventService {
@@ -23,9 +26,33 @@ class EventService implements IEventService {
 
   @override
   Stream<List<EventModel>> getEventsStream() {
-    return _eventsRef.orderBy('datetime').snapshots().map((snapshot) =>
-      snapshot.docs.map((doc) => EventModel.fromMap(doc.data(), doc.id)).toList()
-    );
+    // Include both past and upcoming, ordered by datetime, limited for performance.
+    final query = _eventsRef.orderBy('datetime').limit(50);
+    return query.snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => EventModel.fromMap(doc.data(), doc.id)).toList());
+  }
+
+  @override
+  Stream<List<EventModel>> getUserEventsStream(String userId) {
+    // Kullanıcının oluşturduğu etkinlikleri getir
+    final query = _eventsRef
+        .where('createdBy', isEqualTo: userId)
+        .orderBy('datetime', descending: true);
+    return query.snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => EventModel.fromMap(doc.data(), doc.id)).toList());
+  }
+
+  @override
+  Future<List<EventModel>> fetchNextEvents({DateTime? startAfter, int limit = 50}) async {
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+        .collection('events')
+        .orderBy('datetime')
+        .limit(limit);
+    if (startAfter != null) {
+      query = query.startAfter([Timestamp.fromDate(startAfter)]);
+    }
+    final snapshot = await query.get();
+    return snapshot.docs.map((doc) => EventModel.fromMap(doc.data(), doc.id)).toList();
   }
 
   @override
@@ -47,9 +74,20 @@ class EventService implements IEventService {
 
   @override
   Future<void> leaveEvent(String eventId, String userId) async {
+    try {
+      // ÖNCE sistem mesajını oluştur (kullanıcı hala katılımcıyken)
+      await _addSystemMessage(eventId, userId, 'left');
+      
+      // SONRA kullanıcıyı array'lerden çıkar
     await _eventsRef.doc(eventId).update({
       'participants': FieldValue.arrayRemove([userId]),
+        'approvedParticipants': FieldValue.arrayRemove([userId]),
     });
+    } catch (e) {
+      // Debug: Hata durumunda log
+      print('leaveEvent error: $e');
+      rethrow;
+    }
   }
 
   /// Katılma isteği gönderir (kullanıcıyı pendingRequests'e ekler)
@@ -67,11 +105,60 @@ class EventService implements IEventService {
       'pendingRequests': FieldValue.arrayRemove([userId]),
       'approvedParticipants': FieldValue.arrayUnion([userId])
     });
+    
+    // Sistem mesajı oluştur: "Kullanıcı adı etkinliğe katıldı"
+    await _addSystemMessage(eventId, userId, 'joined');
+  }
+
+  /// Sistem mesajı ekler (katılma/ayrılma bildirimleri için)
+  Future<void> _addSystemMessage(String eventId, String userId, String type) async {
+    try {
+      // Kullanıcı bilgilerini al
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userName = userDoc.exists 
+          ? (userDoc.data()?['displayName'] ?? 'Bir kullanıcı')
+          : 'Bir kullanıcı';
+      
+      String messageText;
+      if (type == 'joined') {
+        messageText = '$userName etkinliğe katıldı';
+      } else if (type == 'left') {
+        messageText = '$userName etkinlikten ayrıldı';
+      } else {
+        return;
+      }
+      
+      // Sistem mesajını comments collection'ına ekle
+      final docRef = await _eventsRef
+          .doc(eventId)
+          .collection('comments')
+          .add({
+        'text': messageText,
+        'userId': 'system',
+        'userName': 'Sistem',
+        'type': 'system',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      
+      print('System message added successfully: ${docRef.id} - $messageText');
+    } catch (e) {
+      // Hata durumunda sessizce devam et
+      print('System message error: $e');
+      rethrow; // Hata durumunda hatayı fırlat ki görebilelim
+    }
   }
 
   /// Katılma isteğini reddeder (pendingRequests'ten çıkarır)
   @override
   Future<void> rejectJoinRequest(String eventId, String userId) async {
+    await _eventsRef.doc(eventId).update({
+      'pendingRequests': FieldValue.arrayRemove([userId])
+    });
+  }
+
+  /// Katılma isteğini geri alır (kullanıcı kendi isteğini iptal eder)
+  @override
+  Future<void> cancelJoinRequest(String eventId, String userId) async {
     await _eventsRef.doc(eventId).update({
       'pendingRequests': FieldValue.arrayRemove([userId])
     });

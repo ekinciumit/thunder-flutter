@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'event_list_view.dart';
 import 'map_view.dart';
 import 'profile_view.dart';
 import 'create_event_page.dart';
-import 'user_search_page.dart';
 import 'chat_list_page.dart';
+import 'private_chat_page.dart';
+import '../services/notification_service.dart';
+import '../services/chat_service.dart';
+import '../services/auth_service.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../models/chat_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,6 +22,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  final NotificationService _notificationService = NotificationService();
+  final ChatService _chatService = ChatService();
+  final AuthService _authService = AuthService();
+  int _totalUnreadCount = 0;
 
   static final List<Widget> _pages = <Widget>[
     EventListView(),
@@ -22,6 +33,101 @@ class _HomePageState extends State<HomePage> {
     MapView(),
     ProfileView(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _setupNotificationRouting();
+    _loadUnreadCount();
+  }
+
+  void _setupNotificationRouting() {
+    _notificationService.onNotificationTapped = (chatId) {
+      _navigateToChat(chatId);
+    };
+  }
+
+  Future<void> _navigateToChat(String chatId) async {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final currentUser = authViewModel.user;
+    if (currentUser == null) return;
+
+    try {
+      // Chat dokümanını al
+      final chatDoc = await FirebaseFirestore.instance.collection('chats').doc(chatId).get();
+      if (!chatDoc.exists) return;
+
+      final chatData = chatDoc.data()!;
+      final chat = ChatModel.fromMap(chatData, chatId);
+
+      if (chat.type == ChatType.private) {
+        // Diğer kullanıcıyı bul
+        final otherParticipant = chat.participants.firstWhere(
+          (id) => id != currentUser.uid,
+          orElse: () => '',
+        );
+
+        if (otherParticipant.isEmpty) return;
+
+        // Kullanıcı bilgilerini al
+        final otherUser = await _authService.fetchUserProfile(otherParticipant);
+        final otherUserName = otherUser?.displayName ?? 
+                             chat.participantDetails[otherParticipant]?.name ?? 
+                             'Bilinmeyen';
+
+        // Sohbet sayfasına git
+        if (mounted) {
+          // Önce chat list sayfasına git
+          setState(() {
+            _selectedIndex = 1;
+          });
+          
+          // Sonra sohbet sayfasına navigate et
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PrivateChatPage(
+                currentUserId: currentUser.uid,
+                currentUserName: currentUser.displayName ?? 'Kullanıcı',
+                otherUserId: otherParticipant,
+                otherUserName: otherUserName,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sohbet açılamadı: $e')),
+        );
+      }
+    }
+  }
+
+  void _loadUnreadCount() {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final currentUser = authViewModel.user;
+    if (currentUser == null) return;
+
+    FirebaseFirestore.instance
+        .collection('chats')
+        .where('participants', arrayContains: currentUser.uid)
+        .snapshots()
+        .listen((snapshot) {
+      int total = 0;
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final unreadCounts = data['unreadCounts'] as Map<String, dynamic>? ?? {};
+        total += unreadCounts[currentUser.uid] as int? ?? 0;
+      }
+      if (mounted) {
+        setState(() {
+          _totalUnreadCount = total;
+        });
+      }
+    });
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -70,11 +176,41 @@ class _HomePageState extends State<HomePage> {
                 selected: _selectedIndex == 0,
                 onTap: () => _onItemTapped(0),
               ),
-              _NavBarIcon(
-                icon: Icons.chat_rounded,
-                label: 'Sohbetler',
-                selected: _selectedIndex == 1,
-                onTap: () => _onItemTapped(1),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  _NavBarIcon(
+                    icon: Icons.chat_rounded,
+                    label: 'Sohbetler',
+                    selected: _selectedIndex == 1,
+                    onTap: () => _onItemTapped(1),
+                  ),
+                  if (_totalUnreadCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          _totalUnreadCount > 99 ? '99+' : _totalUnreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               _NavBarIcon(
                 icon: Icons.map_rounded,

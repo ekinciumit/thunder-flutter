@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/event_model.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -19,6 +20,71 @@ class _MapViewState extends State<MapView> {
   Position? userPosition;
   GoogleMapController? mapController;
   bool iconsLoaded = false;
+  double _currentZoom = 13;
+
+  List<Marker> _buildClusteredMarkers(List<EventModel> events) {
+    if (events.isEmpty) return [];
+    // Basit grid tabanlı yaklaştırma: zoom seviyesine göre hücre boyutu
+    double grid;
+    if (_currentZoom >= 15) {
+      grid = 0.005; // ~500m
+    } else if (_currentZoom >= 13) {
+      grid = 0.01; // ~1km
+    } else if (_currentZoom >= 11) {
+      grid = 0.025; // ~2.5km
+    } else if (_currentZoom >= 9) {
+      grid = 0.05; // ~5km
+    } else {
+      grid = 0.1; // ~10km
+    }
+
+    final Map<String, List<EventModel>> cellToEvents = {};
+    for (final e in events) {
+      if (e.location.latitude == 0 || e.location.longitude == 0) continue;
+      final cellLat = (e.location.latitude / grid).floor();
+      final cellLng = (e.location.longitude / grid).floor();
+      final key = '$cellLat\_$cellLng';
+      (cellToEvents[key] ??= []).add(e);
+    }
+
+    final List<Marker> markers = [];
+    cellToEvents.forEach((key, list) {
+      // Hücre merkezi için ortalama konum
+      final avgLat = list.map((e) => e.location.latitude).reduce((a, b) => a + b) / list.length;
+      final avgLng = list.map((e) => e.location.longitude).reduce((a, b) => a + b) / list.length;
+      if (list.length == 1) {
+        final event = list.first;
+        markers.add(
+          Marker(
+            markerId: MarkerId(event.id),
+            position: LatLng(event.location.latitude, event.location.longitude),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+            consumeTapEvents: true,
+            onTap: () => _showEventSheet(event),
+          ),
+        );
+      } else {
+        markers.add(
+          Marker(
+            markerId: MarkerId('cluster_$key'),
+            position: LatLng(avgLat, avgLng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueMagenta),
+            infoWindow: InfoWindow(title: '${list.length} etkinlik'),
+            consumeTapEvents: true,
+            onTap: () {
+              // Küme tıklanınca biraz yaklaştır
+              if (mapController != null) {
+                mapController!.animateCamera(CameraUpdate.zoomTo((_currentZoom + 1.5).clamp(3.0, 20.0)));
+              }
+            },
+          ),
+        );
+      }
+    });
+
+    // Kullanıcı konumu marker'ı ayrıca eklenecek build içinde
+    return markers;
+  }
 
   @override
   void initState() {
@@ -102,24 +168,7 @@ class _MapViewState extends State<MapView> {
 
     final eventViewModel = Provider.of<EventViewModel>(context);
     final events = eventViewModel.events;
-    final markers = <Marker>[];
-
-    // Etkinlik markerları
-    for (final event in events) {
-      if (event.location.latitude != 0 && event.location.longitude != 0) {
-        markers.add(
-          Marker(
-            markerId: MarkerId(event.id),
-            position: LatLng(event.location.latitude, event.location.longitude),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
-            consumeTapEvents: true,
-            onTap: () {
-              _showEventSheet(event);
-            },
-          ),
-        );
-      }
-    }
+    final markers = _buildClusteredMarkers(events);
 
     // Kullanıcı konumu markerı
     if (userPosition != null) {
@@ -151,7 +200,8 @@ class _MapViewState extends State<MapView> {
                     myLocationButtonEnabled: false,
                     onMapCreated: (controller) => mapController = controller,
                     onCameraMove: (position) {
-                      // Zoom değişince marker ikonlarını güncelle
+                      _currentZoom = position.zoom;
+                      // Zoom değiştikçe yeniden cluster
                       setState(() {});
                     },
                     padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
@@ -187,7 +237,7 @@ class _MapViewState extends State<MapView> {
     );
   }
 
-  void _showEventSheet(event) {
+  void _showEventSheet(EventModel event) {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
@@ -211,7 +261,7 @@ class _MapViewState extends State<MapView> {
                       borderRadius: BorderRadius.circular(12),
                       color: theme.colorScheme.primary.withAlpha(20),
                       image: event.coverPhotoUrl != null
-                          ? DecorationImage(image: NetworkImage(event.coverPhotoUrl), fit: BoxFit.cover)
+                          ? DecorationImage(image: NetworkImage(event.coverPhotoUrl!), fit: BoxFit.cover)
                           : null,
                     ),
                     child: event.coverPhotoUrl == null

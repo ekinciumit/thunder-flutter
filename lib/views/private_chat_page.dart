@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 
 import '../services/chat_service.dart';
+import '../services/auth_service.dart';
 
 import '../models/message_model.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -16,7 +18,6 @@ import 'widgets/voice_message_widget.dart';
 import 'widgets/voice_recorder_widget.dart';
 import 'widgets/file_picker_widget.dart';
 import 'widgets/file_message_widget.dart';
-import '../services/audio_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
@@ -40,8 +41,8 @@ class PrivateChatPage extends StatefulWidget {
 class _PrivateChatPageState extends State<PrivateChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ChatService _chatService = ChatService();
+  final AuthService _authService = AuthService();
   bool _showEmojiPicker = false;
-  bool _isSending = false;
   final ImagePicker _picker = ImagePicker();
   String? _chatId;
   final ScrollController _scrollController = ScrollController();
@@ -52,7 +53,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   bool _hasMoreMessages = true;
   bool _isRecordingVoice = false;
   bool _isShowingFilePicker = false;
-  final AudioService _audioService = AudioService();
+  StreamSubscription<List<MessageModel>>? _messagesSubscription;
+  bool _isInitialLoad = true;
 
   @override
   void initState() {
@@ -74,62 +76,105 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
 
   Future<void> _initializeChat() async {
     try {
-      // Debug: Initializing chat for users: ${widget.currentUserId} and ${widget.otherUserId}
       final chat = await _chatService.getOrCreatePrivateChat(
         widget.currentUserId, 
         widget.otherUserId
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          // Debug: Chat initialization timeout
           throw Exception('Chat initialization timeout');
         },
       );
-      // Debug: Chat initialized with ID: ${chat.id}
       setState(() {
         _chatId = chat.id;
       });
+      
+      // Mesaj stream'ini başlat
+      _startListeningToMessages();
     } catch (e) {
-      // Debug: Error initializing chat: $e
       // Hata durumunda da bir chat ID'si oluştur
       final fallbackChatId = '${widget.currentUserId}_${widget.otherUserId}';
       setState(() {
         _chatId = fallbackChatId;
       });
+      
+      // Mesaj stream'ini başlat
+      _startListeningToMessages();
     }
+  }
+
+  void _startListeningToMessages() {
+    if (_chatId == null) return;
+    
+    _messagesSubscription?.cancel();
+    _messagesSubscription = _chatService.getMessagesStream(_chatId!, limit: 50).listen(
+      (streamMessages) {
+        if (!mounted) return;
+        
+        // Stream'den gelen mesajları direkt kullan ve UI'ı güncelle
+        final previousIds = _allMessages.map((m) => m.id).toSet();
+        
+        // Stream'den gelen mesajları sırala
+        final sortedMessages = List<MessageModel>.from(streamMessages);
+        sortedMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        
+        // Yeni mesajlar var mı kontrol et
+        final newMessages = sortedMessages.where((m) => !previousIds.contains(m.id)).toList();
+        
+        // UI'ı her zaman güncelle (stream'den gelen mesajlar güncel)
+        setState(() {
+          _allMessages = sortedMessages;
+        });
+        
+        // İlk yükleme flag'ini kapat
+        if (_isInitialLoad) {
+          _isInitialLoad = false;
+          // İlk yüklemede en alta scroll
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients && _allMessages.isNotEmpty) {
+              _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+            }
+          });
+        } else if (newMessages.isNotEmpty) {
+          // Yeni mesaj geldiğinde scroll yap
+          _scrollToBottom();
+        }
+      },
+      onError: (error) {
+        print('❌ Stream hatası: $error');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Mesajlar yüklenirken hata: $error'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _messagesSubscription?.cancel();
     super.dispose();
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-
-  void _scrollToBottomIfNeeded() {
     if (!_scrollController.hasClients) return;
-
+    
+    // Kullanıcı en alttaysa scroll yap, değilse yapma
     final position = _scrollController.position;
-    final isAtBottom = position.pixels <= position.minScrollExtent + 50;
-
-    if (isAtBottom) {
+    final isNearBottom = position.pixels >= position.maxScrollExtent - 100;
+    
+    if (isNearBottom) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.minScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
+          // Sessizce scroll yap (animasyon yok)
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
         }
       });
     }
@@ -144,6 +189,21 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     } else {
       return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
     }
+  }
+
+  /// Mesaj gösteriminde kullanılacak gönderen ismini döndür
+  String _getDisplayName(MessageModel message) {
+    // Eğer senderName "Kullanıcı" ise veya boşsa, doğru ismi kullan
+    if (message.senderName == 'Kullanıcı' || message.senderName.isEmpty) {
+      // Mesaj karşı taraftan geliyorsa otherUserName kullan
+      if (message.senderId != widget.currentUserId) {
+        return widget.otherUserName.isNotEmpty ? widget.otherUserName : 'Bilinmeyen';
+      }
+      // Mesaj bizden geliyorsa currentUserName kullan
+      return widget.currentUserName.isNotEmpty ? widget.currentUserName : 'Ben';
+    }
+    // Normal durumda senderName'i kullan
+    return message.senderName;
   }
 
   Future<void> _loadOlderMessages() async {
@@ -166,9 +226,20 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           _hasMoreMessages = false;
         });
       } else {
+        final scrollPosition = _scrollController.hasClients ? _scrollController.position.pixels : 0;
         setState(() {
           _allMessages = [...olderMessages, ..._allMessages];
         });
+        
+        // Scroll pozisyonunu koru (yeni mesajlar yüklendiğinde)
+        if (_scrollController.hasClients) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients) {
+              final newScrollPosition = _scrollController.position.maxScrollExtent - scrollPosition;
+              _scrollController.jumpTo(newScrollPosition);
+            }
+          });
+        }
       }
     } catch (e) {
       // Debug: Error loading older messages: $e
@@ -182,41 +253,54 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   Future<void> _sendMessage({String? text, String? imageUrl, String? videoUrl}) async {
     if ((text == null || text.trim().isEmpty) && imageUrl == null && videoUrl == null) return;
     if (_chatId == null) {
-      // Debug: Chat ID is null, cannot send message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sohbet başlatılamadı. Lütfen tekrar deneyin.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
     
-    setState(() { _isSending = true; });
-    
     try {
+      // Kullanıcı adını Firestore'dan çek
+      String senderName = widget.currentUserName;
+      if (senderName == 'Kullanıcı' || senderName.isEmpty) {
+        final userProfile = await _authService.fetchUserProfile(widget.currentUserId);
+        senderName = userProfile?.displayName ?? widget.currentUserName;
+      }
+      
       // Mesaj tipini belirle
       MessageType messageType = MessageType.text;
       if (imageUrl != null) messageType = MessageType.image;
       if (videoUrl != null) messageType = MessageType.video;
       
-      // Debug: Sending message: $text, type: $messageType, chatId: $_chatId
-      
       await _chatService.sendMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
-        senderName: widget.currentUserName,
+        senderName: senderName,
         text: text,
         type: messageType,
         imageUrl: imageUrl,
         videoUrl: videoUrl,
       );
       
-      // Debug: Message sent successfully
-      setState(() { _isSending = false; });
       if (text != null) _controller.clear();
       
       // Otomatik scroll to bottom
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottomIfNeeded();
-      });
+      _scrollToBottom();
     } catch (e) {
-      // Debug: Error sending message: $e
-      setState(() { _isSending = false; });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Mesaj gönderilemedi: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -264,8 +348,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                     : null,
                 child: message.senderPhotoUrl == null
                     ? Text(
-                        message.senderName.isNotEmpty 
-                            ? message.senderName[0].toUpperCase()
+                        _getDisplayName(message).isNotEmpty 
+                            ? _getDisplayName(message)[0].toUpperCase()
                             : '?',
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       )
@@ -297,7 +381,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   children: [
                     if (!isMe) ...[
                       Text(
-                        message.senderName,
+                        _getDisplayName(message),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
@@ -397,7 +481,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               children: [
                 if (!isMe) ...[
                   Text(
-                    message.senderName,
+                    _getDisplayName(message),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -500,7 +584,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               children: [
                 if (!isMe) ...[
                   Text(
-                    message.senderName,
+                    _getDisplayName(message),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -570,8 +654,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                     : null,
                 child: message.senderPhotoUrl == null
                     ? Text(
-                        message.senderName.isNotEmpty 
-                            ? message.senderName[0].toUpperCase()
+                        _getDisplayName(message).isNotEmpty 
+                            ? _getDisplayName(message)[0].toUpperCase()
                             : '?',
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       )
@@ -657,8 +741,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                     : null,
                 child: message.senderPhotoUrl == null
                     ? Text(
-                        message.senderName.isNotEmpty 
-                            ? message.senderName[0].toUpperCase()
+                        _getDisplayName(message).isNotEmpty 
+                            ? _getDisplayName(message)[0].toUpperCase()
                             : '?',
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       )
@@ -849,15 +933,19 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           ),
           TextButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
               if (controller.text.trim().isNotEmpty) {
                 try {
                   await _chatService.editMessage(message.id, controller.text.trim());
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!mounted) return;
+                  navigator.pop();
+                  messenger.showSnackBar(
                     const SnackBar(content: Text('Mesaj düzenlendi')),
                   );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!mounted) return;
+                  messenger.showSnackBar(
                     SnackBar(content: Text('Hata: $e')),
                   );
                 }
@@ -883,14 +971,18 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           ),
           TextButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
               try {
                 await _chatService.deleteMessage(message.id, widget.currentUserId);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!mounted) return;
+                navigator.pop();
+                messenger.showSnackBar(
                   const SnackBar(content: Text('Mesaj silindi')),
                 );
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!mounted) return;
+                messenger.showSnackBar(
                   SnackBar(content: Text('Hata: $e')),
                 );
               }
@@ -916,6 +1008,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         await _chatService.addReaction(message.id, widget.currentUserId, emoji);
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Tepki hatası: $e')),
       );
@@ -948,17 +1041,25 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       final audioUrl = await snapshot.ref.getDownloadURL();
 
       // Mesajı gönder
+      // Kullanıcı adını Firestore'dan çek
+      String senderName = widget.currentUserName;
+      if (senderName == 'Kullanıcı' || senderName.isEmpty) {
+        final userProfile = await _authService.fetchUserProfile(widget.currentUserId);
+        senderName = userProfile?.displayName ?? widget.currentUserName;
+      }
+      
       await _chatService.sendVoiceMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
-        senderName: widget.currentUserName,
+        senderName: senderName,
         senderPhotoUrl: null, // TODO: Kullanıcı fotoğrafı ekle
         audioUrl: audioUrl,
         duration: duration,
       );
 
-      _scrollToBottomIfNeeded();
+      _scrollToBottom();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sesli mesaj gönderme hatası: $e')),
       );
@@ -995,10 +1096,17 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       final fileExtension = file.extension;
 
       // Mesajı gönder
+      // Kullanıcı adını Firestore'dan çek
+      String senderName = widget.currentUserName;
+      if (senderName == 'Kullanıcı' || senderName.isEmpty) {
+        final userProfile = await _authService.fetchUserProfile(widget.currentUserId);
+        senderName = userProfile?.displayName ?? widget.currentUserName;
+      }
+      
       await _chatService.sendFileMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
-        senderName: widget.currentUserName,
+        senderName: senderName,
         senderPhotoUrl: null, // TODO: Kullanıcı fotoğrafı ekle
         fileUrl: fileUrl,
         fileName: file.name,
@@ -1006,8 +1114,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         fileExtension: fileExtension,
       );
 
-      _scrollToBottomIfNeeded();
+      _scrollToBottom();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Dosya gönderme hatası: $e')),
       );
@@ -1054,99 +1163,44 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       body: Column(
         children: [
           Expanded(
-            child: _chatId == null
-                ? const Center(child: CircularProgressIndicator())
-                : StreamBuilder<List<MessageModel>>(
-                    stream: _chatService.getMessagesStream(_chatId!, limit: 30),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 16),
-                              Text('Mesajlar yükleniyor...'),
-                            ],
-                          ),
-                        );
-                      }
-                      if (snapshot.hasError) {
-                        // Debug: Stream error: ${snapshot.error}
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.error, size: 64, color: Colors.red),
-                              const SizedBox(height: 16),
-                              Text('Hata: ${snapshot.error}'),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _chatId = null;
-                                  });
-                                  _initializeChat();
-                                },
-                                child: const Text('Tekrar Dene'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                      
-                      // Stream'den gelen yeni mesajları _allMessages ile birleştir
-                      final streamMessages = snapshot.data ?? [];
-                      if (streamMessages.isNotEmpty) {
-                        // _allMessages ile stream'den gelenleri birleştir
-                        final merged = {..._allMessages, ...streamMessages}.toList();
-                        
-                        // Tarihe göre sırala (sondan başa)
-                        merged.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-                        
-                        _allMessages = merged;
-                      }
-                      
-                      if (_allMessages.isEmpty) {
-                        return const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
-                              SizedBox(height: 16),
-                              Text('Henüz mesaj yok'),
-                              SizedBox(height: 8),
-                              Text('İlk mesajı siz gönderin!'),
-                            ],
-                          ),
-                        );
-                      }
-                      
-                      return ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _allMessages.length + (_isLoadingOlderMessages ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          // Loading indicator for older messages
-                          if (index == 0 && _isLoadingOlderMessages) {
-                            return const Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
-                          }
-                          
-                          final messageIndex = _isLoadingOlderMessages ? index - 1 : index;
-                          final message = _allMessages[messageIndex];
-                          final isMe = message.senderId == widget.currentUserId;
-                          
-                          // Yeni mesaj geldiğinde otomatik scroll (sadece kullanıcı alttaysa)
-                          if (messageIndex == _allMessages.length - 1) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _scrollToBottomIfNeeded();
-                            });
-                          }
+            child: _allMessages.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('Henüz mesaj yok'),
+                        SizedBox(height: 8),
+                        Text('İlk mesajı siz gönderin!'),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                            controller: _scrollController,
+                            reverse: false, // Normal sıralama (en eski üstte, en yeni altta)
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _allMessages.length + (_isLoadingOlderMessages ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              // Loading indicator for older messages (en üstte)
+                              if (index == 0 && _isLoadingOlderMessages) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+                              
+                            final messageIndex = _isLoadingOlderMessages ? index - 1 : index;
+                            final message = _allMessages[messageIndex];
+                            
+                            // Silinen mesajları göster
+                            if (message.isDeleted) {
+                              return const SizedBox.shrink();
+                            }
+                            
+                            final isMe = message.senderId == widget.currentUserId;
                           
                           if (message.imageUrl != null && message.imageUrl!.isNotEmpty) {
                             // Fotoğraf mesajı
@@ -1165,49 +1219,158 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                             return _buildTextMessage(message, isMe);
                           }
                         },
-                      );
-                    },
-                  ),
+                      ),
           ),
-          if (_isSending) const LinearProgressIndicator(minHeight: 2),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.emoji_emotions, color: Colors.deepPurple),
-                onPressed: () => setState(() => _showEmojiPicker = !_showEmojiPicker),
-              ),
-              IconButton(
-                icon: const Icon(Icons.mic, color: Colors.deepPurple),
-                onPressed: _showVoiceRecorder,
-              ),
-              IconButton(
-                icon: const Icon(Icons.attach_file, color: Colors.deepPurple),
-                onPressed: _showFilePicker,
-              ),
-              IconButton(
-                icon: const Icon(Icons.photo, color: Colors.blue),
-                onPressed: () => _pickMedia(ImageSource.gallery, isVideo: false),
-              ),
-              IconButton(
-                icon: const Icon(Icons.videocam, color: Colors.red),
-                onPressed: () => _pickMedia(ImageSource.gallery, isVideo: true),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  decoration: const InputDecoration(
-                    hintText: 'Mesaj yaz...',
-                    border: OutlineInputBorder(),
-                  ),
-                  minLines: 1,
-                  maxLines: 3,
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.send, color: Colors.deepPurple),
-                onPressed: () => _sendMessage(text: _controller.text),
-              ),
-            ],
+              ],
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.emoji_emotions, color: Colors.deepPurple),
+                  onPressed: () => setState(() => _showEmojiPicker = !_showEmojiPicker),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.mic, color: Colors.deepPurple),
+                  onPressed: _showVoiceRecorder,
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.attach_file, color: Colors.deepPurple),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'photo':
+                        _pickMedia(ImageSource.gallery, isVideo: false);
+                        break;
+                      case 'video':
+                        _pickMedia(ImageSource.gallery, isVideo: true);
+                        break;
+                      case 'camera':
+                        _pickMedia(ImageSource.camera, isVideo: false);
+                        break;
+                      case 'file':
+                        _showFilePicker();
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'photo',
+                      child: Row(
+                        children: [
+                          Icon(Icons.photo, color: Colors.blue),
+                          SizedBox(width: 12),
+                          Text('Fotoğraf'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'video',
+                      child: Row(
+                        children: [
+                          Icon(Icons.videocam, color: Colors.red),
+                          SizedBox(width: 12),
+                          Text('Video'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'camera',
+                      child: Row(
+                        children: [
+                          Icon(Icons.camera_alt, color: Colors.green),
+                          SizedBox(width: 12),
+                          Text('Kamera'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'file',
+                      child: Row(
+                        children: [
+                          Icon(Icons.insert_drive_file, color: Colors.orange),
+                          SizedBox(width: 12),
+                          Text('Dosya'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.grey[300]!,
+                        width: 1,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      decoration: const InputDecoration(
+                        hintText: 'Mesaj yaz...',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      minLines: 1,
+                      maxLines: 3,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _controller,
+                  builder: (context, value, child) {
+                    final hasText = value.text.trim().isNotEmpty;
+                    return Container(
+                      margin: const EdgeInsets.only(left: 8, right: 8),
+                      decoration: BoxDecoration(
+                        gradient: hasText
+                            ? LinearGradient(
+                                colors: [
+                                  Theme.of(context).colorScheme.primary,
+                                  Theme.of(context).colorScheme.secondary,
+                                ],
+                              )
+                            : null,
+                        color: hasText ? null : Colors.grey[300],
+                        shape: BoxShape.circle,
+                        boxShadow: hasText
+                            ? [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.send,
+                          color: hasText ? Colors.white : Colors.grey[600],
+                        ),
+                        onPressed: hasText
+                            ? () {
+                                _sendMessage(text: _controller.text);
+                                _scrollToBottom();
+                              }
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
           if (_showEmojiPicker)
             SizedBox(

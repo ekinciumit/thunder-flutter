@@ -50,12 +50,12 @@ class _EventDetailPageState extends State<EventDetailPage> {
     }
   }
 
-  void _showEditDialog(BuildContext context, EventViewModel eventViewModel) {
-    final titleController = TextEditingController(text: event.title);
-    final descController = TextEditingController(text: event.description);
-    final addressController = TextEditingController(text: event.address);
-    final quotaController = TextEditingController(text: event.quota.toString());
-    DateTime tempDate = event.datetime;
+  void _showEditDialog(BuildContext context, EventViewModel eventViewModel, EventModel currentEvent) {
+    final titleController = TextEditingController(text: currentEvent.title);
+    final descController = TextEditingController(text: currentEvent.description);
+    final addressController = TextEditingController(text: currentEvent.address);
+    final quotaController = TextEditingController(text: currentEvent.quota.toString());
+    DateTime tempDate = currentEvent.datetime;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -129,6 +129,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       lastDate: DateTime(DateTime.now().year + 2),
                     );
                     if (picked != null) {
+                      if (!context.mounted) return;
                       final pickedTime = await showTimePicker(
                         context: context,
                         initialTime: TimeOfDay.fromDateTime(tempDate),
@@ -151,18 +152,18 @@ class _EventDetailPageState extends State<EventDetailPage> {
             ),
             ElevatedButton(
               onPressed: isUploading ? null : () async {
-                final updatedEvent = event.copyWith(
+                final navigator = Navigator.of(context);
+                final updatedEvent = currentEvent.copyWith(
                   title: titleController.text.trim(),
                   description: descController.text.trim(),
                   address: addressController.text.trim(),
-                  quota: int.tryParse(quotaController.text.trim()) ?? event.quota,
+                  quota: int.tryParse(quotaController.text.trim()) ?? currentEvent.quota,
                   coverPhotoUrl: uploadedPhotoUrl,
                   datetime: tempDate,
                 );
                 await eventViewModel.updateEvent(updatedEvent);
                 if (!mounted) return;
-                setState(() { event = updatedEvent; });
-                if (context.mounted) Navigator.of(context).pop();
+                navigator.pop();
               },
               child: const Text('Kaydet'),
             ),
@@ -178,17 +179,35 @@ class _EventDetailPageState extends State<EventDetailPage> {
     final authViewModel = Provider.of<AuthViewModel>(context);
     final userId = authViewModel.user?.uid ?? '';
     final userName = authViewModel.user?.displayName ?? 'Kullanıcı';
-    final isParticipant = event.participants.contains(userId);
-    final isFull = event.participants.length >= event.quota;
-    final isOwner = event.createdBy == userId;
-    final isApproved = event.approvedParticipants.contains(userId);
     final theme = Theme.of(context);
+
+    // Event'i real-time dinle
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('events').doc(event.id).snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return AppGradientContainer(
+            child: Scaffold(
+              appBar: AppBar(title: Text(event.title)),
+              body: const Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        final eventData = snapshot.data!.data() as Map<String, dynamic>;
+        final currentEvent = EventModel.fromMap(eventData, event.id);
+        
+        final isParticipant = currentEvent.participants.contains(userId);
+        final isFull = (currentEvent.approvedParticipants.length + currentEvent.participants.length) >= currentEvent.quota;
+        final isOwner = currentEvent.createdBy == userId;
+        final isApproved = currentEvent.approvedParticipants.contains(userId);
+        final hasPendingRequest = currentEvent.pendingRequests.contains(userId);
 
     return AppGradientContainer(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: Text(event.title),
+          title: Text(currentEvent.title),
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: Colors.white,
           elevation: 0,
@@ -197,12 +216,51 @@ class _EventDetailPageState extends State<EventDetailPage> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
-            if (isOwner)
+            if (isOwner) ...[
+              // Katılma istekleri bildirimi
+              if (currentEvent.pendingRequests.isNotEmpty)
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications),
+                      tooltip: 'Katılma İstekleri Var',
+                      onPressed: null, // Sadece görsel bildirim için
+                    ),
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          currentEvent.pendingRequests.length > 9 
+                              ? '9+' 
+                              : currentEvent.pendingRequests.length.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               IconButton(
                 icon: const Icon(Icons.edit),
                 tooltip: 'Etkinliği Düzenle',
-                onPressed: () => _showEditDialog(context, eventViewModel),
+                onPressed: () => _showEditDialog(context, eventViewModel, currentEvent),
               ),
+            ],
           ],
         ),
         body: SingleChildScrollView(
@@ -210,11 +268,11 @@ class _EventDetailPageState extends State<EventDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Kapak fotoğrafı ve overlay
-              if (event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty)
+              if (currentEvent.coverPhotoUrl != null && currentEvent.coverPhotoUrl!.isNotEmpty)
                 Stack(
                   children: [
                     Image.network(
-                      event.coverPhotoUrl!,
+                      currentEvent.coverPhotoUrl!,
                       height: 260,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -249,7 +307,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Text(
-                                  event.category,
+                                  currentEvent.category,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
@@ -260,14 +318,14 @@ class _EventDetailPageState extends State<EventDetailPage> {
                               Icon(Icons.calendar_today, color: Colors.white, size: 18),
                               const SizedBox(width: 4),
                               Text(
-                                '${event.datetime.day}.${event.datetime.month}.${event.datetime.year} - ${event.datetime.hour.toString().padLeft(2, '0')}:${event.datetime.minute.toString().padLeft(2, '0')}',
+                                '${currentEvent.datetime.day}.${currentEvent.datetime.month}.${currentEvent.datetime.year} - ${currentEvent.datetime.hour.toString().padLeft(2, '0')}:${currentEvent.datetime.minute.toString().padLeft(2, '0')}',
                                 style: theme.textTheme.bodySmall?.copyWith(color: Colors.white),
                               ),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            event.title,
+                            currentEvent.title,
                             style: theme.textTheme.headlineSmall?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -299,7 +357,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            event.address,
+                            currentEvent.address,
                             style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -308,7 +366,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      event.description,
+                      currentEvent.description,
                       style: theme.textTheme.bodyLarge,
                     ),
                     const SizedBox(height: 16),
@@ -317,7 +375,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                         Icon(Icons.people, color: theme.colorScheme.primary),
                         const SizedBox(width: 6),
                         Text(
-                          '${event.participants.length}/${event.quota}',
+                          '${currentEvent.approvedParticipants.length + currentEvent.participants.length}/${currentEvent.quota}',
                           style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(width: 12),
@@ -331,13 +389,13 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             child: const Text('Kota Dolu', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
                           ),
                         const Spacer(),
-                        _DistanceToEventWidget(eventLat: event.location.latitude, eventLng: event.location.longitude),
+                        _DistanceToEventWidget(eventLat: currentEvent.location.latitude, eventLng: currentEvent.location.longitude),
                       ],
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () async {
-                        final url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${event.location.latitude},${event.location.longitude}');
+                        final url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${currentEvent.location.latitude},${currentEvent.location.longitude}');
                         if (await canLaunchUrl(url)) {
                           await launchUrl(url, mode: LaunchMode.externalApplication);
                         }
@@ -352,38 +410,99 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    if (!isParticipant && !isFull)
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          await eventViewModel.joinEvent(event, userId);
-                          if (!context.mounted) return;
-                          setState(() {});
-                        },
-                        icon: const Icon(Icons.check),
-                        label: const Text('Katıl'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.secondary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    // Katılma butonu mantığı
+                    if (!isOwner)
+                      if (isFull)
+                        Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Kota Dolu',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        )
+                      else if (hasPendingRequest)
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            await eventViewModel.cancelJoinRequest(currentEvent, userId);
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Katılma isteği geri alındı'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.hourglass_empty, color: Colors.orange[700]),
+                          label: Text(
+                            'İstek Gönderildi (Geri Al)',
+                            style: TextStyle(
+                              color: Colors.orange[700],
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange.withValues(alpha: 0.1),
+                            foregroundColor: Colors.orange[700],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        )
+                      else if (isApproved || isParticipant)
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            await eventViewModel.leaveEvent(currentEvent, userId);
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Etkinlikten ayrıldınız'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.exit_to_app),
+                          label: const Text('Ayrıl'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        )
+                      else
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            await eventViewModel.sendJoinRequest(currentEvent, userId);
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Katılma isteği gönderildi. Etkinlik sahibi onayladığında bildirim alacaksınız.'),
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.person_add),
+                          label: const Text('Katılma İsteği Gönder'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.secondary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
                         ),
-                      ),
-                    if (isParticipant)
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          await eventViewModel.leaveEvent(event, userId);
-                          if (!context.mounted) return;
-                          setState(() {});
-                        },
-                        icon: const Icon(Icons.exit_to_app),
-                        label: const Text('Ayrıl'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -397,14 +516,40 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     children: [
                       Text('Katılımcılar:', style: theme.textTheme.titleMedium),
                       const SizedBox(height: 8),
-                      _ParticipantChips(participantUids: event.participants),
+                      _ParticipantChips(
+                        participantUids: [
+                          ...currentEvent.participants,
+                          ...currentEvent.approvedParticipants
+                        ].toSet().toList(), // Duplicate'leri kaldır
+                      ),
                       // Katılma İstekleri bölümünü katılımcıların hemen altına ekle
-                      if ((isOwner /*|| (event.moderators?.contains(userId) ?? false)*/) && event.pendingRequests.isNotEmpty) ...[
+                      if ((isOwner /*|| (currentEvent.moderators?.contains(userId) ?? false)*/) && currentEvent.pendingRequests.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        Text('Katılma İstekleri:', style: theme.textTheme.titleMedium),
+                        Container(
+                          key: const ValueKey('pending_requests_section'),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.person_add, color: Colors.orange[700], size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Katılma İstekleri (${currentEvent.pendingRequests.length})',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: Colors.orange[700],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Column(
-                          children: event.pendingRequests.map((uid) => FutureBuilder<DocumentSnapshot>(
+                          children: currentEvent.pendingRequests.map((uid) => FutureBuilder<DocumentSnapshot>(
                             future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
                             builder: (context, snapshot) {
                               if (!snapshot.hasData || !snapshot.data!.exists) {
@@ -428,18 +573,16 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                         icon: const Icon(Icons.check, color: Colors.green),
                                         tooltip: 'Kabul Et',
                                         onPressed: () async {
-                                          await eventViewModel.approveJoinRequest(event, uid);
+                                          await eventViewModel.approveJoinRequest(currentEvent, uid);
                                           if (!context.mounted) return;
-                                          setState(() {});
                                         },
                                       ),
                                       IconButton(
                                         icon: const Icon(Icons.close, color: Colors.red),
                                         tooltip: 'Reddet',
                                         onPressed: () async {
-                                          await eventViewModel.rejectJoinRequest(event, uid);
+                                          await eventViewModel.rejectJoinRequest(currentEvent, uid);
                                           if (!context.mounted) return;
-                                          setState(() {});
                                         },
                                       ),
                                     ],
@@ -465,8 +608,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     children: [
                       Text('Yorumlar / Sohbet', style: theme.textTheme.titleMedium),
                       const SizedBox(height: 12),
-                      if (isOwner || isApproved)
-                        _CommentsSection(eventId: event.id, userId: userId, userName: userName)
+                      if (isOwner || isApproved || isParticipant)
+                        _CommentsSection(eventId: currentEvent.id, userId: userId, userName: userName)
                       else
                         Container(
                           padding: const EdgeInsets.all(16),
@@ -475,7 +618,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Text(
-                            'Sohbeti görmek ve katılmak için etkinlik sahibi tarafından onaylanmalısınız.',
+                            'Sohbeti görmek ve katılmak için etkinliğe katılmalısınız.',
                             style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
                             textAlign: TextAlign.center,
                           ),
@@ -489,6 +632,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }
@@ -510,6 +655,22 @@ class _CommentsSectionState extends State<_CommentsSection> {
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  String _formatTimestamp(Timestamp timestamp) {
+    final date = timestamp.toDate();
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 0) {
+      return '${date.day}.${date.month}.${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} saat önce';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} dakika önce';
+    } else {
+      return 'Şimdi';
+    }
   }
 
   Future<void> _sendComment() async {
@@ -554,11 +715,90 @@ class _CommentsSectionState extends State<_CommentsSection> {
               if (docs.isEmpty) {
                 return const Center(child: Text('Henüz yorum yok. İlk yorumu sen yaz!'));
               }
+              // Mesajları timestamp'e göre sırala (zaten orderBy ile geliyor ama emin olmak için)
+              final sortedDocs = List.from(docs);
+              sortedDocs.sort((a, b) {
+                final aTime = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                final bTime = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                if (aTime == null && bTime == null) return 0;
+                if (aTime == null) return 1;
+                if (bTime == null) return -1;
+                return aTime.compareTo(bTime);
+              });
+              
               return ListView.builder(
                 padding: const EdgeInsets.all(8),
-                itemCount: docs.length,
+                itemCount: sortedDocs.length,
                 itemBuilder: (context, index) {
-                  final data = docs[index].data() as Map<String, dynamic>;
+                  final data = sortedDocs[index].data() as Map<String, dynamic>;
+                  final isSystemMessage = data['type'] == 'system';
+                  
+                  // Sistem mesajı için stil (diğer mesajlar gibi ama biraz farklı)
+                  if (isSystemMessage) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: Colors.deepPurple.withValues(alpha: 0.2),
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.deepPurple,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.2)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle_outline,
+                                        size: 14,
+                                        color: Colors.deepPurple,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        data['text'] ?? '',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.deepPurple[800],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (data['timestamp'] != null) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _formatTimestamp(data['timestamp'] as Timestamp),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  // Normal mesaj için mevcut stil
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
@@ -590,7 +830,7 @@ class _CommentsSectionState extends State<_CommentsSection> {
                                     const SizedBox(width: 8),
                                     if (data['timestamp'] != null)
                                       Text(
-                                        (data['timestamp'] as Timestamp).toDate().toString().substring(0, 16),
+                                        _formatTimestamp(data['timestamp'] as Timestamp),
                                         style: const TextStyle(fontSize: 11, color: Colors.grey),
                                       ),
                                   ],

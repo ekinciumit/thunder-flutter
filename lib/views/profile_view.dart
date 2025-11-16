@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'user_search_page.dart';
+import 'my_events_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import 'package:flutter/cupertino.dart';
@@ -13,6 +14,7 @@ import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
+// Removed seed data service as test data seeding is no longer needed.
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -219,6 +221,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     }
   }
 
+  // Removed seeding UI and logic.
+
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
@@ -326,7 +330,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                       ),
                       child: Text(
                         user.email,
@@ -348,6 +352,16 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                       gradientColors: const [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
                     ),
                     const SizedBox(height: 16),
+                    _buildGradientButton(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MyEventsPage()));
+                      },
+                      label: 'Etkinliklerim',
+                      icon: Icons.event_note_rounded,
+                      gradientColors: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                    ),
+                    const SizedBox(height: 16),
+                    // Seed/test verisi butonu kaldırıldı
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -435,7 +449,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatColumn('Takipçi', user.followers.length, theme),
-          Container(width: 1, height: 30, color: Colors.white.withOpacity(0.2)),
+          Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.2)),
           _buildStatColumn('Takip', user.following.length, theme),
         ],
       ),

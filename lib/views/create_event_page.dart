@@ -200,7 +200,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: tempCategory,
+                      initialValue: tempCategory,
                       decoration: const InputDecoration(labelText: 'Kategori'),
                       items: categories.map((cat) => DropdownMenuItem(
                         value: cat,
@@ -441,7 +441,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     border: Border.all(color: Colors.purple.withAlpha(40)),
                   ),
                   child: DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: InputDecoration(
                       labelText: 'Kategori',
                       labelStyle: TextStyle(color: Colors.purple.shade700),
@@ -516,6 +516,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     onPressed: eventViewModel.isLoading
                         ? null
                         : () async {
+                            final navigator = Navigator.of(context);
                             if (_formKey.currentState?.validate() != true || selectedDateTime == null || selectedLatLng == null) return;
                             final event = EventModel(
                               id: '',
@@ -532,7 +533,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             );
                             await eventViewModel.addEvent(event);
                             if (!mounted) return;
-                            if (mounted) Navigator.of(context).pop();
+                            navigator.pop();
                           },
                     icon: const Icon(Icons.add),
                     label: const Text('Etkinlik Oluştur'),

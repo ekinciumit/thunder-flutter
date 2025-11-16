@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 import '../../services/audio_service.dart';
 
 class VoiceMessageWidget extends StatefulWidget {
@@ -30,7 +28,7 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
   late Animation<double> _animation;
   
   bool _isPlaying = false;
-  Duration _currentPosition = Duration.zero;
+  final Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
   bool _isLoading = true;
 
@@ -90,6 +88,7 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ses oynatma hatası: $e')),
       );

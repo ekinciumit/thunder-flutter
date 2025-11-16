@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -13,6 +12,7 @@ class FilePickerWidget extends StatelessWidget {
   });
 
   Future<void> _pickFile(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.any,
@@ -27,7 +27,7 @@ class FilePickerWidget extends StatelessWidget {
         onClose();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('Dosya seçme hatası: $e')),
       );
     }
@@ -173,6 +173,7 @@ class FilePickerWidget extends StatelessWidget {
   }
 
   Future<void> _pickFileByType(BuildContext context, FileType type, {List<String>? allowedExtensions}) async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final result = await FilePicker.platform.pickFiles(
         type: type,
@@ -188,7 +189,7 @@ class FilePickerWidget extends StatelessWidget {
         onClose();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('Dosya seçme hatası: $e')),
       );
     }

@@ -122,7 +122,7 @@ class MessageModel {
       replyToMessageId: map['replyToMessageId'],
       forwardFromUserId: map['forwardFromUserId'],
       forwardFromUserName: map['forwardFromUserName'],
-      reactions: Map<String, List<String>>.from(map['reactions'] ?? {}),
+      reactions: _parseReactions(map['reactions']),
       isEdited: map['isEdited'] ?? false,
       editedAt: (map['editedAt'] as Timestamp?)?.toDate(),
       isDeleted: map['isDeleted'] ?? false,
@@ -247,6 +247,21 @@ class MessageModel {
 
   @override
   int get hashCode => id.hashCode;
+
+  /// Reactions'ı parse et (Firestore'dan gelen dynamic list'i String list'e çevir)
+  static Map<String, List<String>> _parseReactions(dynamic reactionsData) {
+    if (reactionsData == null || reactionsData is! Map) {
+      return {};
+    }
+    
+    final Map<String, List<String>> parsed = {};
+    reactionsData.forEach((key, value) {
+      if (value is List) {
+        parsed[key.toString()] = value.map((e) => e.toString()).toList();
+      }
+    });
+    return parsed;
+  }
 }
 
 

@@ -72,3 +72,70 @@ exports.sendNewEventNotification = onDocumentCreated('events/{eventId}', async (
   console.log('Notifications sent:', response.successCount);
   return null;
 });
+
+// Yeni mesaj oluşturulduğunda alıcılara push bildirimi gönder
+exports.sendNewMessageNotification = onDocumentCreated('messages/{messageId}', async (event) => {
+  const msg = event.data.data();
+  const chatId = msg.chatId;
+  const senderId = msg.senderId;
+  const text = msg.text || (msg.type === 'voice' ? 'Sesli mesaj' : 'Mesaj');
+
+  if (!chatId || !senderId) {
+    logger.warn('Missing chatId or senderId on message, skipping notification.');
+    return null;
+  }
+
+  // Sohbet katılımcılarını al
+  const chatDoc = await admin.firestore().collection('chats').doc(chatId).get();
+  if (!chatDoc.exists) {
+    logger.warn('Chat not found for message:', chatId);
+    return null;
+  }
+  const chat = chatDoc.data();
+  const participants = Array.isArray(chat.participants) ? chat.participants : [];
+  const recipients = participants.filter((uid) => uid !== senderId);
+  if (recipients.length === 0) {
+    logger.info('No recipients for message in chat:', chatId);
+    return null;
+  }
+
+  // Alıcıların tokenlarını topla
+  const batches = [];
+  const tokens = new Set();
+  // Firestore where-in 10 limitine takılmamak için tek tek çekiyoruz (katılımcı sayısı düşük varsayım)
+  for (const uid of recipients) {
+    batches.push(
+      admin.firestore().collection('users').doc(uid).get().then((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (Array.isArray(data.fcmTokens)) {
+            data.fcmTokens.forEach((t) => tokens.add(t));
+          }
+        }
+      })
+    );
+  }
+  await Promise.all(batches);
+  if (tokens.size === 0) {
+    logger.info('No FCM tokens for recipients.');
+    return null;
+  }
+
+  // Bildirim içeriği
+  const payload = {
+    notification: {
+      title: chat.name ? `Yeni mesaj • ${chat.name}` : 'Yeni mesaj',
+      body: text.length > 80 ? `${text.substring(0, 77)}…` : text,
+      click_action: 'FLUTTER_NOTIFICATION_CLICK',
+    },
+    data: {
+      chatId: chatId,
+      messageId: event.params.messageId,
+      type: msg.type || 'text',
+    },
+  };
+
+  const response = await admin.messaging().sendToDevice(Array.from(tokens), payload);
+  logger.info('Message notifications sent:', response.successCount);
+  return null;
+});

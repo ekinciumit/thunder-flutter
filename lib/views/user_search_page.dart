@@ -207,7 +207,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final user = filtered[index];
                     return Material(
@@ -222,8 +222,8 @@ class _UserSearchPageState extends State<UserSearchPage> {
                         onTap: () {
                           Navigator.of(context).push(
                             PageRouteBuilder(
-                              pageBuilder: (_, __, ___) => UserProfilePage(user: user, currentUserId: currentUserId),
-                              transitionsBuilder: (_, animation, __, child) => FadeTransition(
+                              pageBuilder: (routeContext, primaryAnimation, secondaryAnimation) => UserProfilePage(user: user, currentUserId: currentUserId),
+                              transitionsBuilder: (routeContext, animation, secondaryAnimation, child) => FadeTransition(
                                 opacity: animation,
                                 child: child,
                               ),

@@ -1,68 +1,201 @@
 rules_version = '2';
+
+
+
 service cloud.firestore {
+
   match /databases/{database}/documents {
 
     // Kullanıcılar koleksiyonu için kurallar
+
     match /users/{userId} {
+
       // Herkes yeni kullanıcı oluşturabilir (kayıt olma)
+
       allow create: if request.auth != null;
+
       // Giriş yapmış herkes kullanıcı profillerini okuyabilir (arama için)
+
       allow read: if request.auth != null;
+
       // Kullanıcı kendi profilini güncelleyebilir (fcmToken dahil)
+
       // Ayrıca takip etme işlemi için başka kullanıcıların followers/following alanlarını güncelleyebilir
+
       allow update: if request.auth != null && (
+
         request.auth.uid == userId ||
+
         // Takip etme işlemi için: sadece followers veya following alanları güncelleniyorsa
+
         (request.resource.data.keys().hasAll(['followers', 'following']) &&
+
          resource.data.keys().hasAll(['followers', 'following']))
+
       );
+
       // Kullanıcılar silinemez
+
       allow delete: if false;
+
     }
 
     // Etkinlikler koleksiyonu için kurallar
+
     match /events/{eventId} {
+
       // Giriş yapmış herkes etkinlikleri okuyabilir
+
       allow read: if request.auth != null;
+
       // Giriş yapmış herkes etkinlik oluşturabilir
+
       allow create: if request.auth != null;
-      // Bir etkinliği silebilmek veya güncelleyebilmek için giriş yapmış olmalı
-      // ve etkinliğin 'createdBy' alanı, istek yapan kullanıcının ID'si ile eşleşmelidir.
-      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+
+      // Güncelleme: 
+
+      // 1. Etkinlik sahibi her şeyi güncelleyebilir
+
+      // 2. Diğer kullanıcılar:
+
+      //    - pendingRequests array'ine kendi ID'lerini ekleyip çıkarabilir
+
+      //    - participants ve approvedParticipants array'lerinden kendi ID'lerini çıkarabilir (ayrılma)
+
+      allow update: if request.auth != null && (
+
+        resource.data.createdBy == request.auth.uid ||
+
+        // Kullanıcı sadece pendingRequests array'ine kendi ID'sini ekleyip çıkarabilir
+
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pendingRequests']) &&
+
+         // Eski ve yeni pendingRequests array'lerini karşılaştır - sadece kullanıcının kendi ID'si değişmiş olmalı
+
+         (request.resource.data.pendingRequests.hasAny([request.auth.uid]) != resource.data.pendingRequests.hasAny([request.auth.uid]))) ||
+
+        // Kullanıcı participants ve approvedParticipants array'lerinden kendi ID'sini çıkarabilir (ayrılma)
+
+        // Eski array'lerde kullanıcı var mı ve yeni array'lerde yok mu kontrol et
+
+        ((resource.data.participants != null && resource.data.participants.hasAny([request.auth.uid])) ||
+
+         (resource.data.approvedParticipants != null && resource.data.approvedParticipants.hasAny([request.auth.uid]))) &&
+
+        ((request.resource.data.participants == null || !request.resource.data.participants.hasAny([request.auth.uid])) &&
+
+         (request.resource.data.approvedParticipants == null || !request.resource.data.approvedParticipants.hasAny([request.auth.uid])))
+
+      );
+
+      // Silme: sadece etkinliği oluşturan kullanıcı
+
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
 
       // Mesajlar (sohbet) alt koleksiyonu için kural
+
       match /messages/{messageId} {
+
         allow read, write: if request.auth != null && (
+
           resource.data.createdBy == request.auth.uid ||
+
           get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid])
+
         );
+
       }
+
+      // Yorumlar (comments) alt koleksiyonu için kural
+
+      match /comments/{commentId} {
+
+        // Okuma: Etkinlik sahibi, onaylanmış katılımcılar ve normal katılımcılar okuyabilir
+
+        allow read: if request.auth != null && (
+
+          get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
+
+          get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
+
+          get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])
+
+        );
+
+        // Yazma: Etkinlik sahibi, onaylanmış katılımcılar ve normal katılımcılar yazabilir
+        // Sistem mesajları için özel kontrol (type: 'system' ve userId: 'system')
+        allow create: if request.auth != null && (
+          // Sistem mesajı ise (sadece katılımcılar oluşturabilir)
+          (request.resource.data.type == 'system' && 
+           request.resource.data.userId == 'system' &&
+           (get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
+            get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
+            get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid]))) ||
+          // Normal mesaj ise (type field'ı yoksa veya type != 'system' ise ve userId kullanıcının kendi ID'si olmalı)
+          ((!('type' in request.resource.data) || request.resource.data.type != 'system') &&
+           request.resource.data.userId == request.auth.uid &&
+           (get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
+            get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
+            get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])))
+        );
+
+        // Güncelleme/Silme: Sadece yorumu yazan kullanıcı (sistem mesajları silinemez/güncellenemez)
+        allow update, delete: if request.auth != null && 
+          resource.data.userId == request.auth.uid &&
+          (!('type' in resource.data) || resource.data.type != 'system');
+
+      }
+
     }
 
     // Sohbetler koleksiyonu için kurallar - Çok basit
+
     match /chats/{chatId} {
+
       // Giriş yapmış herkes okuyabilir
+
       allow read: if request.auth != null;
+
       // Giriş yapmış herkes oluşturabilir
+
       allow create: if request.auth != null;
+
       // Giriş yapmış herkes güncelleyebilir
+
       allow update: if request.auth != null;
+
       // Giriş yapmış herkes silebilir
+
       allow delete: if request.auth != null;
+
     }
 
     // Mesajlar koleksiyonu için kurallar - Basitleştirilmiş
+
     match /messages/{messageId} {
+
       // Mesaj gönderme - giriş yapmış herkes
+
       allow create: if request.auth != null && 
+
         request.auth.uid == request.resource.data.senderId;
+
       // Mesaj okuma - giriş yapmış herkes
+
       allow read: if request.auth != null;
+
       // Mesaj güncelleme - sadece gönderen
+
       allow update: if request.auth != null && 
+
         request.auth.uid == resource.data.senderId;
+
       // Mesaj silme - sadece gönderen
+
       allow delete: if request.auth != null && request.auth.uid == resource.data.senderId;
+
     }
+
   }
-} 
+
+}

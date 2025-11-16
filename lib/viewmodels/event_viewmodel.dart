@@ -8,6 +8,8 @@ class EventViewModel extends ChangeNotifier {
   final IEventService _eventService;
   List<EventModel> events = [];
   bool isLoading = false;
+  bool isLoadingMore = false;
+  bool canLoadMore = true;
   String? error;
   StreamSubscription<List<EventModel>>? _eventsSub;
   bool _isListening = false;
@@ -23,12 +25,36 @@ class EventViewModel extends ChangeNotifier {
     if (_isListening) return;
     _eventsSub = _eventService.getEventsStream().listen((eventList) {
       events = eventList;
+      // Eğer ilk sayfa limit kadar geldiyse devamı olabilir
+      canLoadMore = eventList.length >= 50;
       notifyListeners();
     }, onError: (e) {
       error = e.toString();
       notifyListeners();
     });
     _isListening = true;
+  }
+
+  Future<void> loadMore() async {
+    if (isLoadingMore || !canLoadMore || events.isEmpty) return;
+    isLoadingMore = true;
+    notifyListeners();
+    try {
+      final lastDate = events.last.datetime;
+      final next = await _eventService.fetchNextEvents(startAfter: lastDate, limit: 50);
+      if (next.isEmpty) {
+        canLoadMore = false;
+      } else {
+        // Yinelenenleri önlemek için id bazlı filtre
+        final existingIds = events.map((e) => e.id).toSet();
+        final toAdd = next.where((e) => !existingIds.contains(e.id)).toList();
+        events.addAll(toAdd);
+      }
+    } catch (e) {
+      error = e.toString();
+    }
+    isLoadingMore = false;
+    notifyListeners();
   }
 
   Future<void> addEvent(EventModel event) async {
@@ -53,9 +79,20 @@ class EventViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> sendJoinRequest(EventModel event, String userId) async {
+    try {
+      await _eventService.sendJoinRequest(event.id, userId);
+      notifyListeners();
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+    }
+  }
+
   Future<void> leaveEvent(EventModel event, String userId) async {
     try {
       await _eventService.leaveEvent(event.id, userId);
+      notifyListeners(); // UI'ı güncelle
     } catch (e) {
       error = e.toString();
       notifyListeners();
@@ -101,6 +138,16 @@ class EventViewModel extends ChangeNotifier {
   Future<void> rejectJoinRequest(EventModel event, String userId) async {
     try {
       await _eventService.rejectJoinRequest(event.id, userId);
+      notifyListeners();
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> cancelJoinRequest(EventModel event, String userId) async {
+    try {
+      await _eventService.cancelJoinRequest(event.id, userId);
       notifyListeners();
     } catch (e) {
       error = e.toString();

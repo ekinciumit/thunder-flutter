@@ -157,7 +157,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: events.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final event = events[index];
                     return Card(

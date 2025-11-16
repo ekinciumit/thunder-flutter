@@ -16,14 +16,24 @@ class ChatService {
   /// Özel sohbet oluştur veya getir
   Future<ChatModel> getOrCreatePrivateChat(String userA, String userB) async {
     final chatId = getChatId(userA, userB);
-    // Debug: Getting or creating private chat with ID: $chatId for users: $userA, $userB
     final chatDoc = await _chatsRef.doc(chatId).get();
     
     if (chatDoc.exists) {
-      // Debug: Chat exists, returning existing chat
-      return ChatModel.fromMap(chatDoc.data()!, chatDoc.id);
+      final chatData = chatDoc.data()!;
+      final chat = ChatModel.fromMap(chatData, chatDoc.id);
+      
+      // Eğer participantDetails eksikse, güncelle
+      if (chat.participantDetails.isEmpty || 
+          !chat.participantDetails.containsKey(userA) || 
+          !chat.participantDetails.containsKey(userB)) {
+        await _updateParticipantDetails(chatId, [userA, userB]);
+        // Güncellenmiş chat'i tekrar al
+        final updatedDoc = await _chatsRef.doc(chatId).get();
+        return ChatModel.fromMap(updatedDoc.data()!, chatId);
+      }
+      
+      return chat;
     } else {
-      // Debug: Chat does not exist, creating new chat
       // Yeni özel sohbet oluştur
       final chat = ChatModel(
         id: chatId,
@@ -34,9 +44,50 @@ class ChatService {
       );
       
       await _chatsRef.doc(chatId).set(chat.toMap());
-      // Debug: New chat created successfully
-      return chat;
+      
+      // ParticipantDetails'i doldur
+      await _updateParticipantDetails(chatId, [userA, userB]);
+      
+      // Güncellenmiş chat'i döndür
+      final updatedDoc = await _chatsRef.doc(chatId).get();
+      return ChatModel.fromMap(updatedDoc.data()!, chatId);
     }
+  }
+
+  /// ParticipantDetails'i Firestore'dan kullanıcı bilgilerini çekerek güncelle
+  Future<void> _updateParticipantDetails(String chatId, List<String> userIds) async {
+    final participantDetailsMap = <String, ChatParticipant>{};
+    
+    for (final userId in userIds) {
+      try {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data()!;
+          participantDetailsMap[userId] = ChatParticipant(
+            userId: userId,
+            name: userData['displayName'] ?? 'Bilinmeyen Kullanıcı',
+            photoUrl: userData['photoUrl'],
+            joinedAt: DateTime.now(),
+          );
+        }
+      } catch (e) {
+        // Hata durumunda varsayılan değerler
+        participantDetailsMap[userId] = ChatParticipant(
+          userId: userId,
+          name: 'Bilinmeyen Kullanıcı',
+          joinedAt: DateTime.now(),
+        );
+      }
+    }
+    
+    // Firestore'a kaydet
+    final participantDetailsData = participantDetailsMap.map(
+      (key, value) => MapEntry(key, value.toMap()),
+    );
+    
+    await _chatsRef.doc(chatId).update({
+      'participantDetails': participantDetailsData,
+    });
   }
 
   /// Grup sohbeti oluştur
@@ -143,24 +194,44 @@ class ChatService {
 
   /// Mesajları dinle (stream) - Optimized version with pagination and caching
   Stream<List<MessageModel>> getMessagesStream(String chatId, {int limit = 50}) {
-    // Debug: Getting messages stream for chatId: $chatId with limit: $limit
     return _messagesRef
         .where('chatId', isEqualTo: chatId)
-        .limit(limit)
+        // orderBy kaldırıldı - index eksik olduğu için client-side sıralama yapıyoruz
         .snapshots()
+        .handleError((error) {
+          return <MessageModel>[]; // Hata durumunda boş liste döndür
+        })
         .map((snapshot) {
-      // Debug: Received ${snapshot.docs.length} messages from Firestore
-      final messages = snapshot.docs.map((doc) {
-        return MessageModel.fromMap(doc.data(), doc.id);
-      }).toList();
+      if (snapshot.docs.isEmpty) {
+        return <MessageModel>[];
+      }
       
-      // Timestamp'e göre ters sıralama (en eski mesajlar önce)
+      final messages = snapshot.docs.map((doc) {
+        try {
+          final message = MessageModel.fromMap(doc.data(), doc.id);
+          // Silinen mesajları filtrele
+          if (message.isDeleted) {
+            return null;
+          }
+          return message;
+        } catch (e) {
+          // Parse hatası olan mesajları atla
+          return null;
+        }
+      }).whereType<MessageModel>().toList();
+      
+      // Client-side sıralama (timestamp'e göre - en eski üstte, en yeni altta)
       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       
-      // Cache'e kaydet (async olarak)
-      CacheService.cacheMessages(chatId, messages);
+      // Limit uygula (en son N mesaj)
+      final limitedMessages = messages.length > limit 
+          ? messages.sublist(messages.length - limit)
+          : messages;
       
-      return messages;
+      // Cache'e kaydet (async olarak)
+      CacheService.cacheMessages(chatId, limitedMessages);
+      
+      return limitedMessages;
     });
   }
 
@@ -328,12 +399,21 @@ class ChatService {
   Stream<List<ChatModel>> getUserChats(String userId) {
     return _chatsRef
         .where('participants', arrayContains: userId)
-        .orderBy('lastMessageAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
+      final chats = snapshot.docs.map((doc) {
         return ChatModel.fromMap(doc.data(), doc.id);
       }).toList();
+      
+      // Client-side sıralama (lastMessageAt'e göre)
+      chats.sort((a, b) {
+        if (a.lastMessageAt == null && b.lastMessageAt == null) return 0;
+        if (a.lastMessageAt == null) return 1;
+        if (b.lastMessageAt == null) return -1;
+        return b.lastMessageAt!.compareTo(a.lastMessageAt!);
+      });
+      
+      return chats;
     });
   }
 

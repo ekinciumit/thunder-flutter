@@ -4,7 +4,6 @@ import '../services/chat_service.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 import '../viewmodels/auth_viewmodel.dart';
-import 'private_chat_page.dart';
 import 'widgets/app_gradient_container.dart';
 
 class MessageForwardPage extends StatefulWidget {

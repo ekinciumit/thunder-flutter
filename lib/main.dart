@@ -254,7 +254,8 @@ class _RootPageState extends State<RootPage> {
       builder: (context, authViewModel, _) {
         // Kullanıcı giriş yaptığında ve profil tamamlama gerekmediğinde bildirim servisini başlat
         if (authViewModel.user != null && !authViewModel.needsProfileCompletion) {
-          NotificationService().initialize();
+          final notificationService = NotificationService();
+          notificationService.initialize();
           // Giriş sonrası etkinlik dinlemeyi başlat
           final eventVm = Provider.of<EventViewModel>(context, listen: false);
           eventVm.listenEvents();

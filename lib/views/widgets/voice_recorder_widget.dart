@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../services/audio_service.dart';
 
@@ -65,11 +64,13 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
         // Kayıt süresini takip et
         _startDurationTimer();
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ses kaydı başlatılamadı')),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Hata: $e')),
       );
@@ -101,6 +102,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
         widget.onRecordingComplete(filePath, _recordingDuration);
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Kayıt durdurma hatası: $e')),
       );
