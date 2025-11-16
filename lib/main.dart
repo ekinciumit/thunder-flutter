@@ -69,18 +69,32 @@ class MyApp extends StatelessWidget {
     final IEventService eventService = EventService();
     final LanguageService languageService = LanguageService();
     
-    // Yeni Repository'yi oluştur (opsiyonel - fallback mekanizması var)
-    // ŞU AN: Async olduğu için FutureBuilder kullanmıyoruz, direkt null geçiyoruz
-    // İleride async initialization yapabiliriz
-    AuthRepository? authRepository;
-    
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
+        // Yeni Repository'yi async olarak oluştur (FutureProvider)
+        FutureProvider<AuthRepository?>(
+          create: (_) => createAuthRepository().then((repo) {
+            print('✅ Yeni AuthRepository aktif edildi (Clean Architecture)');
+            return repo;
+          }).catchError((e) {
+            print('⚠️ AuthRepository oluşturulamadı, eski kod kullanılacak: $e');
+            return null; // Fallback devreye girer
+          }),
+          initialData: null, // Başlangıçta null (eski kod kullanılacak)
+        ),
+        // ChangeNotifierProxyProvider: FutureProvider'dan Repository'yi alıp AuthViewModel'e ver
+        ChangeNotifierProxyProvider<AuthRepository?, AuthViewModel>(
           create: (_) => AuthViewModel(
             authService: authService,
-            authRepository: authRepository, // null = eski kod kullanılacak
+            authRepository: null, // Başlangıçta null (eski kod kullanılacak)
           ),
+          update: (context, authRepository, previous) {
+            // Repository hazır olunca AuthViewModel'i güncelle
+            return previous ?? AuthViewModel(
+              authService: authService,
+              authRepository: authRepository, // null = eski kod, değil = yeni kod
+            );
+          },
         ),
         ChangeNotifierProvider(create: (_) => EventViewModel(eventService: eventService)),
         ChangeNotifierProvider(create: (_) => languageService),

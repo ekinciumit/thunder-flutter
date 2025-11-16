@@ -36,26 +36,33 @@ class AuthViewModel extends ChangeNotifier {
       
       // ÖNCE YENİ KODU DENE (Clean Architecture)
       if (_authRepository != null) {
+        print('🔄 Yeni kod kullanılıyor (Clean Architecture)');
         try {
           final result = await _authRepository!.signIn(email, password);
           
           if (result.isRight) {
             // ✅ Yeni kod başarılı
+            print('✅ Yeni kod başarılı: signIn');
             signedInUser = result.right;
           } else {
             // ❌ Yeni kod hata verdi, eski koda geç
             final failure = result.left;
+            print('⚠️ Yeni kod hata verdi, eski koda geçiliyor: ${failure.message}');
             throw Exception(failure.message);
           }
         } catch (e) {
           // Yeni kod exception fırlattı, eski koda geç (fallback)
+          print('⚠️ Yeni kod exception, eski koda geçiliyor: $e');
           // Devam et, eski kodu kullan
         }
+      } else {
+        print('📦 Eski kod kullanılıyor (fallback)');
       }
       
       // ESKİ KODU KULLAN (Fallback veya yeni kod yoksa)
       if (signedInUser == null) {
         signedInUser = await _authService.signIn(email, password);
+        print('✅ Eski kod başarılı: signIn');
       }
       
       if (signedInUser != null) {
