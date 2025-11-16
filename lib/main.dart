@@ -15,6 +15,9 @@ import 'views/complete_profile_page.dart';
 import 'services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/di/service_locator.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/domain/repositories/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Arka plan bildirimleri için handler (üst düzey bir fonksiyon olmalı)
 @pragma('vm:entry-point')
@@ -66,9 +69,19 @@ class MyApp extends StatelessWidget {
     final IEventService eventService = EventService();
     final LanguageService languageService = LanguageService();
     
+    // Yeni Repository'yi oluştur (opsiyonel - fallback mekanizması var)
+    // ŞU AN: Async olduğu için FutureBuilder kullanmıyoruz, direkt null geçiyoruz
+    // İleride async initialization yapabiliriz
+    AuthRepository? authRepository;
+    
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel(authService: authService)),
+        ChangeNotifierProvider(
+          create: (_) => AuthViewModel(
+            authService: authService,
+            authRepository: authRepository, // null = eski kod kullanılacak
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => EventViewModel(eventService: eventService)),
         ChangeNotifierProvider(create: (_) => languageService),
       ],
