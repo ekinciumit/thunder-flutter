@@ -8,7 +8,6 @@ import 'create_event_page.dart';
 import 'chat_list_page.dart';
 import 'private_chat_page.dart';
 import '../services/notification_service.dart';
-import '../services/chat_service.dart';
 import '../services/auth_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../models/chat_model.dart';
@@ -23,7 +22,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final NotificationService _notificationService = NotificationService();
-  final ChatService _chatService = ChatService();
   final AuthService _authService = AuthService();
   int _totalUnreadCount = 0;
 

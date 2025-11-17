@@ -26,16 +26,12 @@ void main() {
   late MockFirebaseFirestore mockFirestore;
   late MockUserCredential mockCredential;
   late MockUser mockUser;
-  late MockDocumentReference mockDocRef;
-  late MockDocumentSnapshot mockDocSnapshot;
 
   setUp(() {
     mockAuth = MockFirebaseAuth();
     mockFirestore = MockFirebaseFirestore();
     mockCredential = MockUserCredential();
     mockUser = MockUser();
-    mockDocRef = MockDocumentReference();
-    mockDocSnapshot = MockDocumentSnapshot();
 
     dataSource = AuthRemoteDataSourceImpl(
       auth: mockAuth,

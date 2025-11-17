@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/event_model.dart';
 import '../services/event_service.dart';
-import '../services/auth_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/event_viewmodel.dart';
 import 'event_detail_page.dart';
@@ -20,7 +19,6 @@ class MyEventsPage extends StatefulWidget {
 
 class _MyEventsPageState extends State<MyEventsPage> {
   final EventService _eventService = EventService();
-  final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {

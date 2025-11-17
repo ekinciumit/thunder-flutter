@@ -4,7 +4,6 @@ import 'package:mockito/annotations.dart';
 import 'package:thunder/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:thunder/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:thunder/features/auth/data/datasources/auth_local_data_source.dart';
-import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
 import 'package:thunder/models/user_model.dart';
 import 'package:thunder/core/errors/exceptions.dart';
 import 'package:thunder/core/errors/failures.dart';
