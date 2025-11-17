@@ -64,16 +64,23 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
     
     print('🏗️ [ARCH] SignIn: Clean Architecture kullanılıyor (Use Case)');
+    print('🔄 [TEST] SignIn başlatıldı: $email');
     
     try {
       // Clean Architecture: Use Case kullan
       final result = await _signInUseCase(email, password);
       
+      print('🔄 [TEST] SignInUseCase sonucu: isRight=${result.isRight}');
+      
       if (result.isRight) {
         final signedInUser = result.right;
+        print('✅ [TEST] SignInUseCase başarılı, user: ${signedInUser.uid}');
         
         // Firestore'dan tam profil verisini çek
+        print('🔄 [TEST] Profil çekiliyor: ${signedInUser.uid}');
         final profileResult = await _fetchUserProfileUseCase(signedInUser.uid);
+        print('🔄 [TEST] FetchUserProfile sonucu: isRight=${profileResult.isRight}');
+        
         // Either'i güvenli bir şekilde aç (null değerleri destekle)
         final profile = profileResult.fold(
           (failure) => null, // Hata durumunda null döndür
@@ -84,13 +91,16 @@ class AuthViewModel extends ChangeNotifier {
         
         // Eğer profil yoksa, profil tamamlama gerekli
         needsProfileCompletion = profile == null;
+        print('✅ [TEST] SignIn başarılı, user=${user?.uid}, needsProfileCompletion=$needsProfileCompletion');
       } else {
         // Failure durumu
         final failure = result.left;
         error = failure.message;
+        print('❌ [TEST] SignInUseCase başarısız: ${failure.message}');
       }
     } catch (e) {
       error = e.toString();
+      print('❌ [TEST] SignIn exception: $e');
     }
     
     isLoading = false;
@@ -159,24 +169,30 @@ class AuthViewModel extends ChangeNotifier {
     );
     
     print('🏗️ [ARCH] CompleteProfile: Clean Architecture kullanılıyor (Use Case)');
+    print('🔄 [TEST] CompleteProfile başlatıldı: displayName=$displayName');
     
     try {
       // Clean Architecture: Use Case kullan
       final result = await _saveUserProfileUseCase(user!);
       
+      print('🔄 [TEST] SaveUserProfileUseCase sonucu: isRight=${result.isRight}');
+      
       if (result.isRight) {
         // ✅ Use Case başarılı
         needsProfileCompletion = false;
+        print('✅ [TEST] CompleteProfile başarılı, needsProfileCompletion=false');
         notifyListeners();
       } else {
         // ❌ Use Case hata verdi
         final failure = result.left;
         error = failure.message;
+        print('❌ [TEST] SaveUserProfileUseCase başarısız: ${failure.message}');
         notifyListeners();
         throw Exception(failure.message);
       }
     } catch (e) {
       error = e.toString();
+      print('❌ [TEST] CompleteProfile exception: $e');
       notifyListeners();
       rethrow;
     }
@@ -184,25 +200,31 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<void> signOut() async {
     print('🏗️ [ARCH] SignOut: Clean Architecture kullanılıyor (Use Case)');
+    print('🔄 [TEST] SignOut başlatıldı');
     
     try {
       // Clean Architecture: Use Case kullan
       final result = await _signOutUseCase();
       
+      print('🔄 [TEST] SignOutUseCase sonucu: isRight=${result.isRight}');
+      
       if (result.isRight) {
         // ✅ Use Case başarılı
         user = null;
+        print('✅ [TEST] SignOut başarılı, user=null');
         notifyListeners();
       } else {
         // ❌ Use Case hata verdi
         final failure = result.left;
         error = failure.message;
+        print('❌ [TEST] SignOutUseCase başarısız: ${failure.message}');
         notifyListeners();
         throw Exception(failure.message);
       }
     } catch (e) {
       // Hata durumunda da user'ı temizle
       user = null;
+      print('❌ [TEST] SignOut exception: $e');
       notifyListeners();
       rethrow;
     }
