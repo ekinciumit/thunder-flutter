@@ -3,7 +3,6 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/domain/usecases/sign_in_usecase.dart';
-import '../core/errors/failures.dart';
 
 class AuthViewModel extends ChangeNotifier {
   UserModel? user;

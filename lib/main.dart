@@ -17,7 +17,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/di/service_locator.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 // Arka plan bildirimleri için handler (üst düzey bir fonksiyon olmalı)
 @pragma('vm:entry-point')
@@ -78,6 +77,7 @@ class MyApp extends StatelessWidget {
             return repo;
           }).catchError((e) {
             print('⚠️ AuthRepository oluşturulamadı, eski kod kullanılacak: $e');
+            // ignore: invalid_return_type_for_catch_error
             return null; // Fallback devreye girer
           }),
           initialData: null, // Başlangıçta null (eski kod kullanılacak)

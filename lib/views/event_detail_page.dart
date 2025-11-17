@@ -431,17 +431,17 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           ),
                         )
                       else if (hasPendingRequest)
-                        ElevatedButton.icon(
-                          onPressed: () async {
+                      ElevatedButton.icon(
+                        onPressed: () async {
                             await eventViewModel.cancelJoinRequest(currentEvent, userId);
-                            if (!context.mounted) return;
+                          if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Katılma isteği geri alındı'),
                                 duration: Duration(seconds: 2),
                               ),
                             );
-                          },
+                        },
                           icon: Icon(Icons.hourglass_empty, color: Colors.orange[700]),
                           label: Text(
                             'İstek Gönderildi (Geri Al)',
@@ -451,36 +451,36 @@ class _EventDetailPageState extends State<EventDetailPage> {
                               fontSize: 16,
                             ),
                           ),
-                          style: ElevatedButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange.withValues(alpha: 0.1),
                             foregroundColor: Colors.orange[700],
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                               side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                         )
                       else if (isApproved || isParticipant)
-                        ElevatedButton.icon(
-                          onPressed: () async {
+                      ElevatedButton.icon(
+                        onPressed: () async {
                             await eventViewModel.leaveEvent(currentEvent, userId);
-                            if (!context.mounted) return;
+                          if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Etkinlikten ayrıldınız'),
                                 duration: Duration(seconds: 2),
                               ),
                             );
-                          },
-                          icon: const Icon(Icons.exit_to_app),
-                          label: const Text('Ayrıl'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
+                        },
+                        icon: const Icon(Icons.exit_to_app),
+                        label: const Text('Ayrıl'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                         )
                       else
                         ElevatedButton.icon(
@@ -502,7 +502,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                        ),
+                      ),
                   ],
                 ),
               ),

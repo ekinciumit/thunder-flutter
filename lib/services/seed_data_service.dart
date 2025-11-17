@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/event_model.dart';
 
 /// Firebase'e test verileri eklemek için service
 /// Uygulama içinden çalıştırılabilir

@@ -77,7 +77,7 @@ class ChatService {
           name: 'Bilinmeyen Kullanıcı',
           joinedAt: DateTime.now(),
         );
-      }
+    }
     }
     
     // Firestore'a kaydet

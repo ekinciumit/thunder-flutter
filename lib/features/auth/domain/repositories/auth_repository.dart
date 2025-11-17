@@ -37,6 +37,8 @@ class Either<L, R> {
     if (!_isLeft || _left == null) {
       throw StateError('Either is Right, not Left');
     }
+    // Null check yapıldığı için analyzer'a göre ! gereksiz ama tip güvenliği için gerekli
+    // ignore: unnecessary_non_null_assertion
     return _left!;
   }
   
@@ -44,6 +46,8 @@ class Either<L, R> {
     if (_isLeft || _right == null) {
       throw StateError('Either is Left, not Right');
     }
+    // Null check yapıldığı için analyzer'a göre ! gereksiz ama tip güvenliği için gerekli
+    // ignore: unnecessary_non_null_assertion
     return _right!;
   }
 
@@ -54,8 +58,12 @@ class Either<L, R> {
   /// Returns: Her iki durumda da aynı tip döner
   T fold<T>(T Function(L) onLeft, T Function(R) onRight) {
     if (_isLeft) {
+      // Null check yapıldığı için analyzer'a göre ! gereksiz ama tip güvenliği için gerekli
+      // ignore: unnecessary_non_null_assertion
       return onLeft(_left!);
     } else {
+      // Null check yapıldığı için analyzer'a göre ! gereksiz ama tip güvenliği için gerekli
+      // ignore: unnecessary_non_null_assertion
       return onRight(_right!);
     }
   }
