@@ -32,16 +32,18 @@ class AuthRepositoryImpl implements AuthRepository {
       // Önce remote'dan giriş yap
       final user = await _remoteDataSource.signIn(email, password);
       
-      // Başarılı olursa cache'e kaydet
-      await _localDataSource.cacheUser(user);
+      // Başarılı olursa cache'e kaydet (cache hatası kritik değil)
+      try {
+        await _localDataSource.cacheUser(user);
+      } on CacheException catch (e) {
+        // Cache hatası kritik değil, kullanıcı zaten giriş yaptı
+        // Sadece log'a yaz, devam et
+        print('⚠️ Cache hatası (kritik değil): ${e.message}');
+      }
       
       return Either.right(user);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
-    } on CacheException catch (e) {
-      // Cache hatası kritik değil, kullanıcı zaten giriş yaptı
-      // Ama yine de failure döndürelim (opsiyonel: sadece warning olabilir)
-      return Either.left(CacheFailure(e.message));
     } catch (e) {
       return Either.left(UnknownFailure('Beklenmeyen bir hata oluştu: ${e.toString()}'));
     }
@@ -53,15 +55,18 @@ class AuthRepositoryImpl implements AuthRepository {
       // Önce remote'dan kayıt ol
       final user = await _remoteDataSource.signUp(email, password);
       
-      // Başarılı olursa cache'e kaydet
-      await _localDataSource.cacheUser(user);
+      // Başarılı olursa cache'e kaydet (cache hatası kritik değil)
+      try {
+        await _localDataSource.cacheUser(user);
+      } on CacheException catch (e) {
+        // Cache hatası kritik değil, kullanıcı zaten kayıt oldu
+        // Sadece log'a yaz, devam et
+        print('⚠️ Cache hatası (kritik değil): ${e.message}');
+      }
       
       return Either.right(user);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
-    } on CacheException catch (e) {
-      // Cache hatası kritik değil, kullanıcı zaten kayıt oldu
-      return Either.left(CacheFailure(e.message));
     } catch (e) {
       return Either.left(UnknownFailure('Beklenmeyen bir hata oluştu: ${e.toString()}'));
     }
@@ -85,14 +90,17 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, void>> saveUserProfile(UserModel user) async {
     try {
       await _remoteDataSource.saveUserProfile(user);
-      // Profil kaydedilince cache'i güncelle
-      await _localDataSource.cacheUser(user);
+      // Profil kaydedilince cache'i güncelle (cache hatası kritik değil)
+      try {
+        await _localDataSource.cacheUser(user);
+      } on CacheException catch (e) {
+        // Cache hatası kritik değil, profil zaten kaydedildi
+        // Sadece log'a yaz, devam et
+        print('⚠️ Cache hatası (kritik değil): ${e.message}');
+      }
       return Either.right(null);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
-    } on CacheException catch (e) {
-      // Cache hatası kritik değil, profil zaten kaydedildi
-      return Either.left(CacheFailure(e.message));
     } catch (e) {
       return Either.left(UnknownFailure('Profil kaydedilirken bir hata oluştu: ${e.toString()}'));
     }
@@ -159,6 +167,7 @@ class AuthRepositoryImpl implements AuthRepository {
 /// 
 /// Bu fonksiyon Service Locator'da kullanılabilir
 Future<AuthRepository> createAuthRepository() async {
+  print('🏗️ [ARCH] createAuthRepository: Clean Architecture Repository oluşturuluyor...');
   final prefs = await SharedPreferences.getInstance();
   
   return AuthRepositoryImpl(

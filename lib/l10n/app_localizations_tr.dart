@@ -192,6 +192,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get success => 'Başarılı';
 
   @override
+  String get signUpSuccess =>
+      'Kaydınız başarıyla oluşturuldu! Giriş yapılıyor...';
+
+  @override
   String get noData => 'Veri bulunamadı';
 
   @override

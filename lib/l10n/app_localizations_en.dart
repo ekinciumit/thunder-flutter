@@ -192,6 +192,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get success => 'Success';
 
   @override
+  String get signUpSuccess =>
+      'Your account has been created successfully! Signing in...';
+
+  @override
   String get noData => 'No data found';
 
   @override

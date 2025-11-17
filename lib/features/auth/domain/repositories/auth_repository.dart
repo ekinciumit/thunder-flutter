@@ -58,13 +58,15 @@ class Either<L, R> {
   /// Returns: Her iki durumda da aynı tip döner
   T fold<T>(T Function(L) onLeft, T Function(R) onRight) {
     if (_isLeft) {
-      // Null check yapıldığı için analyzer'a göre ! gereksiz ama tip güvenliği için gerekli
-      // ignore: unnecessary_non_null_assertion
+      if (_left == null) {
+        throw StateError('Either is Left but _left is null');
+      }
       return onLeft(_left!);
     } else {
-      // Null check yapıldığı için analyzer'a göre ! gereksiz ama tip güvenliği için gerekli
-      // ignore: unnecessary_non_null_assertion
-      return onRight(_right!);
+      // Right durumunda _right null olabilir (örn: Either.right(null))
+      // Bu durumda onRight callback'ine null geçiriyoruz
+      // R tipi nullable olabilir (örn: UserModel?)
+      return onRight(_right as R);
     }
   }
 }

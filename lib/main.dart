@@ -6,7 +6,6 @@ import 'l10n/app_localizations.dart';
 import 'firebase_options.dart';
 import 'viewmodels/auth_viewmodel.dart';
 import 'viewmodels/event_viewmodel.dart';
-import 'services/auth_service.dart';
 import 'services/event_service.dart';
 import 'services/language_service.dart';
 import 'views/home_page.dart';
@@ -45,17 +44,13 @@ void main() async {
 void _setupServiceLocator() {
   final sl = ServiceLocator();
   
-  // Auth servisini kaydet
-  sl.registerSingleton<IAuthService>(AuthService());
-  
   // Event servisini kaydet
   sl.registerSingleton<IEventService>(EventService());
   
   // Language servisini kaydet
   sl.registerSingleton<LanguageService>(LanguageService());
   
-  // ŞU AN: Mevcut kod hala direkt servisleri kullanıyor
-  // İleride Service Locator'dan alacağız: sl.get<IAuthService>()
+  // Not: AuthService artık kullanılmıyor, Clean Architecture Repository kullanılıyor
 }
 
 class MyApp extends StatelessWidget {
@@ -69,19 +64,17 @@ class MyApp extends StatelessWidget {
     
     return MultiProvider(
       providers: [
-        // Faz 4: Repository'yi async olarak oluştur (FutureProvider)
+        // Yeni Repository'yi async olarak oluştur (FutureProvider)
         FutureProvider<AuthRepository?>(
-          create: (_) async {
-            try {
-              final repo = await createAuthRepository();
-              print('✅ AuthRepository aktif edildi (Clean Architecture - Faz 4)');
-              return repo;
-            } catch (e) {
-              print('❌ AuthRepository oluşturulamadı: $e');
-              return null; // Hata durumunda null döndür (fallback için)
-            }
-          },
-          initialData: null as AuthRepository?, // FutureProvider için initialData gerekli
+          create: (_) => createAuthRepository().then((repo) {
+            debugPrint('✅ Yeni AuthRepository aktif edildi (Clean Architecture)');
+            return repo;
+          }).catchError((e) {
+            debugPrint('⚠️ AuthRepository oluşturulamadı, eski kod kullanılacak: $e');
+            // ignore: invalid_return_type_for_catch_error
+            return null; // Fallback devreye girer
+          }),
+          initialData: null, // Başlangıçta null (eski kod kullanılacak)
         ),
         // ChangeNotifierProxyProvider: FutureProvider'dan Repository'yi alıp AuthViewModel'e ver
         ChangeNotifierProxyProvider<AuthRepository?, AuthViewModel>(
@@ -329,8 +322,36 @@ class _RootPageState extends State<RootPage> {
   }
 
   Widget _buildHome(AuthViewModel authViewModel, BuildContext context) {
+    debugPrint('🔄 [TEST] _buildHome çağrıldı, user=${authViewModel.user?.uid}, needsProfileCompletion=${authViewModel.needsProfileCompletion}, justSignedUp=${authViewModel.justSignedUp}');
+    
     if (authViewModel.user != null) {
       if (authViewModel.needsProfileCompletion) {
+        // SignUp başarılı mesajını burada göster (sadece yeni kayıt olduysa)
+        if (authViewModel.justSignedUp) {
+          debugPrint('🔔 [TEST] SignUp başarılı mesajı gösterilecek: justSignedUp=true');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final l10n = AppLocalizations.of(context);
+            debugPrint('🔔 [TEST] PostFrameCallback çalıştı, l10n=${l10n != null}, mounted=$mounted');
+            if (l10n != null && mounted) {
+              debugPrint('✅ [TEST] SnackBar gösteriliyor: ${l10n.signUpSuccess}');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n.signUpSuccess),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+              // Flag'i sıfırla (bir kere göster)
+              authViewModel.justSignedUp = false;
+              debugPrint('✅ [TEST] justSignedUp flag sıfırlandı');
+            } else {
+              debugPrint('❌ [TEST] SnackBar gösterilemedi: l10n=${l10n != null}, mounted=$mounted');
+            }
+          });
+        } else {
+          debugPrint('ℹ️ [TEST] justSignedUp=false, mesaj gösterilmeyecek');
+        }
+        
         return CompleteProfilePage(
           onComplete: (name, bio, photoUrl) async {
             await authViewModel.completeProfile(

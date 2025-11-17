@@ -3,14 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:thunder/views/auth_page.dart';
 import 'package:thunder/viewmodels/auth_viewmodel.dart';
-import 'package:thunder/services/auth_service.dart';
+import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
+import 'package:mockito/annotations.dart';
 
+import 'auth_page_test.mocks.dart';
+
+@GenerateMocks([AuthRepository])
 void main() {
   group('AuthPage Widget Tests', () {
     testWidgets('AuthPage - Email ve password field\'ları görünür', (WidgetTester tester) async {
       // Arrange
-      final authService = AuthService();
-      final authViewModel = AuthViewModel(authService: authService);
+      final mockRepository = MockAuthRepository();
+      final authViewModel = AuthViewModel(authRepository: mockRepository);
       
       // Act
       await tester.pumpWidget(
@@ -30,8 +34,8 @@ void main() {
 
     testWidgets('AuthPage - Giriş butonu görünür', (WidgetTester tester) async {
       // Arrange
-      final authService = AuthService();
-      final authViewModel = AuthViewModel(authService: authService);
+      final mockRepository = MockAuthRepository();
+      final authViewModel = AuthViewModel(authRepository: mockRepository);
       
       // Act
       await tester.pumpWidget(
@@ -49,8 +53,8 @@ void main() {
 
     testWidgets('AuthPage - Kayıt ol / Giriş yap toggle çalışıyor', (WidgetTester tester) async {
       // Arrange
-      final authService = AuthService();
-      final authViewModel = AuthViewModel(authService: authService);
+      final mockRepository = MockAuthRepository();
+      final authViewModel = AuthViewModel(authRepository: mockRepository);
       
       // Act
       await tester.pumpWidget(

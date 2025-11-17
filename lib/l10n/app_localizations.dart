@@ -464,6 +464,12 @@ abstract class AppLocalizations {
   /// **'Başarılı'**
   String get success;
 
+  /// Kayıt başarılı mesajı
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaydınız başarıyla oluşturuldu! Giriş yapılıyor...'**
+  String get signUpSuccess;
+
   /// Veri yok mesajı
   ///
   /// In tr, this message translates to:
