@@ -70,30 +70,38 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Faz 4: Repository'yi async olarak oluştur (FutureProvider)
-        // Artık Repository zorunlu, fallback yok
-        FutureProvider<AuthRepository>(
-          create: (_) => createAuthRepository().then((repo) {
-            print('✅ AuthRepository aktif edildi (Clean Architecture - Faz 4)');
-            return repo;
-          }).catchError((e) {
-            print('❌ AuthRepository oluşturulamadı: $e');
-            throw e; // Hata durumunda uygulama başlamasın
-          }),
+        FutureProvider<AuthRepository?>(
+          create: (_) async {
+            try {
+              final repo = await createAuthRepository();
+              print('✅ AuthRepository aktif edildi (Clean Architecture - Faz 4)');
+              return repo;
+            } catch (e) {
+              print('❌ AuthRepository oluşturulamadı: $e');
+              return null; // Hata durumunda null döndür (fallback için)
+            }
+          },
+          initialData: null as AuthRepository?, // FutureProvider için initialData gerekli
         ),
         // ChangeNotifierProxyProvider: FutureProvider'dan Repository'yi alıp AuthViewModel'e ver
-        ChangeNotifierProxyProvider<AuthRepository, AuthViewModel>(
+        ChangeNotifierProxyProvider<AuthRepository?, AuthViewModel>(
           create: (_) {
             // Repository henüz hazır değilse, geçici bir hata durumu oluştur
             throw Exception('AuthRepository henüz hazır değil');
           },
           update: (context, authRepository, previous) {
+            // Repository null ise hata fırlat
+            if (authRepository == null) {
+              if (previous != null) return previous;
+              throw Exception('AuthRepository null, uygulama başlatılamıyor');
+            }
+            
             // Repository hazır olunca ViewModel'i oluştur
             if (previous != null) {
-              // Mevcut ViewModel varsa güncelle (normalde olmamalı ama güvenlik için)
               previous.updateRepository(authRepository);
               return previous;
             }
-            // İlk oluşturma - Faz 4: Sadece Repository kullan, eski kod yok
+            // İlk oluşturma - Faz 4: Sadece Repository kullan
             return AuthViewModel(
               authRepository: authRepository,
             );
