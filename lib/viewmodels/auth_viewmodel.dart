@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
-import '../services/auth_service.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/domain/usecases/sign_in_usecase.dart';
 import '../features/auth/domain/usecases/sign_up_usecase.dart';
@@ -8,63 +7,54 @@ import '../features/auth/domain/usecases/sign_out_usecase.dart';
 import '../features/auth/domain/usecases/fetch_user_profile_usecase.dart';
 import '../features/auth/domain/usecases/save_user_profile_usecase.dart';
 
+/// AuthViewModel - Clean Architecture Implementation
+/// 
+/// Faz 4: Fallback mekanizması kaldırıldı, sadece Clean Architecture kullanılıyor.
+/// Repository her zaman gereklidir ve Use Cases üzerinden işlemler yapılır.
 class AuthViewModel extends ChangeNotifier {
   UserModel? user;
   bool isLoading = false;
   String? error;
   bool needsProfileCompletion = false;
 
-  final IAuthService _authService; // Eski kod (fallback)
-  AuthRepository? _authRepository; // Yeni kod (opsiyonel - mutable)
+  final AuthRepository _authRepository;
   
-  // Use Cases (opsiyonel - fallback mekanizması var)
-  SignInUseCase? _signInUseCase;
-  SignUpUseCase? _signUpUseCase;
-  SignOutUseCase? _signOutUseCase;
-  FetchUserProfileUseCase? _fetchUserProfileUseCase;
-  SaveUserProfileUseCase? _saveUserProfileUseCase;
+  // Use Cases - Clean Architecture Domain Layer
+  late final SignInUseCase _signInUseCase;
+  late final SignUpUseCase _signUpUseCase;
+  late final SignOutUseCase _signOutUseCase;
+  late final FetchUserProfileUseCase _fetchUserProfileUseCase;
+  late final SaveUserProfileUseCase _saveUserProfileUseCase;
 
   AuthViewModel({
-    IAuthService? authService,
-    AuthRepository? authRepository, // Yeni kod opsiyonel
-  }) : _authService = authService ?? AuthService(),
-       _authRepository = authRepository {
+    required AuthRepository authRepository,
+  }) : _authRepository = authRepository {
     _initializeUseCases();
     _initializeUser();
   }
   
-  /// Use Cases'i oluştur (eğer Repository varsa)
+  /// Use Cases'i oluştur
   void _initializeUseCases() {
-    if (_authRepository != null) {
-      _signInUseCase = SignInUseCase(_authRepository!);
-      _signUpUseCase = SignUpUseCase(_authRepository!);
-      _signOutUseCase = SignOutUseCase(_authRepository!);
-      _fetchUserProfileUseCase = FetchUserProfileUseCase(_authRepository!);
-      _saveUserProfileUseCase = SaveUserProfileUseCase(_authRepository!);
-    } else {
-      _signInUseCase = null;
-      _signUpUseCase = null;
-      _signOutUseCase = null;
-      _fetchUserProfileUseCase = null;
-      _saveUserProfileUseCase = null;
-    }
+    _signInUseCase = SignInUseCase(_authRepository);
+    _signUpUseCase = SignUpUseCase(_authRepository);
+    _signOutUseCase = SignOutUseCase(_authRepository);
+    _fetchUserProfileUseCase = FetchUserProfileUseCase(_authRepository);
+    _saveUserProfileUseCase = SaveUserProfileUseCase(_authRepository);
   }
   
   /// Kullanıcıyı başlat
   void _initializeUser() {
-    if (_authRepository != null) {
-      user = _authRepository!.getCurrentUser();
-    } else {
-      user = _authService.getCurrentUser();
-    }
+    user = _authRepository.getCurrentUser();
   }
   
   /// Repository güncellendiğinde çağrılır (ChangeNotifierProxyProvider'dan)
+  /// Not: Faz 4'te Repository her zaman mevcut olduğu için bu metod artık kullanılmıyor
+  /// ama geriye dönük uyumluluk için bırakıldı
   void updateRepository(AuthRepository? repository) {
-    _authRepository = repository;
-    _initializeUseCases();
-    _initializeUser();
-    notifyListeners();
+    if (repository != null) {
+      // Repository değişirse Use Cases'i yeniden oluştur
+      // Not: Normalde bu durum oluşmamalı, ama güvenlik için bırakıldı
+    }
   }
 
   Future<void> signIn(String email, String password) async {
@@ -73,64 +63,24 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      UserModel? signedInUser;
+      // Clean Architecture: Use Case kullan
+      final result = await _signInUseCase(email, password);
       
-      // ÖNCE USE CASE'İ DENE (Clean Architecture - Domain Layer)
-      if (_signInUseCase != null) {
-        print('🔄 Use Case kullanılıyor: signIn (Clean Architecture)');
-        try {
-          final result = await _signInUseCase!(email, password);
-          
-          if (result.isRight) {
-            // ✅ Use Case başarılı
-            print('✅ Use Case başarılı: signIn');
-            signedInUser = result.right;
-          } else {
-            // ❌ Use Case hata verdi, eski koda geç
-            final failure = result.left;
-            print('⚠️ Use Case hata verdi, eski koda geçiliyor: ${failure.message}');
-            throw Exception(failure.message);
-          }
-        } catch (e) {
-          // Use Case exception fırlattı, eski koda geç (fallback)
-          print('⚠️ Use Case exception, eski koda geçiliyor: $e');
-          // Devam et, eski kodu kullan
-        }
-      } else {
-        print('📦 Eski kod kullanılıyor: signIn (fallback)');
-      }
-      
-      // ESKİ KODU KULLAN (Fallback veya Use Case yoksa)
-      if (signedInUser == null) {
-        signedInUser = await _authService.signIn(email, password);
-        print('✅ Eski kod başarılı: signIn');
-      }
-      
-      if (signedInUser != null) {
+      if (result.isRight) {
+        final signedInUser = result.right;
+        
         // Firestore'dan tam profil verisini çek
-        UserModel? profile;
-        
-        // Profil çekmeyi Use Case ile dene
-        if (_fetchUserProfileUseCase != null) {
-          try {
-            final profileResult = await _fetchUserProfileUseCase!(signedInUser.uid);
-            if (profileResult.isRight) {
-              profile = profileResult.right;
-            }
-          } catch (e) {
-            // Use Case hata verdi, eski koda geç
-          }
-        }
-        
-        // Eski kodla profil çek (fallback veya Use Case yoksa)
-        if (profile == null) {
-          profile = await _authService.fetchUserProfile(signedInUser.uid);
-        }
+        final profileResult = await _fetchUserProfileUseCase(signedInUser.uid);
+        final profile = profileResult.isRight ? profileResult.right : null;
         
         user = profile ?? signedInUser;
         
         // Eğer profil yoksa, profil tamamlama gerekli
         needsProfileCompletion = profile == null;
+      } else {
+        // Failure durumu
+        final failure = result.left;
+        error = failure.message;
       }
     } catch (e) {
       error = e.toString();
@@ -146,62 +96,22 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      UserModel? signedUpUser;
+      // Clean Architecture: Use Case kullan
+      final result = await _signUpUseCase(email, password);
       
-      // ÖNCE USE CASE'İ DENE (Clean Architecture - Domain Layer)
-      if (_signUpUseCase != null) {
-        print('🔄 Use Case kullanılıyor: signUp (Clean Architecture)');
-        try {
-          final result = await _signUpUseCase!(email, password);
-          
-          if (result.isRight) {
-            // ✅ Use Case başarılı
-            print('✅ Use Case başarılı: signUp');
-            signedUpUser = result.right;
-          } else {
-            // ❌ Use Case hata verdi, eski koda geç
-            final failure = result.left;
-            print('⚠️ Use Case hata verdi, eski koda geçiliyor: ${failure.message}');
-            throw Exception(failure.message);
-          }
-        } catch (e) {
-          // Use Case exception fırlattı, eski koda geç (fallback)
-          print('⚠️ Use Case exception, eski koda geçiliyor: $e');
-          // Devam et, eski kodu kullan
-        }
-      } else {
-        print('📦 Eski kod kullanılıyor: signUp (fallback)');
-      }
-      
-      // ESKİ KODU KULLAN (Fallback veya Use Case yoksa)
-      if (signedUpUser == null) {
-        signedUpUser = await _authService.signUp(email, password);
-        print('✅ Eski kod başarılı: signUp');
-      }
-      
-      if (signedUpUser != null) {
+      if (result.isRight) {
+        final signedUpUser = result.right;
+        
         // Firestore'dan tam profil verisini çek
-        UserModel? profile;
-        
-        // Profil çekmeyi Use Case ile dene
-        if (_fetchUserProfileUseCase != null) {
-          try {
-            final profileResult = await _fetchUserProfileUseCase!(signedUpUser.uid);
-            if (profileResult.isRight) {
-              profile = profileResult.right;
-            }
-          } catch (e) {
-            // Use Case hata verdi, eski koda geç
-          }
-        }
-        
-        // Eski kodla profil çek (fallback veya Use Case yoksa)
-        if (profile == null) {
-          profile = await _authService.fetchUserProfile(signedUpUser.uid);
-        }
+        final profileResult = await _fetchUserProfileUseCase(signedUpUser.uid);
+        final profile = profileResult.isRight ? profileResult.right : null;
         
         user = profile ?? signedUpUser;
-        needsProfileCompletion = true;
+        needsProfileCompletion = true; // Yeni kullanıcı için profil tamamlama gerekli
+      } else {
+        // Failure durumu
+        final failure = result.left;
+        error = failure.message;
       }
     } catch (e) {
       error = e.toString();
@@ -224,38 +134,19 @@ class AuthViewModel extends ChangeNotifier {
     );
     
     try {
-      // ÖNCE USE CASE'İ DENE (Clean Architecture - Domain Layer)
-      if (_saveUserProfileUseCase != null) {
-        print('🔄 Use Case kullanılıyor: completeProfile (Clean Architecture)');
-        try {
-          final result = await _saveUserProfileUseCase!(user!);
-          
-          if (result.isRight) {
-            // ✅ Use Case başarılı
-            print('✅ Use Case başarılı: completeProfile');
-            needsProfileCompletion = false;
-            notifyListeners();
-            return;
-          } else {
-            // ❌ Use Case hata verdi, eski koda geç
-            final failure = result.left;
-            print('⚠️ Use Case hata verdi, eski koda geçiliyor: ${failure.message}');
-            throw Exception(failure.message);
-          }
-        } catch (e) {
-          // Use Case exception fırlattı, eski koda geç (fallback)
-          print('⚠️ Use Case exception, eski koda geçiliyor: $e');
-          // Devam et, eski kodu kullan
-        }
-      } else {
-        print('📦 Eski kod kullanılıyor: completeProfile (fallback)');
-      }
+      // Clean Architecture: Use Case kullan
+      final result = await _saveUserProfileUseCase(user!);
       
-      // ESKİ KODU KULLAN (Fallback veya Use Case yoksa)
-      await _authService.saveUserProfile(user!);
-      print('✅ Eski kod başarılı: completeProfile');
-      needsProfileCompletion = false;
-      notifyListeners();
+      if (result.isRight) {
+        needsProfileCompletion = false;
+        notifyListeners();
+      } else {
+        // Failure durumu
+        final failure = result.left;
+        error = failure.message;
+        notifyListeners();
+        throw Exception(failure.message);
+      }
     } catch (e) {
       error = e.toString();
       notifyListeners();
@@ -265,38 +156,19 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      // ÖNCE USE CASE'İ DENE (Clean Architecture - Domain Layer)
-      if (_signOutUseCase != null) {
-        print('🔄 Use Case kullanılıyor: signOut (Clean Architecture)');
-        try {
-          final result = await _signOutUseCase!();
-          
-          if (result.isRight) {
-            // ✅ Use Case başarılı
-            print('✅ Use Case başarılı: signOut');
-            user = null;
-            notifyListeners();
-            return;
-          } else {
-            // ❌ Use Case hata verdi, eski koda geç
-            final failure = result.left;
-            print('⚠️ Use Case hata verdi, eski koda geçiliyor: ${failure.message}');
-            throw Exception(failure.message);
-          }
-        } catch (e) {
-          // Use Case exception fırlattı, eski koda geç (fallback)
-          print('⚠️ Use Case exception, eski koda geçiliyor: $e');
-          // Devam et, eski kodu kullan
-        }
-      } else {
-        print('📦 Eski kod kullanılıyor: signOut (fallback)');
-      }
+      // Clean Architecture: Use Case kullan
+      final result = await _signOutUseCase();
       
-      // ESKİ KODU KULLAN (Fallback veya Use Case yoksa)
-      await _authService.signOut();
-      print('✅ Eski kod başarılı: signOut');
-      user = null;
-      notifyListeners();
+      if (result.isRight) {
+        user = null;
+        notifyListeners();
+      } else {
+        // Failure durumu - yine de user'ı temizle
+        final failure = result.left;
+        user = null;
+        notifyListeners();
+        throw Exception(failure.message);
+      }
     } catch (e) {
       // Hata durumunda da user'ı temizle
       user = null;
@@ -311,41 +183,18 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
     
     try {
-      UserModel? profile;
+      // Clean Architecture: Use Case kullan
+      final result = await _fetchUserProfileUseCase(user!.uid);
       
-      // ÖNCE USE CASE'İ DENE (Clean Architecture - Domain Layer)
-      if (_fetchUserProfileUseCase != null) {
-        print('🔄 Use Case kullanılıyor: loadUserProfile (Clean Architecture)');
-        try {
-          final result = await _fetchUserProfileUseCase!(user!.uid);
-          
-          if (result.isRight) {
-            // ✅ Use Case başarılı
-            print('✅ Use Case başarılı: loadUserProfile');
-            profile = result.right;
-          } else {
-            // ❌ Use Case hata verdi, eski koda geç
-            final failure = result.left;
-            print('⚠️ Use Case hata verdi, eski koda geçiliyor: ${failure.message}');
-            // Devam et, eski kodu kullan
-          }
-        } catch (e) {
-          // Use Case exception fırlattı, eski koda geç (fallback)
-          print('⚠️ Use Case exception, eski koda geçiliyor: $e');
-          // Devam et, eski kodu kullan
+      if (result.isRight) {
+        final profile = result.right;
+        if (profile != null) {
+          user = profile;
         }
       } else {
-        print('📦 Eski kod kullanılıyor: loadUserProfile (fallback)');
-      }
-      
-      // ESKİ KODU KULLAN (Fallback veya Use Case yoksa)
-      if (profile == null) {
-        profile = await _authService.fetchUserProfile(user!.uid);
-        print('✅ Eski kod başarılı: loadUserProfile');
-      }
-      
-      if (profile != null) {
-        user = profile;
+        // Failure durumu
+        final failure = result.left;
+        error = failure.message;
       }
     } catch (e) {
       error = e.toString();

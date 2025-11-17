@@ -64,40 +64,38 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Servisleri oluştur ve DI ile ViewModel'lere ver
-    final IAuthService authService = AuthService();
     final IEventService eventService = EventService();
     final LanguageService languageService = LanguageService();
     
     return MultiProvider(
       providers: [
-        // Yeni Repository'yi async olarak oluştur (FutureProvider)
-        FutureProvider<AuthRepository?>(
+        // Faz 4: Repository'yi async olarak oluştur (FutureProvider)
+        // Artık Repository zorunlu, fallback yok
+        FutureProvider<AuthRepository>(
           create: (_) => createAuthRepository().then((repo) {
-            print('✅ Yeni AuthRepository aktif edildi (Clean Architecture)');
+            print('✅ AuthRepository aktif edildi (Clean Architecture - Faz 4)');
             return repo;
           }).catchError((e) {
-            print('⚠️ AuthRepository oluşturulamadı, eski kod kullanılacak: $e');
-            // ignore: invalid_return_type_for_catch_error
-            return null; // Fallback devreye girer
+            print('❌ AuthRepository oluşturulamadı: $e');
+            throw e; // Hata durumunda uygulama başlamasın
           }),
-          initialData: null, // Başlangıçta null (eski kod kullanılacak)
         ),
         // ChangeNotifierProxyProvider: FutureProvider'dan Repository'yi alıp AuthViewModel'e ver
-        ChangeNotifierProxyProvider<AuthRepository?, AuthViewModel>(
-          create: (_) => AuthViewModel(
-            authService: authService,
-            authRepository: null, // Başlangıçta null (eski kod kullanılacak)
-          ),
+        ChangeNotifierProxyProvider<AuthRepository, AuthViewModel>(
+          create: (_) {
+            // Repository henüz hazır değilse, geçici bir hata durumu oluştur
+            throw Exception('AuthRepository henüz hazır değil');
+          },
           update: (context, authRepository, previous) {
-            // Repository hazır olunca mevcut ViewModel'i güncelle (Use Cases'i de günceller)
+            // Repository hazır olunca ViewModel'i oluştur
             if (previous != null) {
+              // Mevcut ViewModel varsa güncelle (normalde olmamalı ama güvenlik için)
               previous.updateRepository(authRepository);
               return previous;
             }
-            // İlk oluşturma
+            // İlk oluşturma - Faz 4: Sadece Repository kullan, eski kod yok
             return AuthViewModel(
-              authService: authService,
-              authRepository: authRepository, // null = eski kod, değil = yeni kod
+              authRepository: authRepository,
             );
           },
         ),
