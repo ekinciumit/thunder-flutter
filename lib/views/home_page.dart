@@ -8,7 +8,6 @@ import 'create_event_page.dart';
 import 'chat_list_page.dart';
 import 'private_chat_page.dart';
 import '../services/notification_service.dart';
-import '../services/auth_service.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../models/chat_model.dart';
 
@@ -22,7 +21,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final NotificationService _notificationService = NotificationService();
-  final AuthService _authService = AuthService();
   int _totalUnreadCount = 0;
 
   static final List<Widget> _pages = <Widget>[
@@ -67,8 +65,8 @@ class _HomePageState extends State<HomePage> {
 
         if (otherParticipant.isEmpty) return;
 
-        // Kullanıcı bilgilerini al
-        final otherUser = await _authService.fetchUserProfile(otherParticipant);
+        // Kullanıcı bilgilerini al (Clean Architecture: AuthViewModel kullan)
+        final otherUser = await authViewModel.fetchUserProfile(otherParticipant);
         final otherUserName = otherUser?.displayName ?? 
                              chat.participantDetails[otherParticipant]?.name ?? 
                              'Bilinmeyen';

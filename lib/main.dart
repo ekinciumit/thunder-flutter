@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -16,6 +17,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/di/service_locator.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
+import 'features/auth/data/datasources/auth_remote_data_source.dart';
+import 'features/auth/data/datasources/auth_local_data_source.dart';
+import 'models/user_model.dart';
 
 // Arka plan bildirimleri için handler (üst düzey bir fonksiyon olmalı)
 @pragma('vm:entry-point')
@@ -53,6 +57,44 @@ void _setupServiceLocator() {
   // Not: AuthService artık kullanılmıyor, Clean Architecture Repository kullanılıyor
 }
 
+/// Geçici AuthRepository oluşturur (sync)
+/// 
+/// Bu fonksiyon sadece Provider'ın create metodunda kullanılır.
+/// SharedPreferences async olduğu için geçici bir local data source kullanır.
+/// Gerçek repository FutureProvider tarafından async oluşturulur.
+AuthRepository _createTemporaryAuthRepository() {
+  // Geçici local data source: cache işlemleri yapmaz (sadece Provider için)
+  final temporaryLocalDataSource = _TemporaryAuthLocalDataSource();
+  
+  return AuthRepositoryImpl(
+    remoteDataSource: AuthRemoteDataSourceImpl(),
+    localDataSource: temporaryLocalDataSource,
+  );
+}
+
+/// Geçici AuthLocalDataSource implementasyonu
+/// 
+/// Bu sınıf sadece Provider'ın create metodunda kullanılır.
+/// Cache işlemleri yapmaz, sadece interface'i implement eder.
+class _TemporaryAuthLocalDataSource implements AuthLocalDataSource {
+  @override
+  Future<void> cacheUser(UserModel user) async {
+    // Geçici data source, cache yapmaz
+  }
+
+  @override
+  Future<UserModel?> getCachedUser() async {
+    // Geçici data source, cache'den okumaz
+    return null;
+  }
+
+  @override
+  Future<void> clearCache() async {
+    // Geçici data source, cache temizlemez
+  }
+}
+
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -64,40 +106,52 @@ class MyApp extends StatelessWidget {
     
     return MultiProvider(
       providers: [
-        // Yeni Repository'yi async olarak oluştur (FutureProvider)
+        // Clean Architecture: FutureProvider ile AuthRepository async oluşturuluyor
+        // Repository hazır olunca ChangeNotifierProxyProvider ile ViewModel oluşturuluyor
         FutureProvider<AuthRepository?>(
-          create: (_) => createAuthRepository().then((repo) {
-            debugPrint('✅ Yeni AuthRepository aktif edildi (Clean Architecture)');
-            return repo;
-          }).catchError((e) {
-            debugPrint('⚠️ AuthRepository oluşturulamadı, eski kod kullanılacak: $e');
-            // ignore: invalid_return_type_for_catch_error
-            return null; // Fallback devreye girer
-          }),
-          initialData: null, // Başlangıçta null (eski kod kullanılacak)
+          create: (_) async {
+            try {
+              // Repository'yi oluştur
+              final repository = await createAuthRepository();
+              if (kDebugMode) {
+                debugPrint('✅ Yeni AuthRepository aktif edildi (Clean Architecture)');
+              }
+              return repository;
+            } catch (e) {
+              if (kDebugMode) {
+                debugPrint('⚠️ AuthRepository oluşturulamadı: $e');
+              }
+              return null;
+            }
+          },
+          initialData: null, // Başlangıçta null
         ),
-        // ChangeNotifierProxyProvider: FutureProvider'dan Repository'yi alıp AuthViewModel'e ver
+        // ChangeNotifierProxyProvider: AuthRepository hazır olunca AuthViewModel oluştur
+        // Bu sayede AuthViewModel ChangeNotifier olarak kalır ve notifyListeners() çalışır
         ChangeNotifierProxyProvider<AuthRepository?, AuthViewModel>(
           create: (_) {
-            // Repository henüz hazır değilse, geçici bir hata durumu oluştur
-            throw Exception('AuthRepository henüz hazır değil');
+            // create metodu sync olmalı, bu yüzden geçici bir repository ile geçici ViewModel oluşturuyoruz
+            // update metodunda gerçek repository ile değiştirilecek
+            // Geçici repository: SharedPreferences olmadan oluşturuluyor (sadece Provider için)
+            final temporaryRepository = _createTemporaryAuthRepository();
+            return AuthViewModel(authRepository: temporaryRepository);
           },
-          update: (context, authRepository, previous) {
-            // Repository null ise hata fırlat
+          update: (_, authRepository, previous) {
+            // Repository hazır değilse önceki ViewModel'i koru
             if (authRepository == null) {
-              if (previous != null) return previous;
-              throw Exception('AuthRepository null, uygulama başlatılamıyor');
+              return previous ?? AuthViewModel(authRepository: _createTemporaryAuthRepository());
             }
             
-            // Repository hazır olunca ViewModel'i oluştur
+            // Önceki ViewModel varsa, aynı ViewModel'i döndür
+            // (Bu sayede state korunur)
             if (previous != null) {
-              previous.updateRepository(authRepository);
+              // Repository değiştiyse ViewModel'i güncelle
+              // Not: Normalde bu durum oluşmamalı çünkü repository singleton
               return previous;
             }
-            // İlk oluşturma - Faz 4: Sadece Repository kullan
-            return AuthViewModel(
-              authRepository: authRepository,
-            );
+            
+            // Yeni ViewModel oluştur (gerçek repository ile)
+            return AuthViewModel(authRepository: authRepository);
           },
         ),
         ChangeNotifierProvider(create: (_) => EventViewModel(eventService: eventService)),
@@ -107,7 +161,7 @@ class MyApp extends StatelessWidget {
         builder: (context, languageService, _) {
           return MaterialApp(
             title: 'Thunder',
-            localizationsDelegates: const [
+            localizationsDelegates: [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
@@ -305,13 +359,24 @@ class _RootPageState extends State<RootPage> {
 
   @override
   Widget build(BuildContext context) {
-    // AuthViewModel'i dinle ve kullanıcı durumuna göre UI'ı ve servisleri yönet
-    return Consumer<AuthViewModel>(
+    // Clean Architecture: FutureProvider'dan AuthViewModel'i kontrol et
+    // ViewModel hazır olana kadar loading göster, hazır olunca kullan
+    return Consumer<AuthViewModel?>(
       builder: (context, authViewModel, _) {
+        // ViewModel henüz hazır değilse loading göster
+        if (authViewModel == null) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        // ViewModel hazır, kullan
         // Kullanıcı giriş yaptığında ve profil tamamlama gerekmediğinde bildirim servisini başlat
         if (authViewModel.user != null && !authViewModel.needsProfileCompletion) {
           final notificationService = NotificationService();
-          notificationService.initialize();
+          notificationService.initialize(authViewModel);
           // Giriş sonrası etkinlik dinlemeyi başlat
           final eventVm = Provider.of<EventViewModel>(context, listen: false);
           eventVm.listenEvents();
@@ -322,18 +387,13 @@ class _RootPageState extends State<RootPage> {
   }
 
   Widget _buildHome(AuthViewModel authViewModel, BuildContext context) {
-    debugPrint('🔄 [TEST] _buildHome çağrıldı, user=${authViewModel.user?.uid}, needsProfileCompletion=${authViewModel.needsProfileCompletion}, justSignedUp=${authViewModel.justSignedUp}');
-    
     if (authViewModel.user != null) {
       if (authViewModel.needsProfileCompletion) {
         // SignUp başarılı mesajını burada göster (sadece yeni kayıt olduysa)
         if (authViewModel.justSignedUp) {
-          debugPrint('🔔 [TEST] SignUp başarılı mesajı gösterilecek: justSignedUp=true');
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final l10n = AppLocalizations.of(context);
-            debugPrint('🔔 [TEST] PostFrameCallback çalıştı, l10n=${l10n != null}, mounted=$mounted');
             if (l10n != null && mounted) {
-              debugPrint('✅ [TEST] SnackBar gösteriliyor: ${l10n.signUpSuccess}');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(l10n.signUpSuccess),
@@ -343,13 +403,8 @@ class _RootPageState extends State<RootPage> {
               );
               // Flag'i sıfırla (bir kere göster)
               authViewModel.justSignedUp = false;
-              debugPrint('✅ [TEST] justSignedUp flag sıfırlandı');
-            } else {
-              debugPrint('❌ [TEST] SnackBar gösterilemedi: l10n=${l10n != null}, mounted=$mounted');
             }
           });
-        } else {
-          debugPrint('ℹ️ [TEST] justSignedUp=false, mesaj gösterilmeyecek');
         }
         
         return CompleteProfilePage(

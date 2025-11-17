@@ -1,11 +1,11 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
-import 'auth_service.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final AuthService _authService = AuthService();
+  AuthViewModel? _authViewModel; // Clean Architecture: AuthViewModel kullan
   bool _initialized = false;
   StreamSubscription<RemoteMessage>? _onMessageSub;
   StreamSubscription<String>? _onTokenRefreshSub;
@@ -14,7 +14,11 @@ class NotificationService {
   // Notification tap callback - main.dart'da set edilecek
   Function(String chatId)? onNotificationTapped;
 
-  Future<void> initialize() async {
+  /// NotificationService'i başlat
+  /// 
+  /// Clean Architecture: AuthViewModel kullanarak token kaydeder.
+  Future<void> initialize(AuthViewModel authViewModel) async {
+    _authViewModel = authViewModel;
     if (_initialized) {
       if (kDebugMode) {
         print('NotificationService.initialize: already initialized, skipping');
@@ -43,7 +47,7 @@ class NotificationService {
         if (kDebugMode) {
           print('FCM Token: $token');
         }
-        await _authService.saveUserToken(token);
+        await _authViewModel?.saveUserToken(token);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -57,7 +61,7 @@ class NotificationService {
         print('FCM Token refreshed: $newToken');
       }
       try {
-        await _authService.saveUserToken(newToken);
+        await _authViewModel?.saveUserToken(newToken);
       } catch (e) {
         if (kDebugMode) {
           print('FCM token save error: $e');

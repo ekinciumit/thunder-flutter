@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../l10n/app_localizations.dart';
+import '../l10n/app_localizations.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';

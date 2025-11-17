@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'user_profile_page.dart';
@@ -38,15 +39,36 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
     if (picked != null) {
-      setState(() { isUploading = true; });
-      newPhotoFile = File(picked.path);
-      final fileName = 'event_${event.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = FirebaseStorage.instance.ref().child('event_photos').child(fileName);
-      await ref.putFile(newPhotoFile!);
-      uploadedPhotoUrl = await ref.getDownloadURL();
-      setState(() { isUploading = false; });
+      // Kırpma işlemi
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Fotoğrafı Kırp',
+            toolbarColor: Theme.of(context).colorScheme.primary,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.ratio16x9,
+            lockAspectRatio: false,
+          ),
+          IOSUiSettings(
+            title: 'Fotoğrafı Kırp',
+            aspectRatioPresets: [CropAspectRatioPreset.ratio16x9],
+          ),
+        ],
+      );
+      
+      if (croppedFile != null) {
+        setState(() { isUploading = true; });
+        newPhotoFile = File(croppedFile.path);
+        final fileName = 'event_${event.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final ref = FirebaseStorage.instance.ref().child('event_photos').child(fileName);
+        await ref.putFile(newPhotoFile!);
+        uploadedPhotoUrl = await ref.getDownloadURL();
+        setState(() { isUploading = false; });
+      }
     }
   }
 

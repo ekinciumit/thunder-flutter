@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/message_model.dart';
 import '../models/chat_model.dart';
 import 'cache_service.dart';
@@ -400,20 +401,43 @@ class ChatService {
     return _chatsRef
         .where('participants', arrayContains: userId)
         .snapshots()
+        .handleError((error) {
+          // Hata durumunda boş liste döndür ve log'a yaz
+          if (kDebugMode) {
+            debugPrint('Chat listesi yükleme hatası: $error');
+          }
+          return <ChatModel>[];
+        })
         .map((snapshot) {
-      final chats = snapshot.docs.map((doc) {
-        return ChatModel.fromMap(doc.data(), doc.id);
-      }).toList();
-      
-      // Client-side sıralama (lastMessageAt'e göre)
-      chats.sort((a, b) {
-        if (a.lastMessageAt == null && b.lastMessageAt == null) return 0;
-        if (a.lastMessageAt == null) return 1;
-        if (b.lastMessageAt == null) return -1;
-        return b.lastMessageAt!.compareTo(a.lastMessageAt!);
-      });
-      
-      return chats;
+      try {
+        final chats = snapshot.docs.map((doc) {
+          try {
+            return ChatModel.fromMap(doc.data(), doc.id);
+          } catch (e) {
+            // Parse hatası olan chat'leri atla
+            if (kDebugMode) {
+              debugPrint('Chat parse hatası (${doc.id}): $e');
+            }
+            return null;
+          }
+        }).whereType<ChatModel>().toList();
+        
+        // Client-side sıralama (lastMessageAt'e göre)
+        chats.sort((a, b) {
+          if (a.lastMessageAt == null && b.lastMessageAt == null) return 0;
+          if (a.lastMessageAt == null) return 1;
+          if (b.lastMessageAt == null) return -1;
+          return b.lastMessageAt!.compareTo(a.lastMessageAt!);
+        });
+        
+        return chats;
+      } catch (e) {
+        // Genel hata durumunda boş liste döndür
+        if (kDebugMode) {
+          debugPrint('Chat listesi işleme hatası: $e');
+        }
+        return <ChatModel>[];
+      }
     });
   }
 

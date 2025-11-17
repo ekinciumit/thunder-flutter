@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 
 import '../services/chat_service.dart';
-import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 import '../models/message_model.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -41,7 +43,6 @@ class PrivateChatPage extends StatefulWidget {
 class _PrivateChatPageState extends State<PrivateChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ChatService _chatService = ChatService();
-  final AuthService _authService = AuthService();
   bool _showEmojiPicker = false;
   final ImagePicker _picker = ImagePicker();
   String? _chatId;
@@ -265,11 +266,20 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     }
     
     try {
-      // Kullanıcı adını Firestore'dan çek
+      // Kullanıcı adını AuthViewModel'den çek (Clean Architecture)
+      // widget.currentUserName "Kullanıcı" olabilir, bu yüzden her zaman Firestore'dan çekiyoruz
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       String senderName = widget.currentUserName;
+      
+      // Eğer currentUserName "Kullanıcı" veya boşsa, Firestore'dan çek
       if (senderName == 'Kullanıcı' || senderName.isEmpty) {
-        final userProfile = await _authService.fetchUserProfile(widget.currentUserId);
-        senderName = userProfile?.displayName ?? widget.currentUserName;
+        final userProfile = await authViewModel.fetchUserProfile(widget.currentUserId);
+        senderName = userProfile?.displayName ?? 'Kullanıcı';
+      }
+      
+      // Eğer hala "Kullanıcı" ise, mevcut kullanıcının displayName'ini kullan
+      if (senderName == 'Kullanıcı' && authViewModel.user != null) {
+        senderName = authViewModel.user!.displayName ?? 'Kullanıcı';
       }
       
       // Mesaj tipini belirle
@@ -305,23 +315,121 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Future<void> _pickMedia(ImageSource source, {bool isVideo = false}) async {
-    final picked = isVideo
-        ? await _picker.pickVideo(source: source)
-        : await _picker.pickImage(source: source, imageQuality: 80);
-    if (picked == null) return;
-    final file = File(picked.path);
-    final ext = isVideo ? 'mp4' : 'jpg';
-    final ref = FirebaseStorage.instance
-        .ref()
-        .child('chat_media')
-        .child('${DateTime.now().millisecondsSinceEpoch}.$ext');
-    final uploadTask = ref.putFile(file);
-    final snapshot = await uploadTask;
-    final url = await snapshot.ref.getDownloadURL();
-    if (isVideo) {
-      await _sendMessage(videoUrl: url);
-    } else {
-      await _sendMessage(imageUrl: url);
+    if (!mounted || _chatId == null) return;
+    
+    try {
+      final picked = isVideo
+          ? await _picker.pickVideo(source: source)
+          : await _picker.pickImage(source: source, imageQuality: 80);
+      if (picked == null) return;
+      
+      final file = File(picked.path);
+      
+      // Dosya kontrolü
+      if (!await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Dosya bulunamadı'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Dosya boyutu kontrolü (max 50MB)
+      final fileSize = await file.length();
+      const maxFileSize = 50 * 1024 * 1024; // 50MB
+      if (fileSize > maxFileSize) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Dosya boyutu çok büyük (Max: 50MB)'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Loading göstergesi göster
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('${isVideo ? 'Video' : 'Resim'} yükleniyor...'),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 60),
+          ),
+        );
+      }
+      
+      // Context'i async işlemden önce al
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      
+      final ext = isVideo ? 'mp4' : 'jpg';
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('chat_media')
+          .child('${DateTime.now().millisecondsSinceEpoch}.$ext');
+      
+      final uploadTask = ref.putFile(file);
+      
+      // Upload progress dinle
+      uploadTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        if (kDebugMode) {
+          debugPrint('${isVideo ? 'Video' : 'Resim'} yükleme ilerlemesi: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      });
+      
+      final snapshot = await uploadTask;
+      final url = await snapshot.ref.getDownloadURL();
+      
+      // Başarılı mesajı göster
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('${isVideo ? 'Video' : 'Resim'} yüklendi'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      if (isVideo) {
+        await _sendMessage(videoUrl: url);
+      } else {
+        await _sendMessage(imageUrl: url);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${isVideo ? 'Video' : 'Resim'} gönderme hatası: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      
+      if (kDebugMode) {
+        debugPrint('${isVideo ? 'Video' : 'Resim'} gönderme hatası: $e');
+      }
     }
   }
 
@@ -1027,8 +1135,34 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Future<void> _sendVoiceMessage(String filePath, Duration duration) async {
+    if (!mounted || _chatId == null) return;
+    
+    // Loading göstergesi göster
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Text('Sesli mesaj yükleniyor...'),
+            ],
+          ),
+          duration: Duration(seconds: 30),
+        ),
+      );
+    }
+
     try {
-      if (_chatId == null) return;
+      // Dosya kontrolü
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('Ses dosyası bulunamadı');
+      }
 
       // Ses dosyasını Firebase Storage'a yükle
       final storageRef = FirebaseStorage.instance
@@ -1036,33 +1170,72 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           .child('voice_messages')
           .child('${DateTime.now().millisecondsSinceEpoch}.m4a');
       
-      final uploadTask = storageRef.putFile(File(filePath));
+      final uploadTask = storageRef.putFile(file);
+      
+      // Upload progress dinle
+      uploadTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        if (kDebugMode) {
+          debugPrint('Ses yükleme ilerlemesi: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      });
+      
       final snapshot = await uploadTask;
       final audioUrl = await snapshot.ref.getDownloadURL();
 
-      // Mesajı gönder
-      // Kullanıcı adını Firestore'dan çek
+      // Kullanıcı adını AuthViewModel'den çek (Clean Architecture)
+      // Context'i async işlemden önce al
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      
       String senderName = widget.currentUserName;
+      // Eğer currentUserName "Kullanıcı" veya boşsa, Firestore'dan çek
       if (senderName == 'Kullanıcı' || senderName.isEmpty) {
-        final userProfile = await _authService.fetchUserProfile(widget.currentUserId);
-        senderName = userProfile?.displayName ?? widget.currentUserName;
+        final userProfile = await authViewModel.fetchUserProfile(widget.currentUserId);
+        senderName = userProfile?.displayName ?? 'Kullanıcı';
+      }
+      // Eğer hala "Kullanıcı" ise, mevcut kullanıcının displayName'ini kullan
+      if (senderName == 'Kullanıcı' && authViewModel.user != null) {
+        senderName = authViewModel.user!.displayName ?? 'Kullanıcı';
       }
       
+      // Mesajı gönder
       await _chatService.sendVoiceMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
         senderName: senderName,
-        senderPhotoUrl: null, // TODO: Kullanıcı fotoğrafı ekle
+        senderPhotoUrl: null,
         audioUrl: audioUrl,
         duration: duration,
       );
 
-      _scrollToBottom();
+      // Başarılı mesajı göster
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('Sesli mesaj gönderildi'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        _scrollToBottom();
+      }
     } catch (e) {
       if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sesli mesaj gönderme hatası: $e')),
+        SnackBar(
+          content: Text('Sesli mesaj gönderme hatası: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
       );
+      
+      if (kDebugMode) {
+        debugPrint('Sesli mesaj gönderme hatası: $e');
+      }
     }
   }
 
@@ -1079,8 +1252,64 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Future<void> _sendFileMessage(PlatformFile file) async {
+    if (!mounted || _chatId == null) return;
+    
+    // Null kontrolü
+    if (file.path == null || file.path!.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dosya yolu bulunamadı'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Dosya boyutu kontrolü (max 50MB)
+    const maxFileSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxFileSize) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dosya boyutu çok büyük (Max: 50MB)'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Loading göstergesi göster
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('${file.name} yükleniyor...'),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 60),
+        ),
+      );
+    }
+
     try {
-      if (_chatId == null) return;
+      // Dosya kontrolü
+      final fileObj = File(file.path!);
+      if (!await fileObj.exists()) {
+        throw Exception('Dosya bulunamadı');
+      }
 
       // Dosyayı Firebase Storage'a yükle
       final storageRef = FirebaseStorage.instance
@@ -1088,38 +1317,72 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           .child('chat_files')
           .child('${DateTime.now().millisecondsSinceEpoch}_${file.name}');
       
-      final uploadTask = storageRef.putFile(File(file.path!));
+      final uploadTask = storageRef.putFile(fileObj);
+      
+      // Upload progress dinle
+      uploadTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        if (kDebugMode) {
+          debugPrint('Dosya yükleme ilerlemesi: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      });
+      
       final snapshot = await uploadTask;
       final fileUrl = await snapshot.ref.getDownloadURL();
 
       // Dosya uzantısını al
       final fileExtension = file.extension;
 
-      // Mesajı gönder
-      // Kullanıcı adını Firestore'dan çek
+      // Context'i async işlemden önce al
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      
+      // Kullanıcı adını Firestore'dan çek (Clean Architecture: AuthViewModel kullan)
       String senderName = widget.currentUserName;
       if (senderName == 'Kullanıcı' || senderName.isEmpty) {
-        final userProfile = await _authService.fetchUserProfile(widget.currentUserId);
+        final userProfile = await authViewModel.fetchUserProfile(widget.currentUserId);
         senderName = userProfile?.displayName ?? widget.currentUserName;
       }
       
+      // Mesajı gönder
       await _chatService.sendFileMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
         senderName: senderName,
-        senderPhotoUrl: null, // TODO: Kullanıcı fotoğrafı ekle
+        senderPhotoUrl: null,
         fileUrl: fileUrl,
         fileName: file.name,
         fileSize: file.size,
         fileExtension: fileExtension,
       );
 
-      _scrollToBottom();
+      // Başarılı mesajı göster
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('${file.name} gönderildi'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        _scrollToBottom();
+      }
     } catch (e) {
       if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Dosya gönderme hatası: $e')),
+        SnackBar(
+          content: Text('Dosya gönderme hatası: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
       );
+      
+      if (kDebugMode) {
+        debugPrint('Dosya gönderme hatası: $e');
+      }
     }
   }
 

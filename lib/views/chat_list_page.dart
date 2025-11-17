@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/chat_service.dart';
-import '../services/auth_service.dart';
 import '../models/chat_model.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import 'private_chat_page.dart';
@@ -17,7 +16,6 @@ class ChatListPage extends StatefulWidget {
 
 class _ChatListPageState extends State<ChatListPage> {
   final ChatService _chatService = ChatService();
-  final AuthService _authService = AuthService();
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -309,12 +307,13 @@ class _ChatListPageState extends State<ChatListPage> {
                       )
                     : '';
                 
-                // Eğer participantDetails yoksa, Firestore'dan çek
+                // Eğer participantDetails yoksa, Firestore'dan çek (Clean Architecture: AuthViewModel kullan)
                 if (chat.type == ChatType.private && 
                     otherParticipant.isNotEmpty &&
                     !chat.participantDetails.containsKey(otherParticipant)) {
+                  final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
                   return FutureBuilder(
-                    future: _authService.fetchUserProfile(otherParticipant),
+                    future: authViewModel.fetchUserProfile(otherParticipant),
                     builder: (context, snapshot) {
                       String displayName = 'Bilinmeyen Kullanıcı';
                       String? photoUrl;

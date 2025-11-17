@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -107,10 +108,31 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   Future<void> _pickCoverPhoto() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
     if (pickedFile != null) {
-      setState(() { coverPhotoFile = File(pickedFile.path); });
-      await _uploadCoverPhoto();
+      // Kırpma işlemi
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Fotoğrafı Kırp',
+            toolbarColor: Theme.of(context).colorScheme.primary,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.ratio16x9,
+            lockAspectRatio: false,
+          ),
+          IOSUiSettings(
+            title: 'Fotoğrafı Kırp',
+            aspectRatioPresets: [CropAspectRatioPreset.ratio16x9],
+          ),
+        ],
+      );
+      
+      if (croppedFile != null) {
+        setState(() { coverPhotoFile = File(croppedFile.path); });
+        await _uploadCoverPhoto();
+      }
     }
   }
 
