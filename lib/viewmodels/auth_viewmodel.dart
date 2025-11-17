@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
+import '../features/auth/domain/usecases/sign_in_usecase.dart';
 import '../core/errors/failures.dart';
 
 class AuthViewModel extends ChangeNotifier {
@@ -11,19 +12,44 @@ class AuthViewModel extends ChangeNotifier {
   bool needsProfileCompletion = false;
 
   final IAuthService _authService; // Eski kod (fallback)
-  final AuthRepository? _authRepository; // Yeni kod (opsiyonel)
+  AuthRepository? _authRepository; // Yeni kod (opsiyonel - mutable)
+  
+  // Use Cases (opsiyonel - fallback mekanizması var)
+  SignInUseCase? _signInUseCase;
 
   AuthViewModel({
     IAuthService? authService,
     AuthRepository? authRepository, // Yeni kod opsiyonel
   }) : _authService = authService ?? AuthService(),
        _authRepository = authRepository {
-    // Önce yeni koddan deneyelim, yoksa eski koddan
+    _initializeUseCases();
+    _initializeUser();
+  }
+  
+  /// Use Cases'i oluştur (eğer Repository varsa)
+  void _initializeUseCases() {
+    if (_authRepository != null) {
+      _signInUseCase = SignInUseCase(_authRepository!);
+    } else {
+      _signInUseCase = null;
+    }
+  }
+  
+  /// Kullanıcıyı başlat
+  void _initializeUser() {
     if (_authRepository != null) {
       user = _authRepository!.getCurrentUser();
     } else {
       user = _authService.getCurrentUser();
     }
+  }
+  
+  /// Repository güncellendiğinde çağrılır (ChangeNotifierProxyProvider'dan)
+  void updateRepository(AuthRepository? repository) {
+    _authRepository = repository;
+    _initializeUseCases();
+    _initializeUser();
+    notifyListeners();
   }
 
   Future<void> signIn(String email, String password) async {
@@ -34,32 +60,32 @@ class AuthViewModel extends ChangeNotifier {
     try {
       UserModel? signedInUser;
       
-      // ÖNCE YENİ KODU DENE (Clean Architecture)
-      if (_authRepository != null) {
-        print('🔄 Yeni kod kullanılıyor (Clean Architecture)');
+      // ÖNCE USE CASE'İ DENE (Clean Architecture - Domain Layer)
+      if (_signInUseCase != null) {
+        print('🔄 Use Case kullanılıyor: signIn (Clean Architecture)');
         try {
-          final result = await _authRepository!.signIn(email, password);
+          final result = await _signInUseCase!(email, password);
           
           if (result.isRight) {
-            // ✅ Yeni kod başarılı
-            print('✅ Yeni kod başarılı: signIn');
+            // ✅ Use Case başarılı
+            print('✅ Use Case başarılı: signIn');
             signedInUser = result.right;
           } else {
-            // ❌ Yeni kod hata verdi, eski koda geç
+            // ❌ Use Case hata verdi, eski koda geç
             final failure = result.left;
-            print('⚠️ Yeni kod hata verdi, eski koda geçiliyor: ${failure.message}');
+            print('⚠️ Use Case hata verdi, eski koda geçiliyor: ${failure.message}');
             throw Exception(failure.message);
           }
         } catch (e) {
-          // Yeni kod exception fırlattı, eski koda geç (fallback)
-          print('⚠️ Yeni kod exception, eski koda geçiliyor: $e');
+          // Use Case exception fırlattı, eski koda geç (fallback)
+          print('⚠️ Use Case exception, eski koda geçiliyor: $e');
           // Devam et, eski kodu kullan
         }
       } else {
-        print('📦 Eski kod kullanılıyor (fallback)');
+        print('📦 Eski kod kullanılıyor: signIn (fallback)');
       }
       
-      // ESKİ KODU KULLAN (Fallback veya yeni kod yoksa)
+      // ESKİ KODU KULLAN (Fallback veya Use Case yoksa)
       if (signedInUser == null) {
         signedInUser = await _authService.signIn(email, password);
         print('✅ Eski kod başarılı: signIn');

@@ -89,8 +89,13 @@ class MyApp extends StatelessWidget {
             authRepository: null, // Başlangıçta null (eski kod kullanılacak)
           ),
           update: (context, authRepository, previous) {
-            // Repository hazır olunca AuthViewModel'i güncelle
-            return previous ?? AuthViewModel(
+            // Repository hazır olunca mevcut ViewModel'i güncelle (Use Cases'i de günceller)
+            if (previous != null) {
+              previous.updateRepository(authRepository);
+              return previous;
+            }
+            // İlk oluşturma
+            return AuthViewModel(
               authService: authService,
               authRepository: authRepository, // null = eski kod, değil = yeni kod
             );
