@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
-import '../viewmodels/event_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import '../models/event_model.dart';
 import 'dart:math';
 import '../views/event_detail_page.dart';
@@ -65,6 +65,7 @@ class _EventListViewState extends State<EventListView> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
+        if (!mounted) return;
         setState(() { locationHint = 'Konum servisi kapalı. Lütfen açın.'; });
         return;
       }
@@ -72,19 +73,23 @@ class _EventListViewState extends State<EventListView> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
+          if (!mounted) return;
           setState(() { locationHint = 'Konum izni reddedildi.'; });
           return;
         }
       }
       if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
         setState(() { locationHint = 'Konum izni kalıcı reddedildi. Ayarlardan izin verin.'; });
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
+      if (!mounted) return;
       setState(() { userPosition = pos; locationHint = null; });
     } catch (_) {
+      if (!mounted) return;
       setState(() { locationHint = 'Konum alınamadı. Tekrar deneyin.'; });
     }
   }
@@ -96,6 +101,7 @@ class _EventListViewState extends State<EventListView> {
         loadedIcons[entry.key] = AssetImage(entry.value);
       } catch (_) {}
     }
+    if (!mounted) return;
     setState(() {
       categoryIconImages = loadedIcons;
       iconsLoaded = true;

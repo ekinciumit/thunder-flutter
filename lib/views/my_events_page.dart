@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/event_model.dart';
-import '../services/event_service.dart';
-import '../viewmodels/auth_viewmodel.dart';
-import '../viewmodels/event_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'event_detail_page.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
@@ -18,8 +17,6 @@ class MyEventsPage extends StatefulWidget {
 }
 
 class _MyEventsPageState extends State<MyEventsPage> {
-  final EventService _eventService = EventService();
-
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
@@ -51,7 +48,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
           foregroundColor: Colors.white,
         ),
         body: StreamBuilder<List<EventModel>>(
-          stream: _eventService.getUserEventsStream(currentUser.uid),
+          stream: eventViewModel.getUserEventsStream(currentUser.uid),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(

@@ -2,9 +2,7 @@
 /// 
 /// Bu sınıflar SOLID prensiplerinden Single Responsibility Principle'a uyar:
 /// - Her exception sınıfı belirli bir hata türünü temsil eder
-/// 
-/// ŞU AN: Bu sınıflar sadece ekleniyor, mevcut kod çalışmaya devam ediyor
-/// İleride bu exception'ları kullanacağız.
+library;
 
 /// Sunucu (server) hataları için exception
 class ServerException implements Exception {

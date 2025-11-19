@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../models/user_model.dart';
@@ -38,7 +39,9 @@ class AuthRepositoryImpl implements AuthRepository {
       } on CacheException catch (e) {
         // Cache hatası kritik değil, kullanıcı zaten giriş yaptı
         // Sadece log'a yaz, devam et
-        print('⚠️ Cache hatası (kritik değil): ${e.message}');
+        if (kDebugMode) {
+          debugPrint('⚠️ Cache hatası (kritik değil): ${e.message}');
+        }
       }
       
       return Either.right(user);
@@ -61,7 +64,9 @@ class AuthRepositoryImpl implements AuthRepository {
       } on CacheException catch (e) {
         // Cache hatası kritik değil, kullanıcı zaten kayıt oldu
         // Sadece log'a yaz, devam et
-        print('⚠️ Cache hatası (kritik değil): ${e.message}');
+        if (kDebugMode) {
+          debugPrint('⚠️ Cache hatası (kritik değil): ${e.message}');
+        }
       }
       
       return Either.right(user);
@@ -96,7 +101,9 @@ class AuthRepositoryImpl implements AuthRepository {
       } on CacheException catch (e) {
         // Cache hatası kritik değil, profil zaten kaydedildi
         // Sadece log'a yaz, devam et
-        print('⚠️ Cache hatası (kritik değil): ${e.message}');
+        if (kDebugMode) {
+          debugPrint('⚠️ Cache hatası (kritik değil): ${e.message}');
+        }
       }
       return Either.right(null);
     } on ServerException catch (e) {
@@ -167,7 +174,9 @@ class AuthRepositoryImpl implements AuthRepository {
 /// 
 /// Bu fonksiyon Service Locator'da kullanılabilir
 Future<AuthRepository> createAuthRepository() async {
-  print('🏗️ [ARCH] createAuthRepository: Clean Architecture Repository oluşturuluyor...');
+  if (kDebugMode) {
+    debugPrint('🏗️ [ARCH] createAuthRepository: Clean Architecture Repository oluşturuluyor...');
+  }
   final prefs = await SharedPreferences.getInstance();
   
   return AuthRepositoryImpl(

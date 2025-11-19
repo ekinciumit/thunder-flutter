@@ -3,11 +3,9 @@
 /// Bu sınıf SOLID prensiplerinden Dependency Inversion Principle'a uyar:
 /// - Yüksek seviye modüller düşük seviye modüllere bağımlı olmaz
 /// - Abstract interface'lere bağımlı olur
-/// 
-/// ŞU AN: Bu sınıf sadece ekleniyor, mevcut kod çalışmaya devam ediyor
-/// İleride bu Service Locator'ı kullanacağız.
 
 /// Service Locator pattern implementation
+library;
 /// 
 /// Servisleri merkezi bir yerde yönetir ve ihtiyaç duyulan yerde sağlar.
 /// Bu sayede:

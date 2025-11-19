@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:thunder/views/auth_page.dart';
-import 'package:thunder/viewmodels/auth_viewmodel.dart';
+import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mockito/annotations.dart';
 

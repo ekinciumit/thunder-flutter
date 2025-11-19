@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/event_model.dart';
-import '../viewmodels/event_viewmodel.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'widgets/app_card.dart';
@@ -38,8 +38,33 @@ class _EventDetailPageState extends State<EventDetailPage> {
   }
 
   Future<void> _pickPhoto() async {
+    // Önce galeri veya kamera seçimi göster
+    final source = await showDialog<ImageSource>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Fotoğraf Seç'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Galeri'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Kamera'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    if (source == null) return;
+    
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+    final picked = await picker.pickImage(source: source, imageQuality: 90);
     if (picked != null) {
       // Kırpma işlemi
       final croppedFile = await ImageCropper().cropImage(
@@ -51,7 +76,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
             toolbarColor: Theme.of(context).colorScheme.primary,
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.ratio16x9,
-            lockAspectRatio: false,
+            lockAspectRatio: false, // Serbest kırpma
           ),
           IOSUiSettings(
             title: 'Fotoğrafı Kırp',

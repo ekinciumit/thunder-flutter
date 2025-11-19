@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../models/user_model.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'user_profile_page.dart';
 import 'package:flutter/cupertino.dart';
 

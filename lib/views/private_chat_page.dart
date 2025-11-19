@@ -3,10 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 
-import '../services/chat_service.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/auth_viewmodel.dart';
-
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import '../models/message_model.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -42,7 +41,6 @@ class PrivateChatPage extends StatefulWidget {
 
 class _PrivateChatPageState extends State<PrivateChatPage> {
   final TextEditingController _controller = TextEditingController();
-  final ChatService _chatService = ChatService();
   bool _showEmojiPicker = false;
   final ImagePicker _picker = ImagePicker();
   String? _chatId;
@@ -76,25 +74,32 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Future<void> _initializeChat() async {
+    final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
     try {
-      final chat = await _chatService.getOrCreatePrivateChat(
+      final chat = await chatViewModel.getOrCreatePrivateChat(
         widget.currentUserId, 
         widget.otherUserId
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Chat initialization timeout');
-        },
       );
-      setState(() {
-        _chatId = chat.id;
-      });
-      
-      // Mesaj stream'ini başlat
-      _startListeningToMessages();
+      if (chat != null) {
+        setState(() {
+          _chatId = chat.id;
+        });
+        
+        // Mesaj stream'ini başlat
+        _startListeningToMessages();
+      } else {
+        // Hata durumunda da bir chat ID'si oluştur
+        final fallbackChatId = chatViewModel.getChatId(widget.currentUserId, widget.otherUserId);
+        setState(() {
+          _chatId = fallbackChatId;
+        });
+        
+        // Mesaj stream'ini başlat
+        _startListeningToMessages();
+      }
     } catch (e) {
       // Hata durumunda da bir chat ID'si oluştur
-      final fallbackChatId = '${widget.currentUserId}_${widget.otherUserId}';
+      final fallbackChatId = chatViewModel.getChatId(widget.currentUserId, widget.otherUserId);
       setState(() {
         _chatId = fallbackChatId;
       });
@@ -107,8 +112,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   void _startListeningToMessages() {
     if (_chatId == null) return;
     
+    final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
     _messagesSubscription?.cancel();
-    _messagesSubscription = _chatService.getMessagesStream(_chatId!, limit: 50).listen(
+    _messagesSubscription = chatViewModel.getMessagesStream(_chatId!, limit: 50).listen(
       (streamMessages) {
         if (!mounted) return;
         
@@ -142,7 +148,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         }
       },
       onError: (error) {
-        print('❌ Stream hatası: $error');
+        if (kDebugMode) {
+          debugPrint('❌ Stream hatası: $error');
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -215,8 +223,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     });
 
     try {
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
       final oldestMessage = _allMessages.first;
-      final olderMessages = await _chatService.loadOlderMessages(
+      final olderMessages = await chatViewModel.loadOlderMessages(
         _chatId!,
         oldestMessage.timestamp,
         limit: 20,
@@ -287,7 +296,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       if (imageUrl != null) messageType = MessageType.image;
       if (videoUrl != null) messageType = MessageType.video;
       
-      await _chatService.sendMessage(
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      await chatViewModel.sendMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
         senderName: senderName,
@@ -1045,7 +1055,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               final messenger = ScaffoldMessenger.of(context);
               if (controller.text.trim().isNotEmpty) {
                 try {
-                  await _chatService.editMessage(message.id, controller.text.trim());
+                  final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+                  await chatViewModel.editMessage(message.id, controller.text.trim());
                   if (!mounted) return;
                   navigator.pop();
                   messenger.showSnackBar(
@@ -1082,7 +1093,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               final navigator = Navigator.of(context);
               final messenger = ScaffoldMessenger.of(context);
               try {
-                await _chatService.deleteMessage(message.id, widget.currentUserId);
+                final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+                await chatViewModel.deleteMessage(message.id, widget.currentUserId);
                 if (!mounted) return;
                 navigator.pop();
                 messenger.showSnackBar(
@@ -1105,15 +1117,16 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
 
   void _handleReactionTap(MessageModel message, String emoji) async {
     try {
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
       // Kullanıcının bu tepkiyi daha önce verip vermediğini kontrol et
       final userReactions = message.reactions[widget.currentUserId] ?? [];
       
       if (userReactions.contains(emoji)) {
         // Tepkiyi kaldır
-        await _chatService.removeReaction(message.id, widget.currentUserId, emoji);
+        await chatViewModel.removeReaction(message.id, widget.currentUserId, emoji);
       } else {
         // Tepkiyi ekle
-        await _chatService.addReaction(message.id, widget.currentUserId, emoji);
+        await chatViewModel.addReaction(message.id, widget.currentUserId, emoji);
       }
     } catch (e) {
       if (!mounted) return;
@@ -1200,7 +1213,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       }
       
       // Mesajı gönder
-      await _chatService.sendVoiceMessage(
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      await chatViewModel.sendVoiceMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
         senderName: senderName,
@@ -1345,7 +1359,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       }
       
       // Mesajı gönder
-      await _chatService.sendFileMessage(
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      await chatViewModel.sendFileMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
         senderName: senderName,

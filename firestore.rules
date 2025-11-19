@@ -1,125 +1,74 @@
 rules_version = '2';
 
-
-
 service cloud.firestore {
-
   match /databases/{database}/documents {
 
     // Kullanıcılar koleksiyonu için kurallar
-
     match /users/{userId} {
-
       // Herkes yeni kullanıcı oluşturabilir (kayıt olma)
-
       allow create: if request.auth != null;
 
       // Giriş yapmış herkes kullanıcı profillerini okuyabilir (arama için)
-
       allow read: if request.auth != null;
 
       // Kullanıcı kendi profilini güncelleyebilir (fcmToken dahil)
-
       // Ayrıca takip etme işlemi için başka kullanıcıların followers/following alanlarını güncelleyebilir
-
       allow update: if request.auth != null && (
-
         request.auth.uid == userId ||
-
         // Takip etme işlemi için: sadece followers veya following alanları güncelleniyorsa
-
         (request.resource.data.keys().hasAll(['followers', 'following']) &&
-
          resource.data.keys().hasAll(['followers', 'following']))
-
       );
 
       // Kullanıcılar silinemez
-
       allow delete: if false;
-
     }
 
     // Etkinlikler koleksiyonu için kurallar
-
     match /events/{eventId} {
-
       // Giriş yapmış herkes etkinlikleri okuyabilir
-
       allow read: if request.auth != null;
 
       // Giriş yapmış herkes etkinlik oluşturabilir
-
       allow create: if request.auth != null;
 
       // Güncelleme: 
-
       // 1. Etkinlik sahibi her şeyi güncelleyebilir
-
       // 2. Diğer kullanıcılar:
-
       //    - pendingRequests array'ine kendi ID'lerini ekleyip çıkarabilir
-
       //    - participants ve approvedParticipants array'lerinden kendi ID'lerini çıkarabilir (ayrılma)
-
       allow update: if request.auth != null && (
-
         resource.data.createdBy == request.auth.uid ||
-
         // Kullanıcı sadece pendingRequests array'ine kendi ID'sini ekleyip çıkarabilir
-
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pendingRequests']) &&
-
          // Eski ve yeni pendingRequests array'lerini karşılaştır - sadece kullanıcının kendi ID'si değişmiş olmalı
-
          (request.resource.data.pendingRequests.hasAny([request.auth.uid]) != resource.data.pendingRequests.hasAny([request.auth.uid]))) ||
-
         // Kullanıcı participants ve approvedParticipants array'lerinden kendi ID'sini çıkarabilir (ayrılma)
-
         // Eski array'lerde kullanıcı var mı ve yeni array'lerde yok mu kontrol et
-
         ((resource.data.participants != null && resource.data.participants.hasAny([request.auth.uid])) ||
-
          (resource.data.approvedParticipants != null && resource.data.approvedParticipants.hasAny([request.auth.uid]))) &&
-
         ((request.resource.data.participants == null || !request.resource.data.participants.hasAny([request.auth.uid])) &&
-
          (request.resource.data.approvedParticipants == null || !request.resource.data.approvedParticipants.hasAny([request.auth.uid])))
-
       );
 
       // Silme: sadece etkinliği oluşturan kullanıcı
-
       allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
 
       // Mesajlar (sohbet) alt koleksiyonu için kural
-
       match /messages/{messageId} {
-
         allow read, write: if request.auth != null && (
-
           resource.data.createdBy == request.auth.uid ||
-
           get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid])
-
         );
-
       }
 
       // Yorumlar (comments) alt koleksiyonu için kural
-
       match /comments/{commentId} {
-
         // Okuma: Etkinlik sahibi, onaylanmış katılımcılar ve normal katılımcılar okuyabilir
-
         allow read: if request.auth != null && (
-
           get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
-
           get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
-
           get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])
-
         );
 
         // Yazma: Etkinlik sahibi, onaylanmış katılımcılar ve normal katılımcılar yazabilir
@@ -143,59 +92,56 @@ service cloud.firestore {
         allow update, delete: if request.auth != null && 
           resource.data.userId == request.auth.uid &&
           (!('type' in resource.data) || resource.data.type != 'system');
-
       }
-
     }
 
-    // Sohbetler koleksiyonu için kurallar - Çok basit
-
+    // Sohbetler koleksiyonu için kurallar - Güncellenmiş
     match /chats/{chatId} {
+      // Okuma: Sadece participant olduğu chat'leri okuyabilir
+      // Not: Query'de participants array-contains kullanıldığı için, 
+      // bu kural hem tek doküman okuma hem de query sonuçları için çalışır
+      allow read: if request.auth != null && 
+        request.auth.uid in resource.data.participants;
 
-      // Giriş yapmış herkes okuyabilir
+      // Oluşturma: Giriş yapmış herkes chat oluşturabilir
+      // Ancak oluştururken kendisini participants'a eklemeli
+      allow create: if request.auth != null && 
+        request.auth.uid in request.resource.data.participants;
 
-      allow read: if request.auth != null;
+      // Güncelleme: Sadece participant olduğu chat'leri güncelleyebilir
+      // Chat sahibi (oluşturan) veya participant'lar güncelleyebilir
+      allow update: if request.auth != null && 
+        (request.auth.uid in resource.data.participants ||
+         request.auth.uid == resource.data.get('createdBy', ''));
 
-      // Giriş yapmış herkes oluşturabilir
-
-      allow create: if request.auth != null;
-
-      // Giriş yapmış herkes güncelleyebilir
-
-      allow update: if request.auth != null;
-
-      // Giriş yapmış herkes silebilir
-
-      allow delete: if request.auth != null;
-
+      // Silme: Sadece chat sahibi (oluşturan) silebilir
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.get('createdBy', '');
     }
 
-    // Mesajlar koleksiyonu için kurallar - Basitleştirilmiş
-
+    // Mesajlar koleksiyonu için kurallar - Güncellenmiş
     match /messages/{messageId} {
-
-      // Mesaj gönderme - giriş yapmış herkes
-
+      // Mesaj gönderme: Giriş yapmış ve chat participant'ı olmalı
       allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.senderId &&
+        request.resource.data.chatId != null &&
+        exists(/databases/$(database)/documents/chats/$(request.resource.data.chatId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(request.resource.data.chatId)).data.participants;
 
-        request.auth.uid == request.resource.data.senderId;
+      // Mesaj okuma: Sadece chat participant'ı olan kullanıcılar okuyabilir
+      allow read: if request.auth != null && 
+        resource.data.chatId != null &&
+        exists(/databases/$(database)/documents/chats/$(resource.data.chatId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/chats/$(resource.data.chatId)).data.participants;
 
-      // Mesaj okuma - giriş yapmış herkes
-
-      allow read: if request.auth != null;
-
-      // Mesaj güncelleme - sadece gönderen
-
+      // Mesaj güncelleme: Sadece gönderen kullanıcı güncelleyebilir
       allow update: if request.auth != null && 
-
         request.auth.uid == resource.data.senderId;
 
-      // Mesaj silme - sadece gönderen
-
-      allow delete: if request.auth != null && request.auth.uid == resource.data.senderId;
-
+      // Mesaj silme: Sadece gönderen kullanıcı silebilir
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.senderId;
     }
 
   }
-
-} 
+}

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/chat_service.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'widgets/app_gradient_container.dart';
 
 class MessageForwardPage extends StatefulWidget {
@@ -19,7 +19,6 @@ class MessageForwardPage extends StatefulWidget {
 }
 
 class _MessageForwardPageState extends State<MessageForwardPage> {
-  final ChatService _chatService = ChatService();
   List<ChatModel> _chats = [];
   bool _isLoading = true;
   bool _isForwarding = false;
@@ -38,7 +37,8 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
       if (currentUser == null) return;
 
       // Kullanıcının sohbetlerini al
-      final chatsStream = _chatService.getUserChats(currentUser.uid);
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      final chatsStream = chatViewModel.getUserChats(currentUser.uid);
       await for (final chats in chatsStream) {
         if (mounted) {
           setState(() {
@@ -71,7 +71,8 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
       
       if (currentUser == null) return;
 
-      await _chatService.forwardMessage(
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      await chatViewModel.forwardMessage(
         originalMessage: widget.message,
         targetChatId: targetChat.id,
         senderId: currentUser.uid,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'user_search_page.dart';
@@ -70,26 +71,87 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
   }
 
   Future<void> _changePhoto(AuthViewModel authViewModel) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.camera, 
-      imageQuality: 85, // Kaliteyi biraz artırdık
-      maxWidth: 800, // Maksimum genişlik
-      maxHeight: 800, // Maksimum yükseklik
-    );
+    if (!mounted) return;
     
-    if (pickedFile != null) {
+    try {
+      // Önce galeri veya kamera seçimi göster
+      final source = await showDialog<ImageSource>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Fotoğraf Seç'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Galeri'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Kamera'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      );
+      
+      if (source == null || !mounted) return;
+      
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source, 
+        imageQuality: 90,
+      );
+      
+      if (pickedFile == null || !mounted) return;
+      
+      // Kırpma işlemi
+      CroppedFile? croppedFile;
+      try {
+        croppedFile = await ImageCropper().cropImage(
+          sourcePath: pickedFile.path,
+          aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1), // Kare profil fotoğrafı
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: 'Fotoğrafı Kırp',
+              toolbarColor: Theme.of(context).colorScheme.primary,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: true, // Profil fotoğrafı için kare zorunlu
+            ),
+            IOSUiSettings(
+              title: 'Fotoğrafı Kırp',
+              aspectRatioPresets: [CropAspectRatioPreset.square],
+            ),
+          ],
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Fotoğraf kırpma hatası: ${e.toString()}')),
+          );
+        }
+        return;
+      }
+      
+      if (croppedFile == null || !mounted) return; // Kullanıcı kırpmayı iptal etti
+      
+      final croppedFileObj = File(croppedFile.path);
+      if (!mounted) return;
+      
       setState(() { 
         isUploading = true; 
         uploadProgress = 0.0;
       });
       
       // Progress dialog göster
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -101,12 +163,16 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
             ],
           ),
         ),
-        );
-      }
+      );
       
       try {
-        // Resmi sıkıştır
-        final compressedBytes = await _compressImage(pickedFile.path);
+        // Resmi sıkıştır (kırpılmış dosyayı kullan)
+        final compressedBytes = await _compressImage(croppedFileObj.path);
+        
+        if (!mounted) {
+          Navigator.of(context).pop(); // Progress dialog'u kapat
+          return;
+        }
         
         final fileName = 'profile_${authViewModel.user!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final ref = FirebaseStorage.instance.ref().child('profile_photos').child(fileName);
@@ -127,6 +193,12 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         await uploadTask;
         final url = await ref.getDownloadURL();
         
+        if (!mounted) {
+          Navigator.of(context).pop(); // Progress dialog'u kapat
+          return;
+        }
+        
+        // Profil güncellemesini yap, ama sayfa değişikliğini geciktir
         await authViewModel.completeProfile(
           displayName: authViewModel.user!.displayName ?? '',
           bio: authViewModel.user!.bio,
@@ -136,9 +208,15 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         if (mounted) {
           Navigator.of(context).pop(); // Progress dialog'u kapat
           setState(() { isUploading = false; });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profil fotoğrafı başarıyla güncellendi!')),
-          );
+          
+          // Sayfa değişikliğini geciktir (activity result işlensin)
+          await Future.delayed(const Duration(milliseconds: 300));
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profil fotoğrafı başarıyla güncellendi!')),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -148,6 +226,13 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
             SnackBar(content: Text('Hata: ${e.toString()}')),
           );
         }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() { isUploading = false; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fotoğraf seçme hatası: ${e.toString()}')),
+        );
       }
     }
   }

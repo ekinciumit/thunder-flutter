@@ -1,7 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
@@ -21,7 +21,7 @@ class NotificationService {
     _authViewModel = authViewModel;
     if (_initialized) {
       if (kDebugMode) {
-        print('NotificationService.initialize: already initialized, skipping');
+        debugPrint('NotificationService.initialize: already initialized, skipping');
       }
       return;
     }
@@ -37,7 +37,7 @@ class NotificationService {
     );
 
     if (kDebugMode) {
-      print('User granted permission: ${settings.authorizationStatus}');
+      debugPrint('User granted permission: ${settings.authorizationStatus}');
     }
 
     // 2. FCM Token'ını al ve kaydet
@@ -45,26 +45,26 @@ class NotificationService {
       String? token = await _firebaseMessaging.getToken();
       if (token != null) {
         if (kDebugMode) {
-          print('FCM Token: $token');
+          debugPrint('FCM Token: $token');
         }
         await _authViewModel?.saveUserToken(token);
       }
     } catch (e) {
       if (kDebugMode) {
-        print('FCM token fetch error: $e');
+        debugPrint('FCM token fetch error: $e');
       }
     }
 
     // 2b. Token yenilendikçe kaydet
     _onTokenRefreshSub ??= _firebaseMessaging.onTokenRefresh.listen((newToken) async {
       if (kDebugMode) {
-        print('FCM Token refreshed: $newToken');
+        debugPrint('FCM Token refreshed: $newToken');
       }
       try {
         await _authViewModel?.saveUserToken(newToken);
       } catch (e) {
         if (kDebugMode) {
-          print('FCM token save error: $e');
+          debugPrint('FCM token save error: $e');
         }
       }
     });
@@ -72,13 +72,13 @@ class NotificationService {
     // 3. Gelen bildirimleri dinle (foreground)
     _onMessageSub ??= FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (kDebugMode) {
-        print('Got a message whilst in the foreground!');
-        print('Message data: ${message.data}');
+        debugPrint('Got a message whilst in the foreground!');
+        debugPrint('Message data: ${message.data}');
       }
 
       if (message.notification != null) {
         if (kDebugMode) {
-          print('Message also contained a notification: ${message.notification}');
+          debugPrint('Message also contained a notification: ${message.notification}');
         }
         // Burada uygulama içindeyken bir bildirim gösterebiliriz.
         // Örneğin bir SnackBar veya custom bir dialog.
@@ -88,7 +88,7 @@ class NotificationService {
     // 4. Bildirime dokunulduğunda (app açıkken)
     _onMessageOpenedSub ??= FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       if (kDebugMode) {
-        print('Notification tapped! Message data: ${message.data}');
+        debugPrint('Notification tapped! Message data: ${message.data}');
       }
       _handleNotificationTap(message.data);
     });
@@ -103,7 +103,7 @@ class NotificationService {
     RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) {
       if (kDebugMode) {
-        print('App opened from notification. Message data: ${initialMessage.data}');
+        debugPrint('App opened from notification. Message data: ${initialMessage.data}');
       }
       _handleNotificationTap(initialMessage.data);
     }

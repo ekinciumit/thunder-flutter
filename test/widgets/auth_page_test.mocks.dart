@@ -3,12 +3,12 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i3;
+import 'dart:async' as _i4;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:thunder/core/errors/failures.dart' as _i4;
+import 'package:thunder/core/errors/failures.dart' as _i2;
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart'
-    as _i2;
+    as _i3;
 import 'package:thunder/models/user_model.dart' as _i5;
 
 // ignore_for_file: type=lint
@@ -33,99 +33,99 @@ class _FakeEither_0<L, R> extends _i1.SmartFake implements _i2.Either<L, R> {
 /// A class which mocks [AuthRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAuthRepository extends _i1.Mock implements _i2.AuthRepository {
+class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
   MockAuthRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.Future<_i2.Either<_i4.Failure, _i5.UserModel>> signIn(
+  _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>> signIn(
     String? email,
     String? password,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#signIn, [email, password]),
             returnValue:
-                _i3.Future<_i2.Either<_i4.Failure, _i5.UserModel>>.value(
-                  _FakeEither_0<_i4.Failure, _i5.UserModel>(
+                _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>>.value(
+                  _FakeEither_0<_i2.Failure, _i5.UserModel>(
                     this,
                     Invocation.method(#signIn, [email, password]),
                   ),
                 ),
           )
-          as _i3.Future<_i2.Either<_i4.Failure, _i5.UserModel>>);
+          as _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>>);
 
   @override
-  _i3.Future<_i2.Either<_i4.Failure, _i5.UserModel>> signUp(
+  _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>> signUp(
     String? email,
     String? password,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#signUp, [email, password]),
             returnValue:
-                _i3.Future<_i2.Either<_i4.Failure, _i5.UserModel>>.value(
-                  _FakeEither_0<_i4.Failure, _i5.UserModel>(
+                _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>>.value(
+                  _FakeEither_0<_i2.Failure, _i5.UserModel>(
                     this,
                     Invocation.method(#signUp, [email, password]),
                   ),
                 ),
           )
-          as _i3.Future<_i2.Either<_i4.Failure, _i5.UserModel>>);
+          as _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>>);
 
   @override
-  _i3.Future<_i2.Either<_i4.Failure, void>> signOut() =>
+  _i4.Future<_i2.Either<_i2.Failure, void>> signOut() =>
       (super.noSuchMethod(
             Invocation.method(#signOut, []),
-            returnValue: _i3.Future<_i2.Either<_i4.Failure, void>>.value(
-              _FakeEither_0<_i4.Failure, void>(
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
                 this,
                 Invocation.method(#signOut, []),
               ),
             ),
           )
-          as _i3.Future<_i2.Either<_i4.Failure, void>>);
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
   @override
-  _i3.Future<_i2.Either<_i4.Failure, void>> saveUserProfile(
+  _i4.Future<_i2.Either<_i2.Failure, void>> saveUserProfile(
     _i5.UserModel? user,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#saveUserProfile, [user]),
-            returnValue: _i3.Future<_i2.Either<_i4.Failure, void>>.value(
-              _FakeEither_0<_i4.Failure, void>(
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
                 this,
                 Invocation.method(#saveUserProfile, [user]),
               ),
             ),
           )
-          as _i3.Future<_i2.Either<_i4.Failure, void>>);
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
   @override
-  _i3.Future<_i2.Either<_i4.Failure, _i5.UserModel?>> fetchUserProfile(
+  _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel?>> fetchUserProfile(
     String? uid,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#fetchUserProfile, [uid]),
             returnValue:
-                _i3.Future<_i2.Either<_i4.Failure, _i5.UserModel?>>.value(
-                  _FakeEither_0<_i4.Failure, _i5.UserModel?>(
+                _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel?>>.value(
+                  _FakeEither_0<_i2.Failure, _i5.UserModel?>(
                     this,
                     Invocation.method(#fetchUserProfile, [uid]),
                   ),
                 ),
           )
-          as _i3.Future<_i2.Either<_i4.Failure, _i5.UserModel?>>);
+          as _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel?>>);
 
   @override
-  _i3.Future<_i2.Either<_i4.Failure, void>> saveUserToken(String? token) =>
+  _i4.Future<_i2.Either<_i2.Failure, void>> saveUserToken(String? token) =>
       (super.noSuchMethod(
             Invocation.method(#saveUserToken, [token]),
-            returnValue: _i3.Future<_i2.Either<_i4.Failure, void>>.value(
-              _FakeEither_0<_i4.Failure, void>(
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
                 this,
                 Invocation.method(#saveUserToken, [token]),
               ),
             ),
           )
-          as _i3.Future<_i2.Either<_i4.Failure, void>>);
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
 }

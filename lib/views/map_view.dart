@@ -3,7 +3,7 @@ import '../models/event_model.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import '../viewmodels/event_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'event_detail_page.dart';
 import 'dart:async';
 import 'widgets/app_gradient_container.dart';

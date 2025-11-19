@@ -3,6 +3,7 @@
 /// Bu sınıf SOLID prensiplerinden Single Responsibility Principle'a uyar:
 /// - Sadece uygulama sabitlerini içerir
 /// - Değişmeyen değerleri merkezi bir yerde toplar
+library;
 /// 
 /// ŞU AN: Bu sabitler sadece ekleniyor, mevcut kod çalışmaya devam ediyor
 /// İleride bu sabitleri kullanacağız.

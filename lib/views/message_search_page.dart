@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/chat_service.dart';
 import '../models/message_model.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'private_chat_page.dart';
 import 'widgets/app_gradient_container.dart';
 
@@ -22,7 +22,6 @@ class MessageSearchPage extends StatefulWidget {
 
 class _MessageSearchPageState extends State<MessageSearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  final ChatService _chatService = ChatService();
   
   List<MessageModel> _searchResults = [];
   bool _isSearching = false;
@@ -54,14 +53,15 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
       
       if (currentUser == null) return;
 
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
       List<MessageModel> results;
       
       if (widget.chatId != null) {
         // Belirli bir sohbet içinde ara
-        results = await _chatService.searchMessages(widget.chatId!, query);
+        results = await chatViewModel.searchMessages(widget.chatId!, query);
       } else {
         // Tüm sohbetlerde ara
-        results = await _chatService.searchAllMessages(currentUser.uid, query);
+        results = await chatViewModel.searchAllMessages(currentUser.uid, query);
       }
 
       setState(() {

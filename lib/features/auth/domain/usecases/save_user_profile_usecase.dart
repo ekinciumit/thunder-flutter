@@ -16,7 +16,7 @@ class SaveUserProfileUseCase {
 
   /// Kullanıcı profilini kaydet
   /// 
-  /// Returns: Either<Failure, void>
+  /// Returns: `Either<Failure, void>`
   Future<Either<Failure, void>> call(UserModel user) async {
     // Business logic: User validation
     if (user.uid.isEmpty) {

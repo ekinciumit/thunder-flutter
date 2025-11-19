@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/chat_service.dart';
 import '../models/chat_model.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'private_chat_page.dart';
 import 'message_search_page.dart';
 import 'widgets/app_gradient_container.dart';
@@ -15,7 +15,6 @@ class ChatListPage extends StatefulWidget {
 }
 
 class _ChatListPageState extends State<ChatListPage> {
-  final ChatService _chatService = ChatService();
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -133,7 +132,7 @@ class _ChatListPageState extends State<ChatListPage> {
           ],
         ),
         body: StreamBuilder<List<ChatModel>>(
-          stream: _chatService.getUserChats(currentUser.uid),
+          stream: Provider.of<ChatViewModel>(context, listen: false).getUserChats(currentUser.uid),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(

@@ -3,6 +3,7 @@
 /// Bu sınıf SOLID prensiplerinden Single Responsibility Principle'a uyar:
 /// - Sadece doğrulama (validation) işlemlerinden sorumlu
 /// - Her fonksiyon tek bir şeyi doğrular
+library;
 /// 
 /// ŞU AN: Bu fonksiyonlar sadece ekleniyor, mevcut kod çalışmaya devam ediyor
 /// İleride bu validators'ları kullanacağız.
