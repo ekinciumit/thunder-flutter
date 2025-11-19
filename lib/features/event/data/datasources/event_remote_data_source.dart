@@ -27,10 +27,12 @@ abstract class EventRemoteDataSource {
 /// Clean Architecture Data Layer
 /// Firebase Firestore işlemlerini yapar.
 class EventRemoteDataSourceImpl implements EventRemoteDataSource {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   final CollectionReference<Map<String, dynamic>> _eventsRef;
 
-  EventRemoteDataSourceImpl() : _eventsRef = FirebaseFirestore.instance.collection('events');
+  EventRemoteDataSourceImpl({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _eventsRef = (firestore ?? FirebaseFirestore.instance).collection('events');
 
   @override
   Future<void> addEvent(EventModel event) async {

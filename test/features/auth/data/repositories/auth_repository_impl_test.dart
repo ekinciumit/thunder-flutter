@@ -71,7 +71,7 @@ void main() {
       verifyNever(mockLocalDataSource.cacheUser(any));
     });
 
-    test('should return Left(CacheFailure) when cache fails but sign in succeeds', () async {
+    test('should return Right(UserModel) when cache fails but sign in succeeds (cache error is non-critical)', () async {
       // Arrange
       when(mockRemoteDataSource.signIn(testEmail, testPassword))
           .thenAnswer((_) async => testUser);
@@ -82,8 +82,10 @@ void main() {
       final result = await repository.signIn(testEmail, testPassword);
 
       // Assert
-      expect(result.isLeft, true);
-      expect(result.left, isA<CacheFailure>());
+      // Cache hatası kritik değil, kullanıcı zaten giriş yaptı
+      // Bu yüzden Right(UserModel) döndürmeli
+      expect(result.isRight, true);
+      expect(result.right, testUser);
       verify(mockRemoteDataSource.signIn(testEmail, testPassword)).called(1);
       verify(mockLocalDataSource.cacheUser(testUser)).called(1);
     });

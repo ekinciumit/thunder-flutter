@@ -81,13 +81,14 @@ abstract class ChatRemoteDataSource {
 /// Clean Architecture Data Layer
 /// Firebase Firestore işlemlerini yapar.
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   final CollectionReference<Map<String, dynamic>> _chatsRef;
   final CollectionReference<Map<String, dynamic>> _messagesRef;
 
-  ChatRemoteDataSourceImpl()
-      : _chatsRef = FirebaseFirestore.instance.collection('chats'),
-        _messagesRef = FirebaseFirestore.instance.collection('messages');
+  ChatRemoteDataSourceImpl({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _chatsRef = (firestore ?? FirebaseFirestore.instance).collection('chats'),
+        _messagesRef = (firestore ?? FirebaseFirestore.instance).collection('messages');
 
   @override
   String getChatId(String userA, String userB) {
@@ -441,7 +442,17 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       final messageDoc = await _messagesRef.doc(messageId).get();
       if (messageDoc.exists) {
         final data = messageDoc.data()!;
-        final reactions = Map<String, List<String>>.from(data['reactions'] ?? {});
+        final reactionsData = data['reactions'] ?? {};
+        final reactions = <String, List<String>>{};
+        
+        // Safely convert reactions map
+        if (reactionsData is Map) {
+          reactionsData.forEach((key, value) {
+            if (value is List) {
+              reactions[key.toString()] = value.map((e) => e.toString()).toList();
+            }
+          });
+        }
         
         if (reactions[userId] == null) {
           reactions[userId] = [];
@@ -466,7 +477,17 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       final messageDoc = await _messagesRef.doc(messageId).get();
       if (messageDoc.exists) {
         final data = messageDoc.data()!;
-        final reactions = Map<String, List<String>>.from(data['reactions'] ?? {});
+        final reactionsData = data['reactions'] ?? {};
+        final reactions = <String, List<String>>{};
+        
+        // Safely convert reactions map
+        if (reactionsData is Map) {
+          reactionsData.forEach((key, value) {
+            if (value is List) {
+              reactions[key.toString()] = value.map((e) => e.toString()).toList();
+            }
+          });
+        }
         
         if (reactions[userId] != null) {
           reactions[userId]!.remove(emoji);
@@ -522,7 +543,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         'lastMessage': {
           ...messageData,
           'id': docRef.id,
-          'timestamp': DateTime.now(),
+          'timestamp': Timestamp.fromDate(DateTime.now()),
         },
       });
       
@@ -534,7 +555,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       return MessageModel.fromMap({
         ...messageData,
         'id': docRef.id,
-        'timestamp': DateTime.now(),
+        'timestamp': Timestamp.fromDate(DateTime.now()),
         'status': MessageStatus.sent.name,
       }, docRef.id);
     } catch (e) {
@@ -584,7 +605,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         'lastMessage': {
           ...messageData,
           'id': docRef.id,
-          'timestamp': DateTime.now(),
+          'timestamp': Timestamp.fromDate(DateTime.now()),
         },
       });
       
@@ -596,7 +617,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       return MessageModel.fromMap({
         ...messageData,
         'id': docRef.id,
-        'timestamp': DateTime.now(),
+        'timestamp': Timestamp.fromDate(DateTime.now()),
         'status': MessageStatus.sent.name,
       }, docRef.id);
     } catch (e) {

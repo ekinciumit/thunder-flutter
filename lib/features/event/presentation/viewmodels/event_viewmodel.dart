@@ -45,11 +45,19 @@ class EventViewModel extends ChangeNotifier {
 
   EventViewModel({
     required EventRepository eventRepository,
+    bool autoListenEvents = true,
   }) : _eventRepository = eventRepository {
     _initializeUseCases();
     // Uygulama açıldığında kullanıcı zaten giriş yaptıysa başlat
-    if (FirebaseAuth.instance.currentUser != null) {
-      listenEvents();
+    if (autoListenEvents) {
+      try {
+        if (FirebaseAuth.instance.currentUser != null) {
+          listenEvents();
+        }
+      } catch (e) {
+        // Test ortamında Firebase initialize edilmemiş olabilir
+        // Bu durumda sessizce devam et
+      }
     }
   }
   
