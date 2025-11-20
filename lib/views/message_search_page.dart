@@ -5,6 +5,7 @@ import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'private_chat_page.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
 
 class MessageSearchPage extends StatefulWidget {
   final String? chatId; // null ise tüm sohbetlerde ara
@@ -265,8 +266,12 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(color: Colors.white),
-                          SizedBox(height: 16),
+                          ModernLoadingWidget(
+                            size: 32,
+                            color: Colors.white,
+                            showMessage: false,
+                          ),
+                          const SizedBox(height: 16),
                           Text(
                             'Aranıyor...',
                             style: TextStyle(color: Colors.white70),

@@ -7,6 +7,7 @@ import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'event_detail_page.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class MyEventsPage extends StatefulWidget {
@@ -52,7 +53,10 @@ class _MyEventsPageState extends State<MyEventsPage> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
-                child: CircularProgressIndicator(color: Colors.white),
+                child: ModernLoadingWidget(
+                  message: 'Etkinlikler yükleniyor...',
+                  color: Colors.white,
+                ),
               );
             }
 

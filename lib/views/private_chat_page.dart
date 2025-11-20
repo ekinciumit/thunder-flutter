@@ -18,6 +18,7 @@ import 'widgets/message_reactions.dart';
 import 'widgets/voice_message_widget.dart';
 import 'widgets/voice_recorder_widget.dart';
 import 'widgets/file_picker_widget.dart';
+import 'widgets/modern_loading_widget.dart';
 import 'widgets/file_message_widget.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -373,7 +374,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                 const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: ModernLoadingWidget(size: 20, showMessage: false),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -622,7 +623,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         height: 200,
                         color: Colors.grey[300],
                         child: const Center(
-                          child: CircularProgressIndicator(),
+                          child: ModernLoadingWidget(size: 32, showMessage: false),
                         ),
                       );
                     },
@@ -1734,7 +1735,7 @@ class _VideoMessageWidgetState extends State<_VideoMessageWidget> {
                 ],
               ),
             )
-          : const Center(child: CircularProgressIndicator()),
+          : Center(child: ModernLoadingWidget(message: 'Yükleniyor...')),
     );
   }
 } 

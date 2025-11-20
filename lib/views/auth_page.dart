@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../core/validators/form_validators.dart';
+import '../core/widgets/responsive_widgets.dart';
+import '../core/utils/responsive_helper.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 
@@ -13,6 +16,7 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLogin = true;
@@ -47,14 +51,19 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: AppCard(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-              padding: const EdgeInsets.all(32),
-              borderRadius: 32,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+              margin: EdgeInsets.symmetric(
+                horizontal: ResponsiveHelper.getWidth(context, 4),
+                vertical: ResponsiveHelper.getHeight(context, 4),
+              ),
+              padding: ResponsiveHelper.getPadding(context),
+              borderRadius: ResponsiveHelper.getBorderRadius(context, 32),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: ResponsiveHelper.getPadding(context),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -66,11 +75,11 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                     ),
                     child: Icon(
                       isLogin ? Icons.login : Icons.person_add,
-                      size: 48,
+                      size: ResponsiveHelper.getIconSize(context, 48),
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  ResponsiveSizedBox.spacing(),
                   Text(
                     isLogin ? l10n.login : l10n.signUp,
                     style: theme.textTheme.headlineSmall?.copyWith(
@@ -78,9 +87,14 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  TextField(
+                  ResponsiveSizedBox(
+                    height: ResponsiveHelper.getSpacing(context) * 2,
+                  ),
+                  TextFormField(
                     controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    validator: FormValidators.email,
                     decoration: InputDecoration(
                       labelText: l10n.email,
                       labelStyle: TextStyle(color: theme.colorScheme.primary),
@@ -88,26 +102,80 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide.none,
                       ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: theme.colorScheme.error),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
+                      ),
                       filled: true,
                       fillColor: theme.colorScheme.primary.withAlpha(10),
                       prefixIcon: Icon(Icons.email, color: theme.colorScheme.primary),
+                      errorStyle: TextStyle(color: theme.colorScheme.error),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
+                  ResponsiveSizedBox.spacing(),
+                  TextFormField(
                     controller: passwordController,
+                    keyboardType: TextInputType.visiblePassword,
+                    textInputAction: isLogin ? TextInputAction.done : TextInputAction.next,
+                    obscureText: true,
+                    validator: FormValidators.password,
+                    onFieldSubmitted: (_) {
+                      if (_formKey.currentState!.validate()) {
+                        _handleSubmit(authViewModel);
+                      }
+                    },
                     decoration: InputDecoration(
                       labelText: l10n.password,
                       labelStyle: TextStyle(color: theme.colorScheme.secondary),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getBorderRadius(context, 16),
+                        ),
                         borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getBorderRadius(context, 16),
+                        ),
+                        borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getBorderRadius(context, 16),
+                        ),
+                        borderSide: BorderSide(color: theme.colorScheme.secondary, width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getBorderRadius(context, 16),
+                        ),
+                        borderSide: BorderSide(color: theme.colorScheme.error),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getBorderRadius(context, 16),
+                        ),
+                        borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
                       ),
                       filled: true,
                       fillColor: theme.colorScheme.secondary.withAlpha(10),
                       prefixIcon: Icon(Icons.lock, color: theme.colorScheme.secondary),
+                      errorStyle: TextStyle(color: theme.colorScheme.error),
+                      helperText: isLogin ? null : 'En az 6 karakter, bir harf ve bir rakam içermelidir',
+                      helperMaxLines: 2,
                     ),
-                    obscureText: true,
                   ),
                   const SizedBox(height: 16),
                   if (authViewModel.error != null)
@@ -129,42 +197,44 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                         ],
                       ),
                     ),
-                  const SizedBox(height: 16),
+                  ResponsiveSizedBox.spacing(),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        final email = emailController.text.trim();
-                        final password = passwordController.text.trim();
-                        if (isLogin) {
-                          await authViewModel.signIn(email, password);
-                        } else {
-                          await authViewModel.signUp(email, password);
-                        }
-                      },
+                      onPressed: () => _handleSubmit(authViewModel),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
                         foregroundColor: Colors.white,
                         elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            ResponsiveHelper.getBorderRadius(context, 16),
+                          ),
+                        ),
+                        padding: ResponsiveHelper.getVerticalPadding(context),
                       ),
                       child: Text(
                         isLogin ? l10n.login : l10n.signUp,
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                  ResponsiveSizedBox.spacing(),
                   TextButton(
                     onPressed: () {
+                      _formKey.currentState?.reset();
                       setState(() {
                         isLogin = !isLogin;
+                        authViewModel.error = null; // Toggle'da hatayı temizle
                       });
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: theme.colorScheme.surface.withAlpha(0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getBorderRadius(context, 12),
+                        ),
+                      ),
                     ),
                     child: Text(
                       isLogin ? l10n.noAccount : l10n.hasAccount,
@@ -174,12 +244,31 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                       ),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// Form submit handler
+  /// 
+  /// Form validasyonunu kontrol eder ve geçerliyse auth işlemini başlatır
+  Future<void> _handleSubmit(AuthViewModel authViewModel) async {
+    if (!_formKey.currentState!.validate()) {
+      return; // Form geçersizse işlem yapma
+    }
+
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+    
+    if (isLogin) {
+      await authViewModel.signIn(email, password);
+    } else {
+      await authViewModel.signUp(email, password);
+    }
   }
 } 

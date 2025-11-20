@@ -7,6 +7,7 @@ import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'event_detail_page.dart';
 import 'dart:async';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
 import 'package:flutter/foundation.dart';
 
 class MapView extends StatefulWidget {
@@ -190,7 +191,7 @@ class _MapViewState extends State<MapView> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: !iconsLoaded
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: ModernLoadingWidget(message: 'Harita yükleniyor...'))
             : Stack(
                 children: [
                   GoogleMap(

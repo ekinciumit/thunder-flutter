@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
 
 class EventListView extends StatefulWidget {
   const EventListView({super.key});
@@ -57,8 +58,19 @@ class _EventListViewState extends State<EventListView> {
   @override
   void initState() {
     super.initState();
-    _getUserLocation();
+    // Konum otomatik alınmıyor - kullanıcı "Konumuma en yakın etkinlikleri bul" butonuna tıkladığında alınacak
+    // Sayfa yenilendiğinde (widget yeniden oluşturulduğunda) konum filtresini sıfırla
+    _resetLocationFilter();
     _loadCategoryIcons();
+  }
+
+  /// Konum filtresini sıfırla
+  /// Sayfa yenilendiğinde veya kullanıcı istediğinde çağrılır
+  void _resetLocationFilter() {
+    isDistanceFilterEnabled = false;
+    userPosition = null;
+    locationHint = null;
+    _distanceCache.clear(); // Mesafe cache'ini de temizle
   }
 
   Future<void> _getUserLocation() async {
@@ -154,8 +166,8 @@ class _EventListViewState extends State<EventListView> {
       return matchesSearch && matchesCategory && matchesDate && matchesDistance;
     }).toList();
 
-    // Mesafeye göre sıralama
-    if (userPosition != null) {
+    // Mesafeye göre sıralama (sadece konum alındıysa ve mesafe filtresi aktifse)
+    if (userPosition != null && isDistanceFilterEnabled) {
       filteredEvents.sort((a, b) {
         final da = _calculateDistance(userPosition!.latitude, userPosition!.longitude, a.location.latitude, a.location.longitude);
         final db = _calculateDistance(userPosition!.latitude, userPosition!.longitude, b.location.latitude, b.location.longitude);
@@ -173,43 +185,6 @@ class _EventListViewState extends State<EventListView> {
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: Row(
                 children: [
-                  if (userPosition == null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: OutlinedButton.icon(
-                        onPressed: _getUserLocation,
-                        icon: const Icon(Icons.my_location),
-                        label: const Text('Konum al'),
-                      ),
-                    ),
-                  if (userPosition == null && locationHint != null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final action = await showDialog<String>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Konum İzni/Ayarı'),
-                              content: Text(locationHint!),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(context, 'loc'), child: const Text('Konum Ayarları')),
-                                TextButton(onPressed: () => Navigator.pop(context, 'app'), child: const Text('Uygulama Ayarları')),
-                                TextButton(onPressed: () => Navigator.pop(context, 'cancel'), child: const Text('Kapat')),
-                              ],
-                            ),
-                          );
-                          if (!mounted) return;
-                          if (action == 'loc') {
-                            await Geolocator.openLocationSettings();
-                          } else if (action == 'app') {
-                            await Geolocator.openAppSettings();
-                          }
-                        },
-                        icon: const Icon(Icons.settings),
-                        label: const Text('Ayarlar'),
-                      ),
-                    ),
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
@@ -280,6 +255,7 @@ class _EventListViewState extends State<EventListView> {
                             DateTime? tempStartDate = startDate;
                             DateTime? tempEndDate = endDate;
                             double tempSelectedDistance = selectedDistance;
+                            bool tempIsDistanceFilterEnabled = isDistanceFilterEnabled;
                             return Padding(
                               padding: EdgeInsets.only(
                                 left: 24,
@@ -370,16 +346,138 @@ class _EventListViewState extends State<EventListView> {
                                       ],
                                     ),
                                     const SizedBox(height: 16),
-                                    Text('Mesafe: ${tempSelectedDistance.round()} km', style: theme.textTheme.bodyMedium),
-                                    Slider(
-                                      value: tempSelectedDistance,
-                                      min: 1,
-                                      max: 50,
-                                      divisions: 49,
-                                      label: '${tempSelectedDistance.round()} km',
-                                      onChanged: (val) => setModalState(() => tempSelectedDistance = val),
+                                    // Mesafe filtresi checkbox
+                                    Row(
+                                      children: [
+                                        Checkbox(
+                                          value: tempIsDistanceFilterEnabled && userPosition != null,
+                                          onChanged: userPosition != null
+                                              ? (value) {
+                                                  setModalState(() {
+                                                    tempIsDistanceFilterEnabled = value ?? false;
+                                                  });
+                                                }
+                                              : null,
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            'Mesafe filtresini aktif et (${tempSelectedDistance.round()} km)',
+                                            style: theme.textTheme.bodyMedium,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                    if (tempIsDistanceFilterEnabled && userPosition != null) ...[
+                                      const SizedBox(height: 8),
+                                      Text('Mesafe: ${tempSelectedDistance.round()} km', style: theme.textTheme.bodySmall),
+                                      Slider(
+                                        value: tempSelectedDistance,
+                                        min: 1,
+                                        max: 50,
+                                        divisions: 49,
+                                        label: '${tempSelectedDistance.round()} km',
+                                        onChanged: (val) => setModalState(() => tempSelectedDistance = val),
+                                      ),
+                                    ],
                                     const SizedBox(height: 24),
+                                    // Konumuma en yakın etkinlikleri bul butonu (en altta, diğer filtrelerden sonra)
+                                    Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.deepPurple.withValues(alpha: 0.2),
+                                            Colors.blue.withValues(alpha: 0.15),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.deepPurple.withValues(alpha: 0.3),
+                                        ),
+                                      ),
+                                      child: ElevatedButton.icon(
+                                        onPressed: () async {
+                                          // Konum al ve mesafe filtresini aktif et - otomatik uygula
+                                          await _getUserLocation();
+                                          if (!context.mounted) return;
+                                          if (userPosition != null) {
+                                            // Filtreleri otomatik uygula ve modal'ı kapat
+                                            setState(() {
+                                              isDistanceFilterEnabled = true;
+                                              selectedCategory = tempSelectedCategory;
+                                              startDate = tempStartDate;
+                                              endDate = tempEndDate;
+                                              selectedDistance = tempSelectedDistance;
+                                            });
+                                            // Modal'ı güvenli şekilde kapat
+                                            if (Navigator.canPop(context)) {
+                                              Navigator.of(context).pop();
+                                            }
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: const Text('Konum alındı! En yakın etkinlikler gösteriliyor.'),
+                                                  backgroundColor: Colors.green,
+                                                  duration: const Duration(seconds: 2),
+                                                ),
+                                              );
+                                            }
+                                          } else {
+                                            // Hata durumunda ayarlar dialog'u göster
+                                            final action = await showDialog<String>(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text('Konum İzni/Ayarı'),
+                                                content: Text(locationHint ?? 'Konum alınamadı. Lütfen ayarları kontrol edin.'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, 'loc'),
+                                                    child: const Text('Konum Ayarları'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, 'app'),
+                                                    child: const Text('Uygulama Ayarları'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, 'cancel'),
+                                                    child: const Text('Kapat'),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                            if (!context.mounted) return;
+                                            if (action == 'loc') {
+                                              await Geolocator.openLocationSettings();
+                                            } else if (action == 'app') {
+                                              await Geolocator.openAppSettings();
+                                            }
+                                            // Ayarlar açıldıktan sonra modal'ı kapatma - kullanıcı manuel kapatabilir
+                                          }
+                                        },
+                                        icon: Icon(
+                                          userPosition != null ? Icons.check_circle : Icons.my_location,
+                                          color: userPosition != null ? Colors.green : Colors.deepPurple,
+                                        ),
+                                        label: Text(
+                                          userPosition != null
+                                              ? 'Konumum alındı ✓'
+                                              : 'Konumuma en yakın etkinlikleri bul',
+                                          style: TextStyle(
+                                            color: userPosition != null ? Colors.green.shade700 : Colors.deepPurple.shade700,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          elevation: 0,
+                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
                                     Row(
                                       children: [
                                         Expanded(
@@ -390,8 +488,11 @@ class _EventListViewState extends State<EventListView> {
                                                 startDate = tempStartDate;
                                                 endDate = tempEndDate;
                                                 selectedDistance = tempSelectedDistance;
+                                                isDistanceFilterEnabled = tempIsDistanceFilterEnabled;
                                               });
-                                              Navigator.of(context).pop();
+                                              if (Navigator.canPop(context)) {
+                                                Navigator.of(context).pop();
+                                              }
                                             },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: theme.colorScheme.primary,
@@ -411,6 +512,7 @@ class _EventListViewState extends State<EventListView> {
                                                 tempStartDate = null;
                                                 tempEndDate = null;
                                                 tempSelectedDistance = 10;
+                                                tempIsDistanceFilterEnabled = false;
                                               });
                                             },
                                             style: OutlinedButton.styleFrom(
@@ -459,7 +561,7 @@ class _EventListViewState extends State<EventListView> {
             const SizedBox(height: 8),
             Expanded(
               child: eventViewModel.isLoading
-                  ? const Center(child: CupertinoActivityIndicator(radius: 18))
+                  ? Center(child: ModernLoadingWidget(message: 'Etkinlikler yükleniyor...'))
                   : filteredEvents.isEmpty
                       ? ListView.separated(
                           padding: const EdgeInsets.all(16),
@@ -501,7 +603,9 @@ class _EventListViewState extends State<EventListView> {
                                           onPressed: eventViewModel.isLoadingMore ? null : () => eventViewModel.loadMore(),
                                           icon: eventViewModel.isLoadingMore
                                               ? const SizedBox(
-                                                  width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                                  width: 16, height: 16, 
+                                                  child: ModernLoadingWidget(size: 16, showMessage: false),
+                                                )
                                               : const Icon(Icons.expand_more),
                                           label: Text(eventViewModel.isLoadingMore ? 'Yükleniyor...' : 'Daha fazla yükle'),
                                         )

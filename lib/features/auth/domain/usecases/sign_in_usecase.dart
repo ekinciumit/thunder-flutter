@@ -19,7 +19,7 @@ class SignInUseCase {
 
   /// Email/password ile giriş yap
   /// 
-  /// Returns: Either<Failure, UserModel>
+  /// Returns: Either`<Failure, UserModel>`
   /// - Left: Failure if authentication fails
   /// - Right: UserModel if successful
   Future<Either<Failure, UserModel>> call(String email, String password) async {

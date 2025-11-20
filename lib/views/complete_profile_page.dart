@@ -5,6 +5,10 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import '../core/validators/form_validators.dart';
+import '../core/widgets/responsive_widgets.dart';
+import '../core/utils/responsive_helper.dart';
+import 'widgets/modern_loading_widget.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   final void Function(String name, String bio, String? photoUrl) onComplete;
@@ -15,6 +19,7 @@ class CompleteProfilePage extends StatefulWidget {
 }
 
 class _CompleteProfilePageState extends State<CompleteProfilePage> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
   File? photoFile;
@@ -146,13 +151,14 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           ),
         ),
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-              Container(
-                padding: const EdgeInsets.all(32),
+          child: ResponsivePadding(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                Container(
+                padding: ResponsiveHelper.getPadding(context),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -195,7 +201,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                         color: Colors.deepPurple.shade600,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    ResponsiveSizedBox.spacing(),
                     Text(
                       'Profilini Tamamla',
                       style: theme.textTheme.headlineSmall?.copyWith(
@@ -203,7 +209,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                         color: Colors.deepPurple.shade700,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    ResponsiveSizedBox(
+                      height: ResponsiveHelper.getSpacing(context) * 2,
+                    ),
                     GestureDetector(
                       onTap: isUploading ? null : _pickImageFromCamera,
                       child: Container(
@@ -253,7 +261,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const CupertinoActivityIndicator(radius: 12),
+                          ModernLoadingWidget(
+                            size: 24,
+                            color: Colors.amber,
+                            showMessage: false,
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             'Fotoğraf yükleniyor...',
@@ -265,17 +277,23 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    ResponsiveSizedBox(
+                      height: ResponsiveHelper.getSpacing(context) * 2,
+                    ),
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [Colors.deepPurple.withAlpha(15), Colors.blue.withAlpha(10)],
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getBorderRadius(context, 16),
+                        ),
                         border: Border.all(color: Colors.deepPurple.withAlpha(40)),
                       ),
-                      child: TextField(
+                      child: TextFormField(
                         controller: nameController,
+                        textInputAction: TextInputAction.next,
+                        validator: FormValidators.name,
                         decoration: InputDecoration(
                           labelText: 'İsim Soyisim',
                           labelStyle: TextStyle(color: Colors.deepPurple.shade700),
@@ -283,44 +301,89 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
                           ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.deepPurple.withAlpha(40)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.deepPurple.shade600, width: 2),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.red),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.red, width: 2),
+                          ),
                           filled: true,
                           fillColor: Colors.transparent,
                           prefixIcon: Icon(Icons.person, color: Colors.deepPurple.shade600),
+                          errorStyle: const TextStyle(color: Colors.red),
+                          helperText: 'En az 2 karakter, sadece harf ve boşluk',
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    ResponsiveSizedBox.spacing(),
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [Colors.blue.withAlpha(15), Colors.cyan.withAlpha(10)],
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getBorderRadius(context, 16),
+                        ),
                         border: Border.all(color: Colors.blue.withAlpha(40)),
                       ),
-                      child: TextField(
+                      child: TextFormField(
                         controller: bioController,
+                        textInputAction: TextInputAction.done,
+                        maxLines: 2,
+                        validator: FormValidators.bio,
                         decoration: InputDecoration(
-                          labelText: 'Biyografi',
+                          labelText: 'Biyografi (Opsiyonel)',
                           labelStyle: TextStyle(color: Colors.blue.shade700),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
                           ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.blue.withAlpha(40)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.red),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.red, width: 2),
+                          ),
                           filled: true,
                           fillColor: Colors.transparent,
                           prefixIcon: Icon(Icons.description, color: Colors.blue.shade600),
+                          errorStyle: const TextStyle(color: Colors.red),
+                          helperText: 'Maksimum 500 karakter',
+                          helperMaxLines: 1,
                         ),
-                        maxLines: 2,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    ResponsiveSizedBox(
+                      height: ResponsiveHelper.getSpacing(context) * 2,
+                    ),
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [Colors.deepPurple, Colors.blue],
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getBorderRadius(context, 16),
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.deepPurple.withAlpha(60),
@@ -331,6 +394,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       ),
                       child: ElevatedButton(
                         onPressed: isUploading ? null : () {
+                          if (!_formKey.currentState!.validate()) {
+                            return; // Form geçersizse işlem yapma
+                          }
                           widget.onComplete(
                             nameController.text.trim(),
                             bioController.text.trim(),
@@ -353,7 +419,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                   ],
                 ),
               ),
-            ],
+                ],
+              ),
             ),
           ),
         ),

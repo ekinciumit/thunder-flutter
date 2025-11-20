@@ -6,6 +6,7 @@ import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'private_chat_page.dart';
 import 'message_search_page.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -145,9 +146,10 @@ class _ChatListPageState extends State<ChatListPage> {
                         color: Colors.white.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: const CircularProgressIndicator(
+                      child: ModernLoadingWidget(
+                        size: 24,
                         color: Colors.white,
-                        strokeWidth: 3,
+                        showMessage: false,
                       ),
                     ),
                     const SizedBox(height: 24),

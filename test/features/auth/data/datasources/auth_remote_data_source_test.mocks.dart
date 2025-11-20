@@ -1213,7 +1213,6 @@ class MockFirebaseFirestore extends _i1.Mock implements _i6.FirebaseFirestore {
 /// A class which mocks [DocumentReference].
 ///
 /// See the documentation for Mockito's code generation for more information.
-// ignore: must_be_immutable
 class MockDocumentReference<T extends Object?> extends _i1.Mock
     implements _i6.DocumentReference<T> {
   MockDocumentReference() {

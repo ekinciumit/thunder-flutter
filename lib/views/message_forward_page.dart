@@ -5,6 +5,7 @@ import '../models/message_model.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
 
 class MessageForwardPage extends StatefulWidget {
   final MessageModel message;
@@ -246,8 +247,12 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(color: Colors.white),
-                          SizedBox(height: 16),
+                          ModernLoadingWidget(
+                            size: 32,
+                            color: Colors.white,
+                            showMessage: false,
+                          ),
+                          const SizedBox(height: 16),
                           Text(
                             'Sohbetler yükleniyor...',
                             style: TextStyle(color: Colors.white70),
@@ -368,9 +373,10 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                                           ? const SizedBox(
                                               width: 20,
                                               height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
+                                              child: ModernLoadingWidget(
+                                                size: 20,
                                                 color: Colors.white,
+                                                showMessage: false,
                                               ),
                                             )
                                           : const Icon(

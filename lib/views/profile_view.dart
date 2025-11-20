@@ -13,6 +13,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
 // Removed seed data service as test data seeding is no longer needed.
@@ -315,10 +316,10 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     final theme = Theme.of(context);
 
     if (authViewModel.isLoading) {
-      return const Center(child: CupertinoActivityIndicator(radius: 18));
+      return Center(child: ModernLoadingWidget(message: 'Yükleniyor...'));
     }
     if (user == null) {
-      return const Center(child: CupertinoActivityIndicator(radius: 18));
+      return Center(child: ModernLoadingWidget(message: 'Kullanıcı bilgisi yükleniyor...'));
     }
 
     return AppGradientContainer(
@@ -373,7 +374,14 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                 : const Icon(Icons.person, size: 64, color: Colors.white70),
                           ),
                           if (isUploading)
-                            const Positioned.fill(child: CupertinoActivityIndicator(radius: 16))
+                            const Positioned.fill(
+                              child: Center(
+                                child: ModernLoadingWidget(
+                                  size: 32,
+                                  message: 'Yükleniyor...',
+                                ),
+                              ),
+                            )
                           else
                             Container(
                               padding: const EdgeInsets.all(8),

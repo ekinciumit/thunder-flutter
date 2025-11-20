@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../models/event_model.dart';
 import 'private_chat_page.dart';
+import 'widgets/modern_loading_widget.dart';
 
 class UserProfilePage extends StatefulWidget {
   final UserModel user;
@@ -147,7 +148,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               stream: _userEventsStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(child: ModernLoadingWidget(message: 'Yükleniyor...'));
                 }
                 final events = snapshot.data ?? [];
                 if (events.isEmpty) {

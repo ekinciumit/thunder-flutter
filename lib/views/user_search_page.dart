@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'user_profile_page.dart';
+import 'widgets/modern_loading_widget.dart';
 import 'package:flutter/cupertino.dart';
 
 class UserSearchPage extends StatefulWidget {
@@ -128,7 +129,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
               stream: _userStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CupertinoActivityIndicator(radius: 18));
+                  return Center(child: ModernLoadingWidget(message: 'Aranıyor...'));
                 }
                 final users = snapshot.data ?? [];
                 final filtered = users.where((user) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/audio_service.dart';
+import 'modern_loading_widget.dart';
 
 class VoiceMessageWidget extends StatefulWidget {
   final String audioUrl;
@@ -143,7 +144,7 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
                             child: SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: ModernLoadingWidget(size: 16, showMessage: false),
                             ),
                           )
                         : Icon(

@@ -14,6 +14,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'user_profile_page.dart';
 import '../models/user_model.dart';
+import 'widgets/modern_loading_widget.dart';
 
 class EventDetailPage extends StatefulWidget {
   final EventModel event;
@@ -127,7 +128,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       color: Colors.deepPurple.withAlpha(10),
                     ),
                     child: isUploading
-                        ? const Center(child: CircularProgressIndicator())
+                        ? Center(child: ModernLoadingWidget(size: 32, message: 'Yükleniyor...', showMessage: false))
                         : (uploadedPhotoUrl != null && uploadedPhotoUrl!.isNotEmpty)
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
@@ -236,7 +237,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
           return AppGradientContainer(
             child: Scaffold(
               appBar: AppBar(title: Text(event.title)),
-              body: const Center(child: CircularProgressIndicator()),
+              body: Center(child: ModernLoadingWidget(message: 'Yükleniyor...')),
             ),
           );
         }
@@ -978,7 +979,7 @@ class _ParticipantChips extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const SizedBox(
               width: 32, height: 32,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: ModernLoadingWidget(size: 32, showMessage: false),
             );
           }
           if (snapshot.hasError) {

@@ -16,7 +16,7 @@ class FetchUserProfileUseCase {
 
   /// Kullanıcı profilini getir
   /// 
-  /// Returns: Either<Failure, UserModel?>
+  /// Returns: Either`<Failure, UserModel?>`
   /// - Left: Failure if fetch fails
   /// - Right: UserModel if found, null otherwise
   Future<Either<Failure, UserModel?>> call(String uid) async {
