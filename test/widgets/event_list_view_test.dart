@@ -9,7 +9,6 @@ import 'package:thunder/features/event/presentation/viewmodels/event_viewmodel.d
 import 'package:thunder/features/event/domain/repositories/event_repository.dart';
 import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
-import 'package:thunder/l10n/app_localizations.dart';
 
 import 'event_list_view_test.mocks.dart';
 
@@ -46,12 +45,11 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'),
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: MultiProvider(
             providers: [
               ChangeNotifierProvider<EventViewModel>.value(value: eventViewModel),
@@ -73,12 +71,11 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'),
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: MultiProvider(
             providers: [
               ChangeNotifierProvider<EventViewModel>.value(value: eventViewModel),
@@ -101,12 +98,11 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'),
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: MultiProvider(
             providers: [
               ChangeNotifierProvider<EventViewModel>.value(value: eventViewModel),
@@ -125,4 +121,5 @@ void main() {
     });
   });
 }
+
 

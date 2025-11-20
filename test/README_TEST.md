@@ -19,11 +19,24 @@
 
 ### 2. **Widget Testler** (UI)
 - ✅ `AuthPage` testleri (3 test)
+- ✅ `ChatListPage` testleri (3 test)
+- ✅ `EventListView` testleri (3 test)
+- ✅ `CompleteProfilePage` testleri (6 test)
+- ✅ `ProfileView` testleri (11 test)
+- ✅ `ReactionPicker` testleri (6 test)
+- ✅ `FilePickerWidget` testleri (6 test)
+- ✅ `AppCard` testleri (4 test)
+- ✅ `AppGradientContainer` testleri (4 test)
+- ✅ `ModernButton` testleri (7 test)
+- ✅ `CacheService` testleri (8 test)
+- ✅ `ModernLoadingWidget` testleri (7 test)
+- ✅ `MessageReactions` testleri (6 test)
+- ✅ `FileMessageWidget` testleri (10 test)
+- ✅ `LanguageSelector` testleri (6 test)
+- ✅ `VoiceMessageWidget` testleri (5 test)
+- ✅ `VoiceRecorderWidget` testleri (2 test)
 - ⏳ `HomePage` testleri
-- ⏳ `ChatListPage` testleri
-- ⏳ `EventListView` testleri
 - ⏳ `PrivateChatPage` testleri
-- ⏳ `ProfileView` testleri
 
 ### 3. **Integration Testler** (End-to-end)
 - ⏳ Authentication flow testleri
@@ -45,8 +58,10 @@ flutter test test/features/auth/domain/usecases/sign_in_usecase_test.dart
 ### Test coverage raporu:
 ```bash
 flutter test --coverage
-genhtml coverage/lcov.info -o coverage/html
 ```
+Coverage HTML raporunu görüntülemek için:
+1. `coverage/coverage_viewer.html` dosyasını tarayıcıda açın
+2. Dosya aynı klasördeki `lcov.info` dosyasını otomatik olarak yükler ve gösterir
 
 ### Integration testleri:
 ```bash
@@ -305,25 +320,38 @@ test/
 
 ## 📈 Test Metrikleri (Güncel)
 
-- **Toplam Test**: 449
-- **Geçen Test**: 449
+- **Toplam Test**: 537
+- **Geçen Test**: 537
 - **Başarısız Test**: 0
-- **Test Süresi**: ~17 saniye
-- **Başarı Oranı**: %100
-- **Coverage**: %35.7 (hedef: %40+)
+- **Test Süresi**: ~35 saniye
+- **Başarı Oranı**: %100 ✅
+- **Coverage**: ~%38.5+ (hedef: %40+)
 
 ### Test Dağılımı
-- **Unit Tests**: 390 test ✅
+- **Unit Tests**: 440 test ✅
   - Use Cases: 163 test
   - Repositories: 61 test
   - ViewModels: 66 test
   - Data Sources: 94 test
   - Models: 59 test
   
-- **Widget Tests**: 9 test ⏳
+- **Widget Tests**: 99 test ⏳
   - AuthPage: 3 test
   - EventListView: 3 test
   - ChatListPage: 3 test
+  - CompleteProfilePage: 6 test
+  - ProfileView: 11 test
+  - ReactionPicker: 6 test
+  - FilePickerWidget: 6 test
+  - AppCard: 4 test
+  - AppGradientContainer: 4 test
+  - ModernButton: 7 test
+  - ModernLoadingWidget: 7 test
+  - MessageReactions: 6 test
+  - FileMessageWidget: 10 test
+  - LanguageSelector: 6 test
+  - VoiceMessageWidget: 5 test
+  - VoiceRecorderWidget: 2 test
   
 - **Integration Tests**: 0 test ❌
 

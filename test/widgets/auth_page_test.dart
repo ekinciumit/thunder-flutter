@@ -7,7 +7,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:thunder/views/auth_page.dart';
 import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
-import 'package:thunder/l10n/app_localizations.dart';
 
 import 'auth_page_test.mocks.dart';
 
@@ -26,12 +25,11 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'), // Türkçe locale ayarla
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: ChangeNotifierProvider<AuthViewModel>.value(
             value: authViewModel,
             child: const AuthPage(),
@@ -47,11 +45,11 @@ void main() {
       // bu yüzden byWidgetPredicate kullanarak kontrol ediyoruz
       final emailField = find.byWidgetPredicate(
         (widget) => widget is TextField && 
-                    (widget.decoration as InputDecoration?)?.labelText == 'E-posta',
+                    widget.decoration?.labelText == 'E-posta',
       );
       final passwordField = find.byWidgetPredicate(
         (widget) => widget is TextField && 
-                    (widget.decoration as InputDecoration?)?.labelText == 'Şifre',
+                    widget.decoration?.labelText == 'Şifre',
       );
       expect(emailField, findsOneWidget);
       expect(passwordField, findsOneWidget);
@@ -69,12 +67,11 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'), // Türkçe locale ayarla
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: ChangeNotifierProvider<AuthViewModel>.value(
             value: authViewModel,
             child: const AuthPage(),
@@ -99,12 +96,11 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'), // Türkçe locale ayarla
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: ChangeNotifierProvider<AuthViewModel>.value(
             value: authViewModel,
             child: const AuthPage(),

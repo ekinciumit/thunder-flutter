@@ -11,8 +11,6 @@ import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
 import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
 import 'package:thunder/models/user_model.dart';
-import 'package:thunder/models/chat_model.dart';
-import 'package:thunder/l10n/app_localizations.dart';
 
 import 'chat_list_page_test.mocks.dart';
 
@@ -46,12 +44,11 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'),
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: MultiProvider(
             providers: [
               ChangeNotifierProvider<ChatViewModel>.value(value: chatViewModel),
@@ -84,12 +81,11 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'),
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: MultiProvider(
             providers: [
               ChangeNotifierProvider<ChatViewModel>.value(value: chatViewModel),
@@ -122,12 +118,11 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'),
           localizationsDelegates: const [
-            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: MultiProvider(
             providers: [
               ChangeNotifierProvider<ChatViewModel>.value(value: chatViewModel),

@@ -3,7 +3,6 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:thunder/features/event/data/datasources/event_remote_data_source.dart';
 import 'package:thunder/models/event_model.dart';
-import 'package:thunder/core/errors/exceptions.dart';
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
@@ -33,7 +32,6 @@ void main() {
         await dataSource.addEvent(testEvent);
 
         // Assert
-        final doc = await fakeFirestore.collection('events').doc(testEvent.id).get();
         // Event is added with .add(), so we need to check if it exists in the collection
         final snapshot = await fakeFirestore.collection('events').get();
         expect(snapshot.docs, isNotEmpty);
@@ -77,7 +75,7 @@ void main() {
       test('should return events stream', () async {
         // Arrange
         final eventData = testEvent.toMap();
-        final docRef = await fakeFirestore.collection('events').add(eventData);
+        await fakeFirestore.collection('events').add(eventData);
 
         // Act
         final stream = dataSource.getEventsStream();

@@ -177,12 +177,16 @@ class FileMessageWidget extends StatelessWidget {
                   
                   // File size and extension
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        _formatFileSize(fileSize),
-                        style: TextStyle(
-                          color: isMe ? Colors.white70 : Colors.grey[600],
-                          fontSize: 12,
+                      Flexible(
+                        child: Text(
+                          _formatFileSize(fileSize),
+                          style: TextStyle(
+                            color: isMe ? Colors.white70 : Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (fileExtension != null) ...[

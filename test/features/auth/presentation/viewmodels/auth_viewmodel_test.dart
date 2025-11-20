@@ -190,7 +190,8 @@ void main() {
 
       test('should complete profile successfully', () async {
         // Arrange
-        final updatedUser = testUser.copyWith(
+        // Test user profile completion - user bilgilerini güncelliyoruz
+        testUser.copyWith(
           displayName: 'Test User',
           bio: 'Test bio',
         );

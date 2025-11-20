@@ -145,11 +145,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
               Container(
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
@@ -353,6 +354,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),
