@@ -18,15 +18,15 @@ class AppColorConfig {
 
   /// Primary Color (Ana Renk)
   /// Butonlar, vurgular, navigation için kullanılır
-  static const Color primaryColor = Color(0xFF8CE4FF); // Sky Blue
+  static const Color primaryColor = Color(0xFF3674B5); // Medium Dark Blue
 
   /// Secondary Color (İkincil Renk)
   /// İkincil butonlar, aksanlar için kullanılır
-  static const Color secondaryColor = Color(0xFFFEEE91); // Pale Yellow
+  static const Color secondaryColor = Color(0xFF578FCA); // Lighter Blue
 
   /// Tertiary Color (Üçüncül Renk)
   /// Üçüncül vurgular, bilgi mesajları için kullanılır
-  static const Color tertiaryColor = Color(0xFFFFA239); // Orange
+  static const Color tertiaryColor = Color(0xFFA1E3F9); // Light Sky Blue
 
   // ============================================================================
   // 🌈 GRADIENT RENKLER - Buradan değiştirebilirsiniz
@@ -35,24 +35,24 @@ class AppColorConfig {
   /// Primary Gradient (Ana Gradient)
   /// Ana sayfa arka planları, büyük card'lar için
   static const List<Color> gradientPrimary = [
-    Color(0xFF8CE4FF), // Sky Blue
-    Color(0xFFFEEE91), // Pale Yellow
-    Color(0xFFFFA239), // Orange
-    Color(0xFFFF5656), // Coral/Reddish Orange
+    Color(0xFF3674B5), // Medium Dark Blue
+    Color(0xFF578FCA), // Lighter Blue
+    Color(0xFFA1E3F9), // Light Sky Blue
+    Color(0xFFD1F8EF), // Very Pale Mint Green
   ];
 
   /// Primary Light Gradient (Açık Ana Gradient)
   /// Hafif arka planlar, input alanları için
   static const List<Color> gradientPrimaryLight = [
-    Color(0xFF8CE4FF), // Sky Blue
-    Color(0xFFFEEE91), // Pale Yellow
+    Color(0xFF578FCA), // Lighter Blue
+    Color(0xFFA1E3F9), // Light Sky Blue
   ];
 
   /// Secondary Gradient (İkincil Gradient)
   /// Butonlar, vurgular, navigation için
   static const List<Color> gradientSecondary = [
-    Color(0xFFFFA239), // Orange
-    Color(0xFFFF5656), // Coral/Reddish Orange
+    Color(0xFF3674B5), // Medium Dark Blue
+    Color(0xFF578FCA), // Lighter Blue
   ];
 
   // ============================================================================
