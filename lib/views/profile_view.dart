@@ -14,6 +14,7 @@ import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
@@ -318,248 +319,339 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     }
 
     return AppGradientContainer(
-      child: Center(
-        child: RefreshIndicator(
-          onRefresh: () => _refreshUser(authViewModel),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: AppCard(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-                padding: const EdgeInsets.all(24),
-                borderRadius: 32,
-                gradientColors: [
-                  Colors.black.withAlpha(AppTheme.alphaMediumLight),
-                  Colors.black.withAlpha(AppTheme.alphaVeryLight),
-                ],
-                boxShadow: const [], // Gölgeyi kaldır veya özelleştir
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center, // Her şeyi ortala
-                  children: [
-                    GestureDetector(
-                      onTap: isUploading ? null : () => _showPhotoDialog(user.photoUrl, authViewModel),
-                      child: Stack(
-                        alignment: Alignment.bottomRight,
-                        children: [
-                          CircleAvatar(
-                            radius: 64,
-                            backgroundColor: Colors.white.withAlpha(AppTheme.alphaVeryLight),
-                            child: user.photoUrl != null && user.photoUrl!.isNotEmpty
-                                ? ClipOval(
-                                    child: CachedNetworkImage(
-                                      imageUrl: user.photoUrl!,
-                                      width: 128,
-                                      height: 128,
-                                      fit: BoxFit.cover,
-                                      memCacheWidth: 200,
-                                      memCacheHeight: 200,
-                                      maxWidthDiskCache: 400,
-                                      maxHeightDiskCache: 400,
-                                      placeholder: (context, url) => Container(
-                                        width: 128,
-                                        height: 128,
-                                        color: Colors.grey[300],
-                                        child: const Center(child: CircularProgressIndicator()),
-                                      ),
-                                      errorWidget: (context, url, error) => const Icon(Icons.person, size: 64, color: Colors.white70),
-                                    ),
-                                  )
-                                : const Icon(Icons.person, size: 64, color: Colors.white70),
-                          ),
-                          if (isUploading)
-                            const Positioned.fill(
-                              child: Center(
-                                child: ModernLoadingWidget(
-                                  size: 32,
-                                  message: 'Yükleniyor...',
-                                ),
-                              ),
-                            )
-                          else
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(colors: AppTheme.gradientSecondary),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    if (isEditing)
-                      _buildEditableTextField(nameController, 'İsim')
-                    else
-                      Text(
-                        user.displayName ?? 'İsim belirtilmemiş',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [const Shadow(blurRadius: 2, color: Colors.black54, offset: Offset(1, 1))],
-                        ),
-                      ),
-                    const SizedBox(height: 8),
-                    if (isEditing)
-                      _buildEditableTextField(bioController, 'Biyografi', maxLines: 3)
-                    else
-                      Text(
-                        user.bio ?? 'Biyografi yok',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(AppTheme.alphaVeryLight),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
-                        border: Border.all(color: Colors.white.withAlpha(AppTheme.alphaMediumLight)),
-                      ),
-                      child: Text(
-                        user.email,
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(AppTheme.alphaAlmostOpaque),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _buildFollowerStats(user, theme),
-                    const SizedBox(height: 24),
-                    _buildGradientButton(
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSearchPage()));
-                      },
-                      label: 'Kullanıcı Ara',
-                      icon: Icons.person_search,
-                      gradientColors: AppTheme.gradientSecondary,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildGradientButton(
-                      onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MyEventsPage()));
-                      },
-                      label: 'Etkinliklerim',
-                      icon: Icons.event_note_rounded,
-                      gradientColors: AppTheme.gradientSecondary,
-                    ),
-                    const SizedBox(height: 16),
-                    // Seed/test verisi butonu kaldırıldı
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildGradientButton(
-                          onPressed: () async {
-                            if (isEditing) {
-                              await authViewModel.completeProfile(
-                                displayName: nameController.text.trim(),
-                                bio: bioController.text.trim(),
-                                photoUrl: user.photoUrl,
-                              );
-                              await _refreshUser(authViewModel);
-                            }
-                            setState(() => isEditing = !isEditing);
-                          },
-                          label: isEditing ? 'Kaydet' : 'Düzenle',
-                          icon: isEditing ? Icons.save : Icons.edit,
-                          gradientColors: isEditing
-                              ? AppTheme.gradientSuccess
-                              : AppTheme.gradientSecondary,
-                        ),
-                        const SizedBox(width: 16),
-                        _buildGradientButton(
-                          onPressed: () async => await authViewModel.signOut(),
-                          label: 'Çıkış Yap',
-                          icon: Icons.logout,
-                          gradientColors: [Colors.red.shade600, Colors.pink.shade400],
-                        ),
+      child: RefreshIndicator(
+        onRefresh: () => _refreshUser(authViewModel),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+          child: Column(
+            children: [
+              const SizedBox(height: AppTheme.spacingXl),
+              // Profile Header Card
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.surface,
+                        theme.colorScheme.surfaceContainerHighest,
                       ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                  ),
+                  padding: const EdgeInsets.all(AppTheme.spacingXl),
+                  child: Column(
+                    children: [
+                      // Profile Photo
+                      GestureDetector(
+                        onTap: isUploading ? null : () => _showPhotoDialog(user.photoUrl, authViewModel),
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaMedium),
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  AppTheme.shadowMedium(
+                                    color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaMedium),
+                                  ),
+                                ],
+                              ),
+                              child: user.photoUrl != null && user.photoUrl!.isNotEmpty
+                                  ? ClipOval(
+                                      child: CachedNetworkImage(
+                                        imageUrl: user.photoUrl!,
+                                        fit: BoxFit.cover,
+                                        memCacheWidth: 200,
+                                        memCacheHeight: 200,
+                                        placeholder: (context, url) => Container(
+                                          color: theme.colorScheme.surfaceContainerHighest,
+                                          child: const Center(child: CircularProgressIndicator()),
+                                        ),
+                                        errorWidget: (context, url, error) => Container(
+                                          color: theme.colorScheme.surfaceContainerHighest,
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 60,
+                                            color: AppColorConfig.primaryColor,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Container(
+                                      color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
+                                      child: Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: AppColorConfig.primaryColor,
+                                      ),
+                                    ),
+                            ),
+                            if (isUploading)
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withAlpha(AppTheme.alphaMedium),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: AppTheme.gradientSecondary,
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    AppTheme.shadowSoft(
+                                      color: AppColorConfig.tertiaryColor.withAlpha(AppTheme.alphaMedium),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacingLg),
+                      // Name
+                      if (isEditing)
+                        _buildEditableTextField(nameController, 'İsim')
+                      else
+                        Text(
+                          user.displayName ?? 'İsim belirtilmemiş',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      const SizedBox(height: AppTheme.spacingXs),
+                      // Bio
+                      if (isEditing)
+                        _buildEditableTextField(bioController, 'Biyografi', maxLines: 3)
+                      else
+                        Text(
+                          user.bio ?? 'Biyografi yok',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      const SizedBox(height: AppTheme.spacingMd),
+                      // Email
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppTheme.spacingMd,
+                          vertical: AppTheme.spacingSm,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                          border: Border.all(
+                            color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaMedium),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.email_outlined,
+                              size: 16,
+                              color: AppColorConfig.primaryColor,
+                            ),
+                            const SizedBox(width: AppTheme.spacingXs),
+                            Text(
+                              user.email,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColorConfig.primaryColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: AppTheme.spacingMd),
+              // Stats Card
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingLg),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withAlpha(AppTheme.alphaVeryLight),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatColumn('Takipçi', user.followers.length, theme),
+                      Container(
+                        width: 1,
+                        height: 40,
+                        color: theme.colorScheme.outline.withAlpha(AppTheme.alphaVeryLight),
+                      ),
+                      _buildStatColumn('Takip', user.following.length, theme),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingMd),
+              // Action Buttons
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const UserSearchPage()),
+                  );
+                },
+                icon: const Icon(Icons.person_search),
+                label: const Text('Kullanıcı Ara'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColorConfig.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingXl,
+                    vertical: AppTheme.spacingMd,
+                  ),
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingMd),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const MyEventsPage()),
+                  );
+                },
+                icon: const Icon(Icons.event_note_rounded),
+                label: const Text('Etkinliklerim'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColorConfig.secondaryColor,
+                  foregroundColor: theme.colorScheme.onSecondary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingXl,
+                    vertical: AppTheme.spacingMd,
+                  ),
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingMd),
+              // Edit and Logout Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        if (isEditing) {
+                          await authViewModel.completeProfile(
+                            displayName: nameController.text.trim(),
+                            bio: bioController.text.trim(),
+                            photoUrl: user.photoUrl,
+                          );
+                          await _refreshUser(authViewModel);
+                          if (mounted) {
+                            ModernSnackbar.showSuccess(
+                              context,
+                              'Profil başarıyla güncellendi!',
+                            );
+                          }
+                        }
+                        setState(() => isEditing = !isEditing);
+                      },
+                      icon: Icon(isEditing ? Icons.save : Icons.edit),
+                      label: Text(isEditing ? 'Kaydet' : 'Düzenle'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: isEditing
+                            ? AppColorConfig.successColor
+                            : AppColorConfig.tertiaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppTheme.spacingMd,
+                          vertical: AppTheme.spacingMd,
+                        ),
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spacingMd),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () async => await authViewModel.signOut(),
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Çıkış Yap'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColorConfig.errorColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppTheme.spacingMd,
+                          vertical: AppTheme.spacingMd,
+                        ),
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.spacingXl),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildGradientButton({
-    required VoidCallback onPressed,
-    required String label,
-    required IconData icon,
-    required List<Color> gradientColors,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradientColors),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: gradientColors.first.withAlpha((0.4 * 255).toInt()),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: FilledButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 20),
-        label: Text(label),
-        style: FilledButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 14,
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildFollowerStats(UserModel user, ThemeData theme) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      borderRadius: 20,
-      gradientColors: [ // 'color' yerine 'gradientColors' kullan
-        Colors.white.withAlpha(AppTheme.alphaLight),
-        Colors.white.withAlpha(AppTheme.alphaVeryLight),
-      ],
-      boxShadow: const [], // Gölgeyi kaldır veya özelleştir
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatColumn('Takipçi', user.followers.length, theme),
-          Container(width: 1, height: 30, color: Colors.white.withAlpha(AppTheme.alphaMediumLight)),
-          _buildStatColumn('Takip', user.following.length, theme),
-        ],
-      ),
-    );
-  }
-
-  Column _buildStatColumn(String label, int count, ThemeData theme) {
+  Widget _buildStatColumn(String label, int count, ThemeData theme) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           '$count',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold, 
-            color: theme.colorScheme.onSurface,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColorConfig.primaryColor,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppTheme.spacingXs),
         Text(
           label,
           style: theme.textTheme.bodyMedium?.copyWith(

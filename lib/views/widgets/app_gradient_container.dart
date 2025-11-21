@@ -30,16 +30,22 @@ class AppGradientContainer extends StatelessWidget {
       theme.colorScheme.tertiary.withValues(alpha: 0.03),
     ];
 
+    final colors = gradientColors ?? defaultGradient;
+    final stops = List.generate(
+      colors.length,
+      (index) => index / (colors.length - 1),
+    );
+
     if (enableAnimatedGradient) {
       return AnimatedContainer(
         duration: animationDuration,
         padding: padding,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: gradientColors ?? defaultGradient,
+            colors: colors,
             begin: begin,
             end: end,
-            stops: const [0.0, 0.5, 1.0],
+            stops: stops,
           ),
         ),
         child: child,
@@ -50,10 +56,10 @@ class AppGradientContainer extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: gradientColors ?? defaultGradient,
+          colors: colors,
           begin: begin,
           end: end,
-          stops: const [0.0, 0.5, 1.0],
+          stops: stops,
         ),
       ),
       child: child,
