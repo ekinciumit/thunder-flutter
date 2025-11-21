@@ -47,6 +47,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Center(

@@ -165,7 +165,9 @@ class _HomePageState extends State<HomePage> {
         child: _pages[_selectedIndex],
       ),
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.all(AppTheme.spacingLg),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom,
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusXxl),

@@ -319,14 +319,25 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     }
 
     return AppGradientContainer(
-      child: RefreshIndicator(
-        onRefresh: () => _refreshUser(authViewModel),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
-          child: Column(
-            children: [
-              const SizedBox(height: AppTheme.spacingXl),
+      gradientColors: AppTheme.gradientPrimary,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: RefreshIndicator(
+            onRefresh: () => _refreshUser(authViewModel),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                AppTheme.spacingMd,
+                MediaQuery.of(context).padding.top + AppTheme.spacingMd,
+                AppTheme.spacingMd,
+                AppTheme.spacingXl + MediaQuery.of(context).padding.bottom,
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: AppTheme.spacingMd),
               // Profile Header Card
               Card(
                 elevation: 0,
@@ -556,8 +567,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                 icon: const Icon(Icons.event_note_rounded),
                 label: const Text('Etkinliklerim'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColorConfig.secondaryColor,
-                  foregroundColor: theme.colorScheme.onSecondary,
+                  backgroundColor: AppColorConfig.tertiaryColor,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppTheme.spacingXl,
                     vertical: AppTheme.spacingMd,
@@ -631,8 +642,10 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                   ),
                 ],
               ),
-              const SizedBox(height: AppTheme.spacingXl),
-            ],
+                  const SizedBox(height: AppTheme.spacingXl),
+                ],
+              ),
+            ),
           ),
         ),
       ),

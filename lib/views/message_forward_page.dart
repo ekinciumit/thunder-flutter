@@ -6,6 +6,7 @@ import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
+import '../core/theme/app_theme.dart';
 
 class MessageForwardPage extends StatefulWidget {
   final MessageModel message;
@@ -218,6 +219,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
     }
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(

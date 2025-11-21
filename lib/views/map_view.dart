@@ -192,6 +192,7 @@ class _MapViewState extends State<MapView> {
         : const CameraPosition(target: LatLng(39.925533, 32.866287), zoom: 6); // Ankara default
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: !iconsLoaded

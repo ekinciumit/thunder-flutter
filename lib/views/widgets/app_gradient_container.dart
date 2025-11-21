@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_color_config.dart';
+import '../../core/theme/app_theme.dart';
 
 class AppGradientContainer extends StatelessWidget {
   final Widget child;
@@ -24,11 +26,11 @@ class AppGradientContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    final defaultGradient = [
-      theme.colorScheme.primary.withValues(alpha: 0.1),
-      theme.colorScheme.secondary.withValues(alpha: 0.05),
-      theme.colorScheme.tertiary.withValues(alpha: 0.03),
-    ];
+    // AppColorConfig renklerini kullanarak daha canlı gradient
+    // Gündüz modu için daha belirgin ama yine de yumuşak gradient
+    final defaultGradient = gradientColors ?? AppColorConfig.gradientPrimaryLight.map((color) => 
+      color.withAlpha(AppTheme.alphaMediumLight)
+    ).toList();
 
     final colors = gradientColors ?? defaultGradient;
     final stops = List.generate(

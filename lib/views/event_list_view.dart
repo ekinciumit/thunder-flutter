@@ -178,6 +178,7 @@ class _EventListViewState extends State<EventListView> {
     }
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: null,

@@ -187,6 +187,7 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
   @override
   Widget build(BuildContext context) {
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(

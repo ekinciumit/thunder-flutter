@@ -220,6 +220,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return AppGradientContainer(
+            gradientColors: AppTheme.gradientPrimary,
             child: Scaffold(
               appBar: AppBar(title: Text(event.title)),
               body: Center(child: ModernLoadingWidget(message: 'Yükleniyor...')),
@@ -237,6 +238,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         final hasPendingRequest = currentEvent.pendingRequests.contains(userId);
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(

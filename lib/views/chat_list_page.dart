@@ -83,6 +83,7 @@ class _ChatListPageState extends State<ChatListPage> {
     }
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
