@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'event_list_view.dart';
@@ -35,6 +36,28 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _setupNotificationRouting();
     _loadUnreadCount();
+    // Tam ekran için system UI'ı ayarla
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.edgeToEdge,
+    );
+    // Status bar'ı şeffaf yap
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    // System UI ayarlarını sıfırla (opsiyonel)
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
+    super.dispose();
   }
 
   void _setupNotificationRouting() {
@@ -134,13 +157,12 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: null, // Başlık kaldırıldı
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.primary,
+      extendBodyBehindAppBar: true,
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: _pages[_selectedIndex],
       ),
-      body: _pages[_selectedIndex],
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(

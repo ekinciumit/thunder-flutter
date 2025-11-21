@@ -131,7 +131,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                     keyboardType: TextInputType.visiblePassword,
                     textInputAction: isLogin ? TextInputAction.done : TextInputAction.next,
                     obscureText: true,
-                    validator: FormValidators.password,
+                    validator: isLogin 
+                        ? (value) => FormValidators.required(value, fieldName: 'Şifre')
+                        : FormValidators.password,
                     onFieldSubmitted: (_) {
                       if (_formKey.currentState!.validate()) {
                         _handleSubmit(authViewModel);
