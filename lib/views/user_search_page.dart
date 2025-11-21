@@ -5,7 +5,8 @@ import '../models/user_model.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'user_profile_page.dart';
 import 'widgets/modern_loading_widget.dart';
-import 'package:flutter/cupertino.dart';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_theme.dart';
 
 class UserSearchPage extends StatefulWidget {
   const UserSearchPage({super.key});
@@ -35,10 +36,30 @@ class _UserSearchPageState extends State<UserSearchPage> {
     final currentUserId = Provider.of<AuthViewModel>(context, listen: false).user?.uid ?? '';
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Kullanıcı Ara')),
-      body: Column(
-        children: [
-          Container(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                  color: theme.colorScheme.onSurface,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withAlpha(AppTheme.alphaLight),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Column(
+                children: [
+                  Container(
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -63,60 +84,44 @@ class _UserSearchPageState extends State<UserSearchPage> {
                 ),
               ],
             ),
-            child: TextField(
+            child: ModernInputField(
               controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Kullanıcı ara (isim, e-posta)',
-                hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                prefixIcon: Container(
-                  margin: const EdgeInsets.all(8),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
+              hint: 'Kullanıcı ara (isim, e-posta)',
+              prefixIcon: Container(
+                margin: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
                   ),
-                  child: Icon(
-                    Icons.search,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? Container(
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [theme.colorScheme.error, theme.colorScheme.errorContainer],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.white, size: 20),
-                          onPressed: () {
-                            setState(() {
-                              _searchQuery = '';
-                              _searchController.clear();
-                            });
-                          },
-                        ),
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+                child: Icon(
+                  Icons.search,
+                  color: Colors.white,
+                  size: 20,
                 ),
-                filled: true,
-                fillColor: Colors.transparent,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               ),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.textTheme.bodyMedium?.color,
-                fontWeight: FontWeight.w500,
-              ),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? Container(
+                      margin: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [theme.colorScheme.error, theme.colorScheme.errorContainer],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _searchQuery = '';
+                            _searchController.clear();
+                          });
+                        },
+                      ),
+                    )
+                  : null,
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
@@ -138,71 +143,10 @@ class _UserSearchPageState extends State<UserSearchPage> {
                          (user.email).toLowerCase().contains(query);
                 }).toList();
                 if (filtered.isEmpty) {
-                  return Container(
-                    margin: const EdgeInsets.all(32),
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.deepPurple.withAlpha((0.15 * 255).toInt()),
-                          Colors.blue.withAlpha((0.1 * 255).toInt()),
-                          Colors.amber.withAlpha((0.08 * 255).toInt()),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Colors.deepPurple.withAlpha((0.3 * 255).toInt()),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.deepPurple.withAlpha((0.2 * 255).toInt()),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.deepPurple.withAlpha(30),
-                                Colors.blue.withAlpha(20),
-                              ],
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.person_search,
-                            size: 64,
-                            color: Colors.deepPurple.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Kriterlere uygun kullanıcı bulunamadı.',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: Colors.deepPurple.shade700,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Farklı arama terimleri deneyin.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color?.withAlpha(160),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+                  return EmptyStateWidget(
+                    icon: Icons.person_search,
+                    title: 'Kriterlere uygun kullanıcı bulunamadı',
+                    message: 'Farklı arama terimleri deneyin',
                   );
                 }
                 return ListView.separated(
@@ -314,9 +258,13 @@ class _UserSearchPageState extends State<UserSearchPage> {
                   },
                 );
               },
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

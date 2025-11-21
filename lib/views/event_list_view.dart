@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
@@ -12,6 +11,8 @@ import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
+import '../core/widgets/modern_components.dart';
 
 class EventListView extends StatefulWidget {
   const EventListView({super.key});
@@ -184,21 +185,21 @@ class _EventListViewState extends State<EventListView> {
           children: [
             Padding(
               padding: EdgeInsets.fromLTRB(
-                16, 
-                MediaQuery.of(context).padding.top + 16, 
-                16, 
-                8
+                AppTheme.spacingLg, 
+                MediaQuery.of(context).padding.top + AppTheme.spacingLg, 
+                AppTheme.spacingLg, 
+                AppTheme.spacingSm
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(32),
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withAlpha(20),
+                            color: theme.colorScheme.primary.withAlpha(AppTheme.alphaLight),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -209,12 +210,20 @@ class _EventListViewState extends State<EventListView> {
                         decoration: InputDecoration(
                           hintText: 'Etkinlik ara (başlık, açıklama, adres)',
                           hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.primary.withAlpha(120),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary, size: 20),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: theme.colorScheme.primary,
+                            size: 20,
+                          ),
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear, color: Colors.red, size: 20),
+                                  icon: Icon(
+                                    Icons.clear_rounded,
+                                    color: theme.colorScheme.error,
+                                    size: 20,
+                                  ),
                                   onPressed: () {
                                     setState(() {
                                       _searchQuery = '';
@@ -224,10 +233,12 @@ class _EventListViewState extends State<EventListView> {
                                 )
                               : null,
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingXl,
+                            vertical: AppTheme.spacingLg,
+                          ),
                         ),
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.textTheme.bodyMedium?.color,
                           fontWeight: FontWeight.w500,
                         ),
                         onChanged: (value) {
@@ -238,23 +249,17 @@ class _EventListViewState extends State<EventListView> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.filter_alt_rounded, color: Colors.white),
-                      tooltip: 'Filtrele',
-                      onPressed: () async {
-                        await showModalBottomSheet(
+                  const SizedBox(width: AppTheme.spacingSm),
+                  FilledButton(
+                    onPressed: () async {
+                      await showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                          backgroundColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(AppTheme.radiusRound),
+                            ),
                           ),
                           builder: (context) {
                             String tempSelectedCategory = selectedCategory;
@@ -262,18 +267,25 @@ class _EventListViewState extends State<EventListView> {
                             DateTime? tempEndDate = endDate;
                             double tempSelectedDistance = selectedDistance;
                             bool tempIsDistanceFilterEnabled = isDistanceFilterEnabled;
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                left: 24,
-                                right: 24,
-                                top: 24,
-                                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface,
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(AppTheme.radiusRound),
+                                ),
                               ),
-                              child: StatefulBuilder(
-                                builder: (context, setModalState) => Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  left: AppTheme.spacingXxl,
+                                  right: AppTheme.spacingXxl,
+                                  top: AppTheme.spacingXxl,
+                                  bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingXxl,
+                                ),
+                                child: StatefulBuilder(
+                                  builder: (context, setModalState) => Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
                                     Text('Filtreler', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                                     const SizedBox(height: 20),
                                     DropdownButtonFormField<String>(
@@ -420,12 +432,9 @@ class _EventListViewState extends State<EventListView> {
                                               Navigator.of(context).pop();
                                             }
                                             if (context.mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: const Text('Konum alındı! En yakın etkinlikler gösteriliyor.'),
-                                                  backgroundColor: Colors.green,
-                                                  duration: const Duration(seconds: 2),
-                                                ),
+                                              ModernSnackbar.showSuccess(
+                                                context,
+                                                'Konum alındı! En yakın etkinlikler gösteriliyor.',
                                               );
                                             }
                                           } else {
@@ -433,8 +442,16 @@ class _EventListViewState extends State<EventListView> {
                                             final action = await showDialog<String>(
                                               context: context,
                                               builder: (context) => AlertDialog(
-                                                title: const Text('Konum İzni/Ayarı'),
-                                                content: Text(locationHint ?? 'Konum alınamadı. Lütfen ayarları kontrol edin.'),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                                                ),
+                                                title: const Text(
+                                                  'Konum İzni/Ayarı',
+                                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                                ),
+                                                content: Text(
+                                                  locationHint ?? 'Konum alınamadı. Lütfen ayarları kontrol edin.',
+                                                ),
                                                 actions: [
                                                   TextButton(
                                                     onPressed: () => Navigator.pop(context, 'loc'),
@@ -457,7 +474,6 @@ class _EventListViewState extends State<EventListView> {
                                             } else if (action == 'app') {
                                               await Geolocator.openAppSettings();
                                             }
-                                            // Ayarlar açıldıktan sonra modal'ı kapatma - kullanıcı manuel kapatabilir
                                           }
                                         },
                                         icon: Icon(
@@ -535,87 +551,116 @@ class _EventListViewState extends State<EventListView> {
                                   ],
                                 ),
                               ),
-                            );
-                          },
-                        );
-                      },
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.all(AppTheme.spacingMd),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                      ),
                     ),
+                    child: const Icon(Icons.filter_alt_rounded),
                   ),
                 ],
               ),
             ),
             if (locationHint != null && userPosition == null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppTheme.spacingMd),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withAlpha(AppTheme.alphaLight),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withAlpha(AppTheme.alphaMediumDark)),
+                    color: AppColorConfig.warningColor.withAlpha(AppTheme.alphaLight),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(
+                      color: AppColorConfig.warningColor.withAlpha(AppTheme.alphaMediumDark),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info, color: Colors.amber),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(locationHint!, style: Theme.of(context).textTheme.bodySmall)),
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColorConfig.warningColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppTheme.spacingSm),
+                      Expanded(
+                        child: Text(
+                          locationHint!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColorConfig.warningColor,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTheme.spacingSm),
             Expanded(
               child: eventViewModel.isLoading
-                  ? Center(child: ModernLoadingWidget(message: 'Etkinlikler yükleniyor...'))
+                  ? Center(
+                      child: ModernLoadingWidget(message: 'Etkinlikler yükleniyor...'),
+                    )
                   : filteredEvents.isEmpty
-                      ? ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: 6,
-                          separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: 16),
-                          itemBuilder: (context, index) {
-                            return AppCard(
-                            borderRadius: 24,
-                              gradientColors: [Colors.grey.withAlpha(10), Colors.grey.withAlpha(6)],
-                              boxShadow: const [],
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(height: 160, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(16))),
-                                  const SizedBox(height: 12),
-                                  Container(height: 16, width: 180, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(8))),
-                                  const SizedBox(height: 8),
-                                  Container(height: 12, width: double.infinity, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8))),
-                                  const SizedBox(height: 6),
-                                  Container(height: 12, width: 220, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8))),
-                                  const SizedBox(height: 12),
-                                ],
-                            ),
-                            );
-                          },
+                      ? EmptyStateWidget(
+                          icon: Icons.event_busy,
+                          title: 'Etkinlik bulunamadı',
+                          message: _searchQuery.isNotEmpty
+                              ? 'Arama kriterlerinize uygun etkinlik bulunamadı.'
+                              : 'Henüz etkinlik bulunmuyor.',
+                          actionText: _searchQuery.isNotEmpty ? 'Filtreleri Temizle' : null,
+                          onAction: _searchQuery.isNotEmpty
+                              ? () {
+                                  setState(() {
+                                    _searchQuery = '';
+                                    _searchController.clear();
+                                    selectedCategory = 'Tümü';
+                                    startDate = null;
+                                    endDate = null;
+                                    isDistanceFilterEnabled = false;
+                                  });
+                                }
+                              : null,
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingMd,
+                            vertical: AppTheme.spacingSm,
+                          ),
                           itemCount: filteredEvents.length + 1,
-                          separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: 16),
+                          separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: AppTheme.spacingLg),
                           itemBuilder: (context, index) {
                             if (index == filteredEvents.length) {
-                              // Load more footer as a button
                               return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                                 child: Center(
                                   child: eventViewModel.canLoadMore
-                                      ? ElevatedButton.icon(
-                                          onPressed: eventViewModel.isLoadingMore ? null : () => eventViewModel.loadMore(),
+                                      ? FilledButton.icon(
+                                          onPressed: eventViewModel.isLoadingMore
+                                              ? null
+                                              : () => eventViewModel.loadMore(),
                                           icon: eventViewModel.isLoadingMore
                                               ? const SizedBox(
-                                                  width: 16, height: 16, 
-                                                  child: ModernLoadingWidget(size: 16, showMessage: false),
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2),
                                                 )
                                               : const Icon(Icons.expand_more),
-                                          label: Text(eventViewModel.isLoadingMore ? 'Yükleniyor...' : 'Daha fazla yükle'),
+                                          label: Text(
+                                            eventViewModel.isLoadingMore ? 'Yükleniyor...' : 'Daha fazla yükle',
+                                          ),
                                         )
-                                      : const Text('Hepsi bu kadar'),
+                                      : Text(
+                                          'Hepsi bu kadar',
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
                                 ),
                               );
                             }

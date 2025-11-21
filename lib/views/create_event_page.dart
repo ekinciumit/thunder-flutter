@@ -12,6 +12,8 @@ import '../core/validators/form_validators.dart';
 import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
+import '../core/widgets/modern_components.dart';
 import 'widgets/modern_loading_widget.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -113,26 +115,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   Future<void> _pickCoverPhoto() async {
     // Önce galeri veya kamera seçimi göster
-    final source = await showDialog<ImageSource>(
+    final source = await ModernDialog.showImageSource(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Fotoğraf Seç'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Galeri'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Kamera'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-          ],
-        ),
-      ),
+      title: 'Fotoğraf Seç',
     );
     
     if (source == null) return;
@@ -272,7 +257,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   },
                   child: const Text('İptal'),
                 ),
-                ElevatedButton(
+                FilledButton(
                   onPressed: () {
                     setState(() {
                       selectedLatLng = tempLatLng;
@@ -297,22 +282,25 @@ class _CreateEventPageState extends State<CreateEventPage> {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Etkinlik Oluştur')),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: AppTheme.gradientPrimary,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      body: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: AppTheme.gradientPrimary,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-        ),
-        child: SingleChildScrollView(
-          padding: ResponsiveHelper.getPadding(context),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: ResponsiveHelper.getPadding(context),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 56), // Geri butonu için boşluk
                 GestureDetector(
                   onTap: isUploading ? null : _pickCoverPhoto,
                   child: Container(
@@ -326,12 +314,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       ),
                       borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
                       border: Border.all(
-                        color: Colors.deepPurple.withAlpha(AppTheme.alphaDark),
+                        color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaDark),
                         width: 1.5,
                       ),
                       boxShadow: [
                         AppTheme.shadowMedium(
-                          color: Colors.deepPurple.withAlpha(AppTheme.alphaDark),
+                          color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaDark),
                         ),
                       ],
                       image: uploadedPhotoUrl != null
@@ -343,12 +331,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.add_a_photo, size: 48, color: Colors.deepPurple.shade600),
+                                Icon(Icons.add_a_photo, size: 48, color: AppColorConfig.primaryColor),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Kapak Fotoğrafı Ekle',
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.deepPurple.shade600,
+                                    color: AppColorConfig.primaryColor,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -378,7 +366,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       Text(
                         'Fotoğraf yükleniyor...',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.deepPurple.shade700,
+                          color: AppColorConfig.primaryColor,
                         ),
                       ),
                     ],
@@ -396,38 +384,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                     border: Border.all(color: Colors.deepPurple.withAlpha(AppTheme.alphaDark)),
                   ),
-                  child: TextFormField(
+                  child: ModernInputField(
                     controller: titleController,
+                    label: 'Başlık',
                     textInputAction: TextInputAction.next,
                     validator: FormValidators.title,
-                    decoration: InputDecoration(
-                      labelText: 'Başlık',
-                      labelStyle: TextStyle(color: Colors.deepPurple.shade700),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: Colors.deepPurple.withAlpha(AppTheme.alphaDark)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: Colors.deepPurple.shade600, width: 2),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: const BorderSide(color: Colors.red, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                      errorStyle: const TextStyle(color: Colors.red),
-                      prefixIcon: Icon(Icons.title, color: Colors.deepPurple.shade600),
-                    ),
+                    prefixIcon: Icon(Icons.title, color: AppColorConfig.primaryColor),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -442,39 +404,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                     border: Border.all(color: Colors.blue.withAlpha(AppTheme.alphaDark)),
                   ),
-                  child: TextFormField(
+                  child: ModernInputField(
                     controller: descController,
+                    label: 'Açıklama',
                     textInputAction: TextInputAction.next,
                     maxLines: 3,
                     validator: FormValidators.description,
-                    decoration: InputDecoration(
-                      labelText: 'Açıklama',
-                      labelStyle: TextStyle(color: Colors.blue.shade700),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: Colors.blue.withAlpha(AppTheme.alphaDark)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: const BorderSide(color: Colors.red, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                      errorStyle: const TextStyle(color: Colors.red),
-                      prefixIcon: Icon(Icons.description, color: Colors.blue.shade600),
-                    ),
+                    prefixIcon: Icon(Icons.description, color: Colors.blue.shade600),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -489,38 +425,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                     border: Border.all(color: Colors.amber.withAlpha(AppTheme.alphaDark)),
                   ),
-                  child: TextFormField(
+                  child: ModernInputField(
                     controller: addressController,
+                    label: 'Adres',
                     textInputAction: TextInputAction.next,
                     validator: FormValidators.address,
-                    decoration: InputDecoration(
-                      labelText: 'Adres',
-                      labelStyle: TextStyle(color: Colors.amber.shade700),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: Colors.amber.withAlpha(AppTheme.alphaDark)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: Colors.amber.shade600, width: 2),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: const BorderSide(color: Colors.red, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                      errorStyle: const TextStyle(color: Colors.red),
-                      prefixIcon: Icon(Icons.location_on, color: Colors.amber.shade600),
-                    ),
+                    prefixIcon: Icon(Icons.location_on, color: Colors.amber.shade600),
                   ),
                 ),
                 ResponsiveSizedBox.spacing(),
@@ -537,39 +447,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     ),
                     border: Border.all(color: Colors.green.withAlpha(AppTheme.alphaDark)),
                   ),
-                  child: TextFormField(
+                  child: ModernInputField(
                     controller: quotaController,
+                    label: 'Kota',
                     textInputAction: TextInputAction.next,
                     keyboardType: TextInputType.number,
                     validator: FormValidators.quota,
-                    decoration: InputDecoration(
-                      labelText: 'Kota',
-                      labelStyle: TextStyle(color: Colors.green.shade700),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: Colors.green.withAlpha(AppTheme.alphaDark)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: Colors.green.shade600, width: 2),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: const BorderSide(color: Colors.red, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                      errorStyle: const TextStyle(color: Colors.red),
-                      prefixIcon: Icon(Icons.people, color: Colors.green.shade600),
-                    ),
+                    prefixIcon: Icon(Icons.people, color: Colors.green.shade600),
                   ),
                 ),
                 ResponsiveSizedBox.spacing(),
@@ -579,7 +463,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     gradient: LinearGradient(
                       colors: [
                         Colors.purple.withAlpha(AppTheme.alphaLight),
-                        Colors.deepPurple.withAlpha(AppTheme.alphaVeryLight),
+                        AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(
@@ -637,15 +521,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 ),
                 ResponsiveSizedBox.spacing(),
                 // Konum seçme butonu ve seçili konumu göster
-                ElevatedButton.icon(
+                FilledButton.icon(
                   onPressed: isLocating ? null : _selectLocationOnMap,
                   icon: const Icon(Icons.location_on),
                   label: Text(selectedLatLng == null
                       ? 'Haritadan Konum Seç'
                       : 'Konum Seçildi: (${selectedLatLng!.latitude.toStringAsFixed(4)}, ${selectedLatLng!.longitude.toStringAsFixed(4)})'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
+                  style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
                         ResponsiveHelper.getBorderRadius(context, 16),
@@ -670,38 +552,32 @@ class _CreateEventPageState extends State<CreateEventPage> {
                           ),
                         ],
                       ),
-                      child: ElevatedButton.icon(
+                      child: FilledButton.icon(
                         onPressed: eventViewModel.isLoading
                         ? null
                         : () async {
                             final navigator = Navigator.of(context);
                             // Form validasyonu
                             if (_formKey.currentState?.validate() != true) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Lütfen tüm zorunlu alanları doldurun'),
-                                  backgroundColor: Colors.red,
-                                ),
+                              ModernSnackbar.showError(
+                                context,
+                                'Lütfen tüm zorunlu alanları doldurun',
                               );
                               return;
                             }
                             // Tarih kontrolü
                             if (selectedDateTime == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Lütfen etkinlik tarihi ve saatini seçin'),
-                                  backgroundColor: Colors.red,
-                                ),
+                              ModernSnackbar.showError(
+                                context,
+                                'Lütfen etkinlik tarihi ve saatini seçin',
                               );
                               return;
                             }
                             // Konum kontrolü
                             if (selectedLatLng == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Lütfen etkinlik konumunu haritadan seçin'),
-                                  backgroundColor: Colors.red,
-                                ),
+                              ModernSnackbar.showError(
+                                context,
+                                'Lütfen etkinlik konumunu haritadan seçin',
                               );
                               return;
                             }
@@ -722,20 +598,41 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             if (!mounted) return;
                             navigator.pop();
                           },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Etkinlik Oluştur'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusXl)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Etkinlik Oluştur'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                ),
+                  ],
+                ),
+              ),
+            ),
+            // Geri butonu
+            Positioned(
+              top: 8,
+              left: 8,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+                color: theme.colorScheme.onSurface,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withAlpha(AppTheme.alphaLight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
+        ),
         ),
       ),
     );

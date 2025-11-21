@@ -9,12 +9,12 @@ import 'user_search_page.dart';
 import 'my_events_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/modern_components.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
 // Removed seed data service as test data seeding is no longer needed.
@@ -77,26 +77,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     
     try {
       // Önce galeri veya kamera seçimi göster
-      final source = await showDialog<ImageSource>(
+      final source = await ModernDialog.showImageSource(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Fotoğraf Seç'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Galeri'),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Kamera'),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-            ],
-          ),
-        ),
+        title: 'Fotoğraf Seç',
       );
       
       if (source == null || !mounted) return;
@@ -131,8 +114,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         );
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Fotoğraf kırpma hatası: ${e.toString()}')),
+          ModernSnackbar.showError(
+            context,
+            'Fotoğraf kırpma hatası: ${e.toString()}',
           );
         }
         return;
@@ -154,12 +138,16 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          ),
+          title: const Text('Yükleniyor...'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text('Yükleniyor... ${(uploadProgress * 100).toStringAsFixed(0)}%'),
+              Text('${(uploadProgress * 100).toStringAsFixed(0)}%'),
               const SizedBox(height: 8),
               LinearProgressIndicator(value: uploadProgress),
             ],
@@ -215,8 +203,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
           await Future.delayed(const Duration(milliseconds: 300));
           
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profil fotoğrafı başarıyla güncellendi!')),
+            ModernSnackbar.showSuccess(
+              context,
+              'Profil fotoğrafı başarıyla güncellendi!',
             );
           }
         }
@@ -224,16 +213,18 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         if (mounted) {
           Navigator.of(context).pop(); // Progress dialog'u kapat
           setState(() { isUploading = false; });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Hata: ${e.toString()}')),
+          ModernSnackbar.showError(
+            context,
+            'Hata: ${e.toString()}',
           );
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() { isUploading = false; });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fotoğraf seçme hatası: ${e.toString()}')),
+        ModernSnackbar.showError(
+          context,
+          'Fotoğraf seçme hatası: ${e.toString()}',
         );
       }
     }
@@ -276,18 +267,21 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
             else
               const CircleAvatar(radius: 90, child: Icon(Icons.person, size: 90)),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: isUploading ? null : () async {
                 Navigator.of(context).pop();
                 await _changePhoto(authViewModel);
               },
               icon: const Icon(Icons.camera_alt),
               label: const Text('Yeni Fotoğraf Yükle'),
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusXl)),
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -386,7 +380,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                           else
                             Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 gradient: LinearGradient(colors: AppTheme.gradientSecondary),
                                 shape: BoxShape.circle,
                               ),
@@ -514,17 +508,21 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
           )
         ],
       ),
-      child: ElevatedButton.icon(
+      child: FilledButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 20),
         label: Text(label),
-        style: ElevatedButton.styleFrom(
+        style: FilledButton.styleFrom(
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -573,22 +571,10 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
   }
 
   Widget _buildEditableTextField(TextEditingController controller, String label, {int maxLines = 1}) {
-    final theme = Theme.of(context);
-    return TextField(
+    return ModernInputField(
       controller: controller,
-      textAlign: TextAlign.center,
+      label: label,
       maxLines: maxLines,
-      style: TextStyle(color: theme.colorScheme.onSurface),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-        enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: theme.colorScheme.outline),
-        ),
-        focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: theme.colorScheme.primary),
-        ),
-      ),
     );
   }
 } 

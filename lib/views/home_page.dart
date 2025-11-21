@@ -11,6 +11,9 @@ import 'private_chat_page.dart';
 import '../services/notification_service.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../models/chat_model.dart';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -117,9 +120,7 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sohbet açılamadı: $e')),
-        );
+        ModernSnackbar.showError(context, 'Sohbet açılamadı: $e');
       }
     }
   }
@@ -164,19 +165,19 @@ class _HomePageState extends State<HomePage> {
         child: _pages[_selectedIndex],
       ),
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(AppTheme.spacingLg),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              color: Theme.of(context).colorScheme.primary.withAlpha(AppTheme.alphaLight),
               blurRadius: 20,
               offset: const Offset(0, 8),
               spreadRadius: 0,
             ),
             BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
+              color: Theme.of(context).colorScheme.shadow.withAlpha(AppTheme.alphaVeryLight),
               blurRadius: 6,
               offset: const Offset(0, 2),
               spreadRadius: 0,
@@ -184,7 +185,10 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingXxl,
+            vertical: AppTheme.spacingMd,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -205,17 +209,24 @@ class _HomePageState extends State<HomePage> {
                   ),
                   if (_totalUnreadCount > 0)
                     Positioned(
-                      right: 0,
-                      top: 0,
+                      right: -2,
+                      top: -2,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColorConfig.errorColor,
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.surface,
+                            width: 2,
+                          ),
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
+                          minWidth: 18,
+                          minHeight: 18,
                         ),
                         child: Text(
                           _totalUnreadCount > 99 ? '99+' : _totalUnreadCount.toString(),
@@ -247,33 +258,22 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButton: _selectedIndex == 0
-          ? Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.secondary,
-                  ],
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const CreateEventPage()),
+                );
+              },
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              icon: const Icon(Icons.add_rounded, size: 24),
+              label: const Text(
+                'Etkinlik Oluştur',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: FloatingActionButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CreateEventPage()),
-                  );
-                },
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
               ),
             )
           : null,

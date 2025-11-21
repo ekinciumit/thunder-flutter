@@ -6,6 +6,7 @@ import '../core/validators/form_validators.dart';
 import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/modern_components.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 
@@ -88,46 +89,24 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  ResponsiveSizedBox(
-                    height: ResponsiveHelper.getSpacing(context) * 2,
-                  ),
-                  TextFormField(
+                  const SizedBox(height: AppTheme.spacingXxl),
+                  ModernInputField(
                     controller: emailController,
+                    label: l10n.email,
+                    hint: 'ornek@email.com',
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                     validator: FormValidators.email,
-                    decoration: InputDecoration(
-                      labelText: l10n.email,
-                      labelStyle: TextStyle(color: theme.colorScheme.primary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: theme.colorScheme.error),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: theme.colorScheme.primary.withAlpha(AppTheme.alphaVeryLight),
-                      prefixIcon: Icon(Icons.email, color: theme.colorScheme.primary),
-                      errorStyle: TextStyle(color: theme.colorScheme.error),
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
-                  ResponsiveSizedBox.spacing(),
-                  TextFormField(
+                  const SizedBox(height: AppTheme.spacingLg),
+                  ModernInputField(
                     controller: passwordController,
+                    label: l10n.password,
+                    hint: '••••••••',
                     keyboardType: TextInputType.visiblePassword,
                     textInputAction: isLogin ? TextInputAction.done : TextInputAction.next,
                     obscureText: true,
@@ -139,109 +118,93 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                         _handleSubmit(authViewModel);
                       }
                     },
-                    decoration: InputDecoration(
-                      labelText: l10n.password,
-                      labelStyle: TextStyle(color: theme.colorScheme.secondary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getBorderRadius(context, 16),
-                        ),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getBorderRadius(context, 16),
-                        ),
-                        borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getBorderRadius(context, 16),
-                        ),
-                        borderSide: BorderSide(color: theme.colorScheme.secondary, width: 2),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getBorderRadius(context, 16),
-                        ),
-                        borderSide: BorderSide(color: theme.colorScheme.error),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getBorderRadius(context, 16),
-                        ),
-                        borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: theme.colorScheme.secondary.withAlpha(AppTheme.alphaVeryLight),
-                      prefixIcon: Icon(Icons.lock, color: theme.colorScheme.secondary),
-                      errorStyle: TextStyle(color: theme.colorScheme.error),
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  if (authViewModel.error != null)
-                    AppCard(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      padding: const EdgeInsets.all(12),
-                      borderRadius: 12,
-                      gradientColors: [theme.colorScheme.error.withAlpha(20), theme.colorScheme.error.withAlpha(10)],
+                  if (authViewModel.error != null) ...[
+                    const SizedBox(height: AppTheme.spacingLg),
+                    Container(
+                      padding: const EdgeInsets.all(AppTheme.spacingLg),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border: Border.all(
+                          color: theme.colorScheme.error.withAlpha(AppTheme.alphaMedium),
+                          width: 1,
+                        ),
+                      ),
                       child: Row(
                         children: [
-                          Icon(Icons.error, color: theme.colorScheme.error, size: 20),
-                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.error_outline,
+                            color: theme.colorScheme.error,
+                            size: 20,
+                          ),
+                          const SizedBox(width: AppTheme.spacingMd),
                           Expanded(
                             child: Text(
                               authViewModel.error!,
-                              style: TextStyle(color: theme.colorScheme.error, fontWeight: FontWeight.w600),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onErrorContainer,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ResponsiveSizedBox.spacing(),
+                  ],
+                  const SizedBox(height: AppTheme.spacingXxl),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _handleSubmit(authViewModel),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            ResponsiveHelper.getBorderRadius(context, 16),
-                          ),
+                    child: FilledButton(
+                      onPressed: authViewModel.isLoading 
+                          ? null 
+                          : () => _handleSubmit(authViewModel),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppTheme.spacingLg,
                         ),
-                        padding: ResponsiveHelper.getVerticalPadding(context),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                        ),
                       ),
-                      child: Text(
-                        isLogin ? l10n.login : l10n.signUp,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      ),
+                      child: authViewModel.isLoading
+                          ? SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.colorScheme.onPrimary,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              isLogin ? l10n.login : l10n.signUp,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
                     ),
-                  ResponsiveSizedBox.spacing(),
+                  ),
+                  const SizedBox(height: AppTheme.spacingLg),
                   TextButton(
                     onPressed: () {
                       _formKey.currentState?.reset();
                       setState(() {
                         isLogin = !isLogin;
-                        authViewModel.error = null; // Toggle'da hatayı temizle
+                        authViewModel.error = null;
                       });
                     },
-                    style: TextButton.styleFrom(
-                      backgroundColor: theme.colorScheme.surface.withAlpha(0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getBorderRadius(context, 12),
-                        ),
-                      ),
-                    ),
                     child: Text(
                       isLogin ? l10n.noAccount : l10n.hasAccount,
                       style: TextStyle(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),

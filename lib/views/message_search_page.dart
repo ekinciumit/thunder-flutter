@@ -6,6 +6,8 @@ import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'private_chat_page.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_theme.dart';
 
 class MessageSearchPage extends StatefulWidget {
   final String? chatId; // null ise tüm sohbetlerde ara
@@ -74,8 +76,9 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
         _isSearching = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Arama hatası: $e')),
+        ModernSnackbar.showError(
+          context,
+          'Arama hatası: $e',
         );
       }
     }
@@ -217,36 +220,27 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                   width: 1,
                 ),
               ),
-              child: TextField(
+              child: ModernInputField(
                 controller: _searchController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: widget.chatId != null 
-                      ? 'Bu sohbette ara...'
-                      : 'Tüm mesajlarda ara...',
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Colors.white.withValues(alpha: 0.6),
-                  ),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(
-                            Icons.clear,
-                            color: Colors.white.withValues(alpha: 0.6),
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                            _performSearch('');
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 15,
-                  ),
+                hint: widget.chatId != null 
+                    ? 'Bu sohbette ara...'
+                    : 'Tüm mesajlarda ara...',
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Colors.white.withValues(alpha: 0.6),
                 ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear,
+                          color: Colors.white.withValues(alpha: 0.6),
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          _performSearch('');
+                        },
+                      )
+                    : null,
                 onChanged: (value) {
                   setState(() {});
                   // Debounce için timer kullanılabilir

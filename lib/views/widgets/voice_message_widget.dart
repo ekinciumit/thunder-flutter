@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/audio_service.dart';
+import '../../core/theme/app_color_config.dart';
+import '../../core/widgets/modern_components.dart';
 import 'modern_loading_widget.dart';
 
 class VoiceMessageWidget extends StatefulWidget {
@@ -90,8 +92,9 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ses oynatma hatası: $e')),
+      ModernSnackbar.showError(
+        context,
+        'Ses oynatma hatası: $e',
       );
     }
   }
@@ -118,7 +121,7 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: widget.isMe 
-              ? Colors.deepPurple[500] 
+              ? AppColorConfig.primaryColor 
               : Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
         ),
@@ -136,7 +139,7 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
                     decoration: BoxDecoration(
                       color: widget.isMe 
                           ? Colors.white.withValues(alpha: 0.2)
-                          : Colors.deepPurple.withValues(alpha: 0.1),
+                          : AppColorConfig.primaryColor.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: _isLoading
@@ -149,7 +152,7 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
                           )
                         : Icon(
                             _isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: widget.isMe ? Colors.white : Colors.deepPurple,
+                            color: widget.isMe ? Colors.white : AppColorConfig.primaryColor,
                             size: 20,
                           ),
                   ),
@@ -220,7 +223,7 @@ class _VoiceMessageWidgetState extends State<VoiceMessageWidget>
                       _totalDuration.inMilliseconds,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: widget.isMe ? Colors.white : Colors.deepPurple,
+                      color: widget.isMe ? Colors.white : AppColorConfig.primaryColor,
                       borderRadius: BorderRadius.circular(1),
                     ),
                   ),
@@ -249,7 +252,7 @@ class WaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = isMe ? Colors.white : Colors.deepPurple
+      ..color = isMe ? Colors.white : AppColorConfig.primaryColor
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 

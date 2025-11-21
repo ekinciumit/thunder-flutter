@@ -22,6 +22,9 @@ import 'widgets/modern_loading_widget.dart';
 import 'widgets/file_message_widget.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_color_config.dart';
+import '../core/theme/app_theme.dart';
 
 class PrivateChatPage extends StatefulWidget {
   final String currentUserId;
@@ -153,12 +156,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           debugPrint('❌ Stream hatası: $error');
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Mesajlar yüklenirken hata: $error'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
-            ),
+          ModernSnackbar.showError(
+            context,
+            'Mesajlar yüklenirken hata: $error',
           );
         }
       },
@@ -265,11 +265,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     if ((text == null || text.trim().isEmpty) && imageUrl == null && videoUrl == null) return;
     if (_chatId == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sohbet başlatılamadı. Lütfen tekrar deneyin.'),
-            backgroundColor: Colors.red,
-          ),
+        ModernSnackbar.showError(
+          context,
+          'Sohbet başlatılamadı. Lütfen tekrar deneyin.',
         );
       }
       return;
@@ -314,12 +312,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       _scrollToBottom();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Mesaj gönderilemedi: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
+        ModernSnackbar.showError(
+          context,
+          'Mesaj gönderilemedi: ${e.toString()}',
         );
       }
     }
@@ -354,12 +349,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       const maxFileSize = 50 * 1024 * 1024; // 50MB
       if (fileSize > maxFileSize) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Dosya boyutu çok büyük (Max: 50MB)'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 4),
-            ),
+          ModernSnackbar.showError(
+            context,
+            'Dosya boyutu çok büyük (Max: 50MB)',
           );
         }
         return;
@@ -480,7 +472,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isMe ? Colors.deepPurple : Colors.grey[200],
+                  color: isMe ? AppColorConfig.primaryColor : Colors.grey[200],
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(20),
                     topRight: const Radius.circular(20),
@@ -504,7 +496,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
-                          color: Colors.deepPurple[700],
+                          color: AppColorConfig.primaryColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -551,7 +543,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.deepPurple[100],
+                backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
                 backgroundImage: widget.currentUserName.isNotEmpty 
                     ? null // Kullanıcı fotoğrafı varsa buraya eklenebilir
                     : null,
@@ -559,7 +551,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   widget.currentUserName.isNotEmpty 
                       ? widget.currentUserName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
                 ),
               ),
             ],
@@ -658,12 +650,12 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.deepPurple[100],
+              backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
               child: Text(
                 widget.currentUserName.isNotEmpty 
                     ? widget.currentUserName[0].toUpperCase()
                     : '?',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
               ),
             ),
           ],
@@ -737,12 +729,12 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.deepPurple[100],
+              backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
               child: Text(
                 widget.currentUserName.isNotEmpty 
                     ? widget.currentUserName[0].toUpperCase()
                     : '?',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
               ),
             ),
           ],
@@ -793,7 +785,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: Colors.deepPurple[700],
+                        color: AppColorConfig.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -825,12 +817,12 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.deepPurple[100],
+                backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
                 child: Text(
                   widget.currentUserName.isNotEmpty 
                       ? widget.currentUserName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
                 ),
               ),
             ],
@@ -880,7 +872,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: Colors.deepPurple[700],
+                        color: AppColorConfig.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -893,8 +885,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                     isMe: isMe,
                     onTap: () {
                       // TODO: Dosyayı açma/indirme işlevi
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Dosya açma özelliği yakında eklenecek')),
+                      ModernSnackbar.showInfo(
+                        context,
+                        'Dosya açma özelliği yakında eklenecek',
                       );
                     },
                     onLongPress: () => _showMessageOptions(message),
@@ -920,12 +913,12 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.deepPurple[100],
+                backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
                 child: Text(
                   widget.currentUserName.isNotEmpty 
                       ? widget.currentUserName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
                 ),
               ),
             ],
@@ -999,8 +992,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                 Navigator.pop(context);
                 if (message.text != null) {
                   Clipboard.setData(ClipboardData(text: message.text!));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mesaj kopyalandı')),
+                  ModernSnackbar.showSuccess(
+                    context,
+                    'Mesaj kopyalandı',
                   );
                 }
               },
@@ -1060,13 +1054,15 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   await chatViewModel.editMessage(message.id, controller.text.trim());
                   if (!mounted) return;
                   navigator.pop();
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Mesaj düzenlendi')),
-                  );
+                    ModernSnackbar.showSuccess(
+                      context,
+                      'Mesaj düzenlendi',
+                    );
                 } catch (e) {
                   if (!mounted) return;
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('Hata: $e')),
+                  ModernSnackbar.showError(
+                    context,
+                    'Hata: $e',
                   );
                 }
               }
@@ -1098,13 +1094,15 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                 await chatViewModel.deleteMessage(message.id, widget.currentUserId);
                 if (!mounted) return;
                 navigator.pop();
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Mesaj silindi')),
+                ModernSnackbar.showSuccess(
+                  context,
+                  'Mesaj silindi',
                 );
               } catch (e) {
                 if (!mounted) return;
-                messenger.showSnackBar(
-                  SnackBar(content: Text('Hata: $e')),
+                ModernSnackbar.showError(
+                  context,
+                  'Hata: $e',
                 );
               }
             },
@@ -1514,15 +1512,15 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.emoji_emotions, color: Colors.deepPurple),
+                  icon: Icon(Icons.emoji_emotions, color: AppColorConfig.primaryColor),
                   onPressed: () => setState(() => _showEmojiPicker = !_showEmojiPicker),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.mic, color: Colors.deepPurple),
+                  icon: Icon(Icons.mic, color: AppColorConfig.primaryColor),
                   onPressed: _showVoiceRecorder,
                 ),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.attach_file, color: Colors.deepPurple),
+                  icon: Icon(Icons.attach_file, color: AppColorConfig.primaryColor),
                   onSelected: (value) {
                     switch (value) {
                       case 'photo':

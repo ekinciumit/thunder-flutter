@@ -9,6 +9,7 @@ import '../core/validators/form_validators.dart';
 import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/modern_components.dart';
 import 'widgets/modern_loading_widget.dart';
 
 class CompleteProfilePage extends StatefulWidget {
@@ -36,18 +37,31 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       final source = await showDialog<ImageSource>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Fotoğraf Seç'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          ),
+          title: const Text(
+            'Fotoğraf Seç',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.photo_library),
+                leading: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.primary),
                 title: const Text('Galeri'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
+              const SizedBox(height: AppTheme.spacingSm),
               ListTile(
-                leading: const Icon(Icons.camera_alt),
+                leading: Icon(Icons.camera_alt, color: Theme.of(context).colorScheme.primary),
                 title: const Text('Kamera'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
             ],
@@ -82,9 +96,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         );
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Fotoğraf kırpma hatası: ${e.toString()}')),
-          );
+          ModernSnackbar.showError(context, 'Fotoğraf kırpma hatası: ${e.toString()}');
         }
         return;
       }
@@ -97,9 +109,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fotoğraf seçme hatası: ${e.toString()}')),
-        );
+        ModernSnackbar.showError(context, 'Fotoğraf seçme hatası: ${e.toString()}');
       }
     }
   }
@@ -131,9 +141,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     } catch (e) {
       if (mounted) {
         setState(() { isUploading = false; });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fotoğraf yükleme hatası: ${e.toString()}')),
-        );
+        ModernSnackbar.showError(context, 'Fotoğraf yükleme hatası: ${e.toString()}');
       }
     }
   }
@@ -144,7 +152,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Profilini Tamamla')),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: AppTheme.gradientPrimary,
             begin: Alignment.topLeft,
@@ -280,123 +288,39 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     ResponsiveSizedBox(
                       height: ResponsiveHelper.getSpacing(context) * 2,
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: AppTheme.gradientWithAlpha(
-                            AppTheme.gradientSecondary,
-                            AppTheme.alphaVeryLight,
-                          ),
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getBorderRadius(context, 16),
-                        ),
-                        border: Border.all(color: Colors.deepPurple.withAlpha(AppTheme.alphaDark)),
-                      ),
-                      child: TextFormField(
-                        controller: nameController,
-                        textInputAction: TextInputAction.next,
-                        validator: FormValidators.name,
-                        decoration: InputDecoration(
-                          labelText: 'İsim Soyisim',
-                          labelStyle: TextStyle(color: Colors.deepPurple.shade700),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: BorderSide(color: Colors.deepPurple.withAlpha(AppTheme.alphaDark)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: BorderSide(color: Colors.deepPurple.shade600, width: 2),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: const BorderSide(color: Colors.red),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: const BorderSide(color: Colors.red, width: 2),
-                          ),
-                          filled: true,
-                          fillColor: Colors.transparent,
-                          prefixIcon: Icon(Icons.person, color: Colors.deepPurple.shade600),
-                          errorStyle: const TextStyle(color: Colors.red),
-                        ),
+                    ModernInputField(
+                      controller: nameController,
+                      label: 'İsim Soyisim',
+                      hint: 'Adınız ve soyadınız',
+                      textInputAction: TextInputAction.next,
+                      validator: FormValidators.name,
+                      prefixIcon: Icon(
+                        Icons.person_outline,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
-                    ResponsiveSizedBox.spacing(),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: AppTheme.gradientWithAlpha(
-                            [theme.colorScheme.tertiary, theme.colorScheme.tertiaryContainer],
-                            AppTheme.alphaVeryLight,
-                          ),
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getBorderRadius(context, 16),
-                        ),
-                        border: Border.all(color: Colors.blue.withAlpha(AppTheme.alphaDark)),
-                      ),
-                      child: TextFormField(
-                        controller: bioController,
-                        textInputAction: TextInputAction.done,
-                        maxLines: 2,
-                        validator: FormValidators.bio,
-                        decoration: InputDecoration(
-                          labelText: 'Biyografi (Opsiyonel)',
-                          labelStyle: TextStyle(color: Colors.blue.shade700),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: BorderSide(color: Colors.blue.withAlpha(AppTheme.alphaDark)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: const BorderSide(color: Colors.red),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                            borderSide: const BorderSide(color: Colors.red, width: 2),
-                          ),
-                          filled: true,
-                          fillColor: Colors.transparent,
-                          prefixIcon: Icon(Icons.description, color: Colors.blue.shade600),
-                          errorStyle: const TextStyle(color: Colors.red),
-                        ),
+                    const SizedBox(height: AppTheme.spacingLg),
+                    ModernInputField(
+                      controller: bioController,
+                      label: 'Biyografi (Opsiyonel)',
+                      hint: 'Kendiniz hakkında kısa bir açıklama',
+                      textInputAction: TextInputAction.done,
+                      maxLines: 3,
+                      validator: FormValidators.bio,
+                      prefixIcon: Icon(
+                        Icons.description_outlined,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                     ResponsiveSizedBox(
                       height: ResponsiveHelper.getSpacing(context) * 2,
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: AppTheme.gradientSecondary,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getBorderRadius(context, 16),
-                        ),
-                        boxShadow: [
-                          AppTheme.shadowMedium(
-                            color: Colors.deepPurple.withAlpha(AppTheme.alphaDarker),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
                         onPressed: isUploading ? null : () {
                           if (!_formKey.currentState!.validate()) {
-                            return; // Form geçersizse işlem yapma
+                            return;
                           }
                           widget.onComplete(
                             nameController.text.trim(),
@@ -404,16 +328,21 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             uploadedPhotoUrl,
                           );
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusXl)),
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingXxl,
+                            vertical: AppTheme.spacingLg,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                          ),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Kaydet ve Devam Et',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),

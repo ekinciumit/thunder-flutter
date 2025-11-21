@@ -8,6 +8,7 @@ import 'event_detail_page.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/modern_components.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class MyEventsPage extends StatefulWidget {
@@ -61,65 +62,23 @@ class _MyEventsPageState extends State<MyEventsPage> {
             }
 
             if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.white70),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Hata: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.white70),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+              return ErrorStateWidget(
+                message: 'Etkinlikler yüklenirken bir hata oluştu',
+                error: snapshot.error.toString(),
+                backgroundColor: Colors.transparent,
+                textColor: Colors.white,
               );
             }
 
             final events = snapshot.data ?? [];
 
             if (events.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.event_note_rounded,
-                          size: 64,
-                          color: Colors.white.withValues(alpha: 0.6),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        'Henüz etkinlik oluşturmadınız',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Yeni bir etkinlik oluşturarak başlayın!',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 16,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
+              return EmptyStateWidget(
+                icon: Icons.event_note_rounded,
+                title: 'Henüz etkinlik oluşturmadınız',
+                message: 'Yeni bir etkinlik oluşturarak başlayın!',
+                backgroundColor: Colors.transparent,
+                textColor: Colors.white,
               );
             }
 
@@ -388,7 +347,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: ElevatedButton.icon(
+                        child: FilledButton.icon(
                           onPressed: () => _showManageDialog(event, eventViewModel),
                           icon: const Icon(Icons.settings),
                           label: const Text('Yönet'),
@@ -498,8 +457,9 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                     await eventViewModel.approveJoinRequest(event, userId);
                                     if (!context.mounted) return;
                                     Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('İstek onaylandı')),
+                                    ModernSnackbar.showSuccess(
+                                      context,
+                                      'İstek onaylandı',
                                     );
                                   },
                                 ),
@@ -509,8 +469,9 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                     await eventViewModel.rejectJoinRequest(event, userId);
                                     if (!context.mounted) return;
                                     Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('İstek reddedildi')),
+                                    ModernSnackbar.showInfo(
+                                      context,
+                                      'İstek reddedildi',
                                     );
                                   },
                                 ),
@@ -578,7 +539,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                 children: [
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
                         _showEditDialog(event, eventViewModel);
@@ -648,15 +609,16 @@ class _MyEventsPageState extends State<MyEventsPage> {
             onPressed: () => Navigator.pop(context),
             child: const Text('İptal'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
               await eventViewModel.deleteEvent(event.id);
               if (!context.mounted) return;
               navigator.pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Etkinlik silindi')),
-              );
+                ModernSnackbar.showSuccess(
+                  context,
+                  'Etkinlik silindi',
+                );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

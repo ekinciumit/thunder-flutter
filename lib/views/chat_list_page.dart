@@ -8,6 +8,7 @@ import 'message_search_page.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/modern_components.dart';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -105,19 +106,9 @@ class _ChatListPageState extends State<ChatListPage> {
           elevation: 0,
           foregroundColor: Colors.white,
           actions: [
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(AppTheme.alphaMedium),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  AppTheme.shadowSoft(
-                    color: Colors.black.withAlpha(AppTheme.alphaMediumLight),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.search_rounded, size: 24),
+            Padding(
+              padding: const EdgeInsets.only(right: AppTheme.spacingMd),
+              child: FilledButton.icon(
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -126,7 +117,20 @@ class _ChatListPageState extends State<ChatListPage> {
                     ),
                   );
                 },
-                tooltip: 'Ara',
+                icon: const Icon(Icons.search_rounded, size: 20),
+                label: const Text('Ara'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white.withAlpha(AppTheme.alphaMedium),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingMd,
+                    vertical: AppTheme.spacingSm,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                  ),
+                  elevation: 0,
+                ),
               ),
             ),
           ],
@@ -230,68 +234,16 @@ class _ChatListPageState extends State<ChatListPage> {
             final chats = snapshot.data ?? [];
             
             if (chats.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(AppTheme.alphaVeryLight),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          size: 64,
-                          color: Colors.white.withAlpha(AppTheme.alphaDarker),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        'Henüz sohbet yok',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Etkinliklere katılarak yeni insanlarla tanışın ve sohbet başlatın!',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // Ana sayfaya yönlendir
-                          Navigator.of(context).popUntil((route) => route.isFirst);
-                        },
-                        icon: const Icon(Icons.explore_rounded),
-                        label: const Text('Etkinlikleri Keşfet'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: theme.colorScheme.primary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              return EmptyStateWidget(
+                icon: Icons.chat_bubble_outline_rounded,
+                title: 'Henüz sohbet yok',
+                message: 'Etkinliklere katılarak yeni insanlarla tanışın ve sohbet başlatın!',
+                actionLabel: 'Etkinlikleri Keşfet',
+                onAction: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                backgroundColor: Colors.transparent,
+                textColor: Colors.white,
               );
             }
 
@@ -348,38 +300,20 @@ class _ChatListPageState extends State<ChatListPage> {
             );
           },
         ),
-        floatingActionButton: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.primary,
-                theme.colorScheme.secondary,
-              ],
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              AppTheme.shadowMedium(
-                color: theme.colorScheme.primary.withAlpha(AppTheme.alphaDark),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: FloatingActionButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Yeni sohbet özelliği yakında eklenecek'),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-            },
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 28),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            ModernSnackbar.showInfo(
+              context,
+              'Yeni sohbet özelliği yakında eklenecek',
+            );
+          },
+          icon: const Icon(Icons.chat_bubble_rounded),
+          label: const Text('Yeni Sohbet'),
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusFull),
           ),
         ),
       ),
@@ -557,34 +491,19 @@ class _ChatListPageState extends State<ChatListPage> {
                             ),
                             if (hasUnread) ...[
                               const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      theme.colorScheme.primary,
-                                      theme.colorScheme.secondary,
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary.withAlpha(AppTheme.alphaDark),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
+                              Badge(
+                                label: Text(
                                   unreadCount > 99 ? '99+' : unreadCount.toString(),
                                   style: const TextStyle(
-                                    color: Colors.white,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),
+                                ),
+                                backgroundColor: theme.colorScheme.primary,
+                                textColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
                                 ),
                               ),
                             ],

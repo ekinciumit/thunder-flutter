@@ -4,6 +4,8 @@ import '../models/user_model.dart';
 import '../models/event_model.dart';
 import 'private_chat_page.dart';
 import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_theme.dart';
 
 class UserProfilePage extends StatefulWidget {
   final UserModel user;
@@ -105,24 +107,26 @@ class _UserProfilePageState extends State<UserProfilePage> {
             ),
             const SizedBox(height: 16),
             if (widget.user.uid != widget.currentUserId)
-              ElevatedButton(
+              FilledButton(
                 onPressed: _toggleFollow,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isFollowing ? Colors.grey : Colors.deepPurple,
+                style: FilledButton.styleFrom(
+                  backgroundColor: isFollowing ? Colors.grey : theme.colorScheme.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
                 child: Text(isFollowing ? 'Takibi Bırak' : 'Takip Et'),
               ),
             if (widget.user.uid != widget.currentUserId && isFollowing)
-              ElevatedButton.icon(
+              FilledButton.icon(
                 icon: const Icon(Icons.chat),
                 label: const Text('Sohbet Başlat'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
                 onPressed: () {
