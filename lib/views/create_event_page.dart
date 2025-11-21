@@ -11,6 +11,7 @@ import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../core/validators/form_validators.dart';
 import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
+import '../core/theme/app_theme.dart';
 import 'widgets/modern_loading_widget.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -300,7 +301,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF7F53AC), Color(0xFF647DEE), Color(0xFFFFD54F)],
+            colors: AppTheme.gradientPrimary,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -318,22 +319,19 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     height: 180,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          Colors.deepPurple.withAlpha(30),
-                          Colors.blue.withAlpha(20),
-                          Colors.amber.withAlpha(15),
-                        ],
+                        colors: AppTheme.gradientWithAlpha(
+                          AppTheme.gradientPrimary,
+                          AppTheme.alphaMediumLight,
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
                       border: Border.all(
-                        color: Colors.deepPurple.withAlpha(40),
+                        color: Colors.deepPurple.withAlpha(AppTheme.alphaDark),
                         width: 1.5,
                       ),
                       boxShadow: [
-                        BoxShadow(
-                          color: Colors.deepPurple.withAlpha(40),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                        AppTheme.shadowMedium(
+                          color: Colors.deepPurple.withAlpha(AppTheme.alphaDark),
                         ),
                       ],
                       image: uploadedPhotoUrl != null
@@ -365,10 +363,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.deepPurple.withAlpha(20), Colors.blue.withAlpha(15)],
+                          colors: AppTheme.gradientWithAlpha(
+                            AppTheme.gradientSecondary,
+                            AppTheme.alphaLight,
+                          ),
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.deepPurple.withAlpha(40)),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(color: Colors.deepPurple.withAlpha(AppTheme.alphaDark)),
                   ),
                   child: Column(
                     children: [
@@ -387,10 +388,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.deepPurple.withAlpha(15), Colors.blue.withAlpha(10)],
+                          colors: AppTheme.gradientWithAlpha(
+                            AppTheme.gradientSecondary,
+                            AppTheme.alphaVeryLight,
+                          ),
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.deepPurple.withAlpha(40)),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                    border: Border.all(color: Colors.deepPurple.withAlpha(AppTheme.alphaDark)),
                   ),
                   child: TextFormField(
                     controller: titleController,
@@ -400,29 +404,28 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       labelText: 'Başlık',
                       labelStyle: TextStyle(color: Colors.deepPurple.shade700),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.deepPurple.withAlpha(40)),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                        borderSide: BorderSide(color: Colors.deepPurple.withAlpha(AppTheme.alphaDark)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide(color: Colors.deepPurple.shade600, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: const BorderSide(color: Colors.red),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: const BorderSide(color: Colors.red, width: 2),
                       ),
                       filled: true,
                       fillColor: Colors.transparent,
                       errorStyle: const TextStyle(color: Colors.red),
-                      helperText: '3-100 karakter arası',
                       prefixIcon: Icon(Icons.title, color: Colors.deepPurple.shade600),
                     ),
                   ),
@@ -431,10 +434,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.blue.withAlpha(15), Colors.cyan.withAlpha(10)],
+                          colors: AppTheme.gradientWithAlpha(
+                            [theme.colorScheme.tertiary, theme.colorScheme.tertiaryContainer],
+                            AppTheme.alphaVeryLight,
+                          ),
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.blue.withAlpha(40)),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                    border: Border.all(color: Colors.blue.withAlpha(AppTheme.alphaDark)),
                   ),
                   child: TextFormField(
                     controller: descController,
@@ -445,29 +451,28 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       labelText: 'Açıklama',
                       labelStyle: TextStyle(color: Colors.blue.shade700),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.blue.withAlpha(40)),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                        borderSide: BorderSide(color: Colors.blue.withAlpha(AppTheme.alphaDark)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: const BorderSide(color: Colors.red),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: const BorderSide(color: Colors.red, width: 2),
                       ),
                       filled: true,
                       fillColor: Colors.transparent,
                       errorStyle: const TextStyle(color: Colors.red),
-                      helperText: '10-2000 karakter arası',
                       prefixIcon: Icon(Icons.description, color: Colors.blue.shade600),
                     ),
                   ),
@@ -476,10 +481,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.amber.withAlpha(15), Colors.orange.withAlpha(10)],
+                      colors: [
+                        Colors.amber.withAlpha(AppTheme.alphaLight),
+                        Colors.orange.withAlpha(AppTheme.alphaVeryLight),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.amber.withAlpha(40)),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                    border: Border.all(color: Colors.amber.withAlpha(AppTheme.alphaDark)),
                   ),
                   child: TextFormField(
                     controller: addressController,
@@ -489,29 +497,28 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       labelText: 'Adres',
                       labelStyle: TextStyle(color: Colors.amber.shade700),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.amber.withAlpha(40)),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                        borderSide: BorderSide(color: Colors.amber.withAlpha(AppTheme.alphaDark)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide(color: Colors.amber.shade600, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: const BorderSide(color: Colors.red),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: const BorderSide(color: Colors.red, width: 2),
                       ),
                       filled: true,
                       fillColor: Colors.transparent,
                       errorStyle: const TextStyle(color: Colors.red),
-                      helperText: 'En az 5 karakter',
                       prefixIcon: Icon(Icons.location_on, color: Colors.amber.shade600),
                     ),
                   ),
@@ -520,12 +527,15 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.green.withAlpha(15), Colors.lightGreen.withAlpha(10)],
+                      colors: [
+                        Colors.green.withAlpha(AppTheme.alphaLight),
+                        Colors.lightGreen.withAlpha(AppTheme.alphaVeryLight),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(
                       ResponsiveHelper.getBorderRadius(context, 16),
                     ),
-                    border: Border.all(color: Colors.green.withAlpha(40)),
+                    border: Border.all(color: Colors.green.withAlpha(AppTheme.alphaDark)),
                   ),
                   child: TextFormField(
                     controller: quotaController,
@@ -536,29 +546,28 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       labelText: 'Kota',
                       labelStyle: TextStyle(color: Colors.green.shade700),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Colors.green.withAlpha(40)),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                        borderSide: BorderSide(color: Colors.green.withAlpha(AppTheme.alphaDark)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide(color: Colors.green.shade600, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: const BorderSide(color: Colors.red),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: const BorderSide(color: Colors.red, width: 2),
                       ),
                       filled: true,
                       fillColor: Colors.transparent,
                       errorStyle: const TextStyle(color: Colors.red),
-                      helperText: '1-1000 arası',
                       prefixIcon: Icon(Icons.people, color: Colors.green.shade600),
                     ),
                   ),
@@ -568,12 +577,15 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.purple.withAlpha(15), Colors.deepPurple.withAlpha(10)],
+                      colors: [
+                        Colors.purple.withAlpha(AppTheme.alphaLight),
+                        Colors.deepPurple.withAlpha(AppTheme.alphaVeryLight),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(
                       ResponsiveHelper.getBorderRadius(context, 16),
                     ),
-                    border: Border.all(color: Colors.purple.withAlpha(40)),
+                    border: Border.all(color: Colors.purple.withAlpha(AppTheme.alphaDark)),
                   ),
                   child: DropdownButtonFormField<String>(
                     initialValue: selectedCategory,
@@ -581,7 +593,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       labelText: 'Kategori',
                       labelStyle: TextStyle(color: Colors.purple.shade700),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
@@ -600,12 +612,15 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.teal.withAlpha(15), Colors.cyan.withAlpha(10)],
+                      colors: [
+                        Colors.teal.withAlpha(AppTheme.alphaLight),
+                        Colors.cyan.withAlpha(AppTheme.alphaVeryLight),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(
                       ResponsiveHelper.getBorderRadius(context, 16),
                     ),
-                    border: Border.all(color: Colors.teal.withAlpha(40)),
+                    border: Border.all(color: Colors.teal.withAlpha(AppTheme.alphaDark)),
                   ),
                   child: ListTile(
                     title: Text(
@@ -616,7 +631,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     ),
                     trailing: Icon(Icons.calendar_today, color: Colors.teal.shade600),
                     onTap: _pickDateTime,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusXl)),
                     tileColor: Colors.transparent,
                   ),
                 ),
@@ -644,16 +659,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.deepPurple, Colors.blue],
+                      colors: AppTheme.gradientSecondary,
                     ),
                         borderRadius: BorderRadius.circular(
                           ResponsiveHelper.getBorderRadius(context, 16),
                         ),
                         boxShadow: [
-                          BoxShadow(
-                            color: Colors.deepPurple.withAlpha(60),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                          AppTheme.shadowMedium(
+                            color: Colors.deepPurple.withAlpha(AppTheme.alphaDarker),
                           ),
                         ],
                       ),
@@ -715,7 +728,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       backgroundColor: Colors.transparent,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusXl)),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),

@@ -14,6 +14,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
+import '../core/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
 // Removed seed data service as test data seeding is no longer needed.
@@ -248,7 +249,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
           children: [
             if (photoUrl != null && photoUrl.isNotEmpty)
               ClipRRect(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
                 child: CachedNetworkImage(
                   imageUrl: photoUrl,
                   fit: BoxFit.cover,
@@ -283,7 +284,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
               icon: const Icon(Icons.camera_alt),
               label: const Text('Yeni Fotoğraf Yükle'),
               style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusXl)),
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -334,9 +335,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
                 padding: const EdgeInsets.all(24),
                 borderRadius: 32,
-                gradientColors: [ // 'color' yerine 'gradientColors' kullan
-                  Colors.black.withValues(alpha: 0.2),
-                  Colors.black.withValues(alpha: 0.1),
+                gradientColors: [
+                  Colors.black.withAlpha(AppTheme.alphaMediumLight),
+                  Colors.black.withAlpha(AppTheme.alphaVeryLight),
                 ],
                 boxShadow: const [], // Gölgeyi kaldır veya özelleştir
                 child: Column(
@@ -350,7 +351,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                         children: [
                           CircleAvatar(
                             radius: 64,
-                            backgroundColor: Colors.white.withValues(alpha: 0.1),
+                            backgroundColor: Colors.white.withAlpha(AppTheme.alphaVeryLight),
                             child: user.photoUrl != null && user.photoUrl!.isNotEmpty
                                 ? ClipOval(
                                     child: CachedNetworkImage(
@@ -386,7 +387,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: const BoxDecoration(
-                                gradient: LinearGradient(colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)]),
+                                gradient: LinearGradient(colors: AppTheme.gradientSecondary),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
@@ -413,7 +414,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                       Text(
                         user.bio ?? 'Biyografi yok',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -421,14 +422,14 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        color: Colors.white.withAlpha(AppTheme.alphaVeryLight),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+                        border: Border.all(color: Colors.white.withAlpha(AppTheme.alphaMediumLight)),
                       ),
                       child: Text(
                         user.email,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withAlpha(AppTheme.alphaAlmostOpaque),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -442,7 +443,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                       },
                       label: 'Kullanıcı Ara',
                       icon: Icons.person_search,
-                      gradientColors: const [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+                      gradientColors: AppTheme.gradientSecondary,
                     ),
                     const SizedBox(height: 16),
                     _buildGradientButton(
@@ -451,7 +452,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                       },
                       label: 'Etkinliklerim',
                       icon: Icons.event_note_rounded,
-                      gradientColors: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                      gradientColors: AppTheme.gradientSecondary,
                     ),
                     const SizedBox(height: 16),
                     // Seed/test verisi butonu kaldırıldı
@@ -473,8 +474,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                           label: isEditing ? 'Kaydet' : 'Düzenle',
                           icon: isEditing ? Icons.save : Icons.edit,
                           gradientColors: isEditing
-                              ? [Colors.green.shade600, Colors.green.shade400]
-                              : [const Color(0xFF8E2DE2), const Color(0xFF4A00E0)],
+                              ? AppTheme.gradientSuccess
+                              : AppTheme.gradientSecondary,
                         ),
                         const SizedBox(width: 16),
                         _buildGradientButton(
@@ -534,15 +535,15 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       borderRadius: 20,
       gradientColors: [ // 'color' yerine 'gradientColors' kullan
-        Colors.white.withValues(alpha: 0.15),
-        Colors.white.withValues(alpha: 0.05),
+        Colors.white.withAlpha(AppTheme.alphaLight),
+        Colors.white.withAlpha(AppTheme.alphaVeryLight),
       ],
       boxShadow: const [], // Gölgeyi kaldır veya özelleştir
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatColumn('Takipçi', user.followers.length, theme),
-          Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.2)),
+          Container(width: 1, height: 30, color: Colors.white.withAlpha(AppTheme.alphaMediumLight)),
           _buildStatColumn('Takip', user.following.length, theme),
         ],
       ),

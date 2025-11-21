@@ -5,6 +5,7 @@ import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../core/validators/form_validators.dart';
 import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
+import '../core/theme/app_theme.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 
@@ -67,8 +68,8 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          theme.colorScheme.primary.withAlpha(30),
-                          theme.colorScheme.secondary.withAlpha(20),
+                          theme.colorScheme.primary.withAlpha(AppTheme.alphaMediumDark),
+                          theme.colorScheme.secondary.withAlpha(AppTheme.alphaMediumLight),
                         ],
                       ),
                       shape: BoxShape.circle,
@@ -99,27 +100,27 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                       labelText: l10n.email,
                       labelStyle: TextStyle(color: theme.colorScheme.primary),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                        borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide(color: theme.colorScheme.error),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                         borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
                       ),
                       filled: true,
-                      fillColor: theme.colorScheme.primary.withAlpha(10),
+                      fillColor: theme.colorScheme.primary.withAlpha(AppTheme.alphaVeryLight),
                       prefixIcon: Icon(Icons.email, color: theme.colorScheme.primary),
                       errorStyle: TextStyle(color: theme.colorScheme.error),
                     ),
@@ -149,7 +150,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                         borderRadius: BorderRadius.circular(
                           ResponsiveHelper.getBorderRadius(context, 16),
                         ),
-                        borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
+                        borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(
@@ -170,11 +171,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                         borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
                       ),
                       filled: true,
-                      fillColor: theme.colorScheme.secondary.withAlpha(10),
+                      fillColor: theme.colorScheme.secondary.withAlpha(AppTheme.alphaVeryLight),
                       prefixIcon: Icon(Icons.lock, color: theme.colorScheme.secondary),
                       errorStyle: TextStyle(color: theme.colorScheme.error),
-                      helperText: isLogin ? null : 'En az 6 karakter, bir harf ve bir rakam içermelidir',
-                      helperMaxLines: 2,
                     ),
                   ),
                   const SizedBox(height: 16),

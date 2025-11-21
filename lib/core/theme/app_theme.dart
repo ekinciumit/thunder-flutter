@@ -4,6 +4,122 @@ import 'package:flutter/material.dart';
 /// 
 /// Clean Architecture: Theme yapılandırması ayrı dosyada
 class AppTheme {
+  // Private constructor - Bu sınıf sadece static members içerir
+  AppTheme._();
+
+  /// Spacing Constants
+  /// 
+  /// Uygulama genelinde tutarlı spacing değerleri
+  static const double spacingXs = 4.0;      // Çok küçük boşluk
+  static const double spacingSm = 8.0;      // Küçük boşluk
+  static const double spacingMd = 12.0;     // Orta boşluk
+  static const double spacingLg = 16.0;     // Büyük boşluk
+  static const double spacingXl = 20.0;     // Çok büyük boşluk
+  static const double spacingXxl = 24.0;    // Extra büyük boşluk
+  static const double spacingXxxl = 32.0;   // Çok extra büyük boşluk
+
+  /// Border Radius Constants
+  /// 
+  /// Uygulama genelinde tutarlı border radius değerleri
+  static const double radiusXs = 4.0;      // Çok küçük
+  static const double radiusSm = 8.0;      // Küçük
+  static const double radiusMd = 12.0;     // Orta
+  static const double radiusLg = 14.0;     // Büyük
+  static const double radiusXl = 16.0;     // Çok büyük
+  static const double radiusXxl = 20.0;    // Extra büyük
+  static const double radiusXxxl = 24.0;   // Çok extra büyük
+  static const double radiusRound = 28.0;  // Yuvarlak (modal'lar için)
+  static const double radiusFull = 32.0;   // Tam yuvarlak (card'lar için)
+
+  /// Alpha Constants
+  /// 
+  /// Uygulama genelinde kullanılan alpha (opacity) değerleri
+  static const int alphaVeryLight = 10;   // Çok açık (background)
+  static const int alphaLight = 15;       // Açık
+  static const int alphaMediumLight = 20; // Orta-açık
+  static const int alphaMedium = 25;      // Orta
+  static const int alphaMediumDark = 30;  // Orta-koyu
+  static const int alphaDark = 40;        // Koyu
+  static const int alphaDarker = 60;      // Daha koyu
+  static const int alphaVeryDark = 100;   // Çok koyu
+  static const int alphaAlmostOpaque = 120; // Neredeyse opak
+
+  /// Icon Sizes
+  /// 
+  /// Uygulama genelinde tutarlı icon boyutları
+  static const double iconSizeXs = 16.0;   // Çok küçük
+  static const double iconSizeSm = 20.0;   // Küçük
+  static const double iconSizeMd = 24.0;   // Orta
+  static const double iconSizeLg = 32.0;   // Büyük
+  static const double iconSizeXl = 48.0;   // Çok büyük
+  static const double iconSizeXxl = 64.0;  // Extra büyük
+
+  /// Gradient Colors
+  /// 
+  /// Uygulama genelinde kullanılan gradient renk kombinasyonları
+  static const List<Color> gradientPrimary = [
+    Color(0xFF7F53AC), // Deep purple
+    Color(0xFF647DEE), // Blue
+    Color(0xFFFFD54F), // Amber
+  ];
+  
+  static const List<Color> gradientPrimaryLight = [
+    Color(0xFFE0E7FF), // Light indigo
+    Color(0xFFF3E8FF), // Light purple
+  ];
+  
+  static const List<Color> gradientSecondary = [
+    Color(0xFF6366F1), // Indigo
+    Color(0xFF8B5CF6), // Purple
+  ];
+  
+  static const List<Color> gradientSuccess = [
+    Color(0xFF10B981), // Green
+    Color(0xFF34D399), // Light green
+  ];
+  
+  static const List<Color> gradientError = [
+    Color(0xFFDC2626), // Red
+    Color(0xFFEF4444), // Light red
+  ];
+  
+  /// Helper: Alpha ile gradient oluştur
+  static List<Color> gradientWithAlpha(List<Color> colors, int alpha) {
+    return colors.map((color) => color.withAlpha(alpha)).toList();
+  }
+
+  /// Shadow Helpers
+  /// 
+  /// Uygulama genelinde tutarlı shadow değerleri
+  static BoxShadow shadowSoft({
+    Color? color,
+    double blurRadius = 4.0,
+    Offset offset = const Offset(0, 2),
+  }) => BoxShadow(
+    color: color ?? Colors.black.withAlpha(alphaVeryDark),
+    blurRadius: blurRadius,
+    offset: offset,
+  );
+  
+  static BoxShadow shadowMedium({
+    Color? color,
+    double blurRadius = 12.0,
+    Offset offset = const Offset(0, 4),
+  }) => BoxShadow(
+    color: color ?? Colors.black.withAlpha(alphaDarker),
+    blurRadius: blurRadius,
+    offset: offset,
+  );
+  
+  static BoxShadow shadowLarge({
+    Color? color,
+    double blurRadius = 24.0,
+    Offset offset = const Offset(0, 8),
+  }) => BoxShadow(
+    color: color ?? Colors.black.withAlpha(alphaDark),
+    blurRadius: blurRadius,
+    offset: offset,
+  );
   /// Light Theme
   static ThemeData get lightTheme {
     return ThemeData(

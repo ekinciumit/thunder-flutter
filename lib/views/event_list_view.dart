@@ -11,6 +11,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
+import '../core/theme/app_theme.dart';
 
 class EventListView extends StatefulWidget {
   const EventListView({super.key});
@@ -385,14 +386,14 @@ class _EventListViewState extends State<EventListView> {
                                       width: double.infinity,
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
-                                          colors: [
-                                            Colors.deepPurple.withValues(alpha: 0.2),
-                                            Colors.blue.withValues(alpha: 0.15),
-                                          ],
+                                          colors: AppTheme.gradientWithAlpha(
+                                            AppTheme.gradientSecondary,
+                                            AppTheme.alphaMediumLight,
+                                          ),
                                         ),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: Colors.deepPurple.withValues(alpha: 0.3),
+                                          color: Colors.deepPurple.withAlpha(AppTheme.alphaMediumDark),
                                         ),
                                       ),
                                       child: ElevatedButton.icon(
@@ -472,7 +473,7 @@ class _EventListViewState extends State<EventListView> {
                                           elevation: 0,
                                           padding: const EdgeInsets.symmetric(vertical: 14),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                                           ),
                                         ),
                                       ),
@@ -497,7 +498,7 @@ class _EventListViewState extends State<EventListView> {
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: theme.colorScheme.primary,
                                               foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
                                               padding: const EdgeInsets.symmetric(vertical: 14),
                                             ),
                                             child: const Text('Uygula'),
@@ -518,7 +519,7 @@ class _EventListViewState extends State<EventListView> {
                                             style: OutlinedButton.styleFrom(
                                               foregroundColor: theme.colorScheme.primary,
                                               side: BorderSide(color: theme.colorScheme.primary),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
                                               padding: const EdgeInsets.symmetric(vertical: 14),
                                             ),
                                             child: const Text('Temizle'),
@@ -545,9 +546,9 @@ class _EventListViewState extends State<EventListView> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.15),
+                    color: Colors.amber.withAlpha(AppTheme.alphaLight),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                    border: Border.all(color: Colors.amber.withAlpha(AppTheme.alphaMediumDark)),
                   ),
                   child: Row(
                     children: [

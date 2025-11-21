@@ -7,6 +7,7 @@ import 'private_chat_page.dart';
 import 'message_search_page.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
+import '../core/theme/app_theme.dart';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -93,7 +94,7 @@ class _ChatListPageState extends State<ChatListPage> {
               letterSpacing: -0.5,
               shadows: [
                 Shadow(
-                  color: Colors.black.withValues(alpha: 0.3),
+                  color: Colors.black.withAlpha(AppTheme.alphaMediumDark),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -107,13 +108,11 @@ class _ChatListPageState extends State<ChatListPage> {
             Container(
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.25),
+                color: Colors.white.withAlpha(AppTheme.alphaMedium),
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                  AppTheme.shadowSoft(
+                    color: Colors.black.withAlpha(AppTheme.alphaMediumLight),
                   ),
                 ],
               ),
@@ -143,7 +142,7 @@ class _ChatListPageState extends State<ChatListPage> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: Colors.white.withAlpha(AppTheme.alphaLight),
                         shape: BoxShape.circle,
                       ),
                       child: ModernLoadingWidget(
@@ -156,7 +155,7 @@ class _ChatListPageState extends State<ChatListPage> {
                     Text(
                       'Sohbetler yükleniyor...',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white.withAlpha(AppTheme.alphaAlmostOpaque),
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -176,13 +175,13 @@ class _ChatListPageState extends State<ChatListPage> {
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: Colors.white.withAlpha(AppTheme.alphaVeryLight),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.error_outline_rounded,
                           size: 48,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -198,7 +197,7 @@ class _ChatListPageState extends State<ChatListPage> {
                       Text(
                         '${snapshot.error}',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
                           fontSize: 14,
                         ),
                         textAlign: TextAlign.center,
@@ -240,13 +239,13 @@ class _ChatListPageState extends State<ChatListPage> {
                       Container(
                         padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: Colors.white.withAlpha(AppTheme.alphaVeryLight),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.chat_bubble_outline_rounded,
                           size: 64,
-                          color: Colors.white.withValues(alpha: 0.6),
+                          color: Colors.white.withAlpha(AppTheme.alphaDarker),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -263,7 +262,7 @@ class _ChatListPageState extends State<ChatListPage> {
                       Text(
                         'Etkinliklere katılarak yeni insanlarla tanışın ve sohbet başlatın!',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
                           fontSize: 16,
                           height: 1.5,
                         ),
@@ -359,8 +358,8 @@ class _ChatListPageState extends State<ChatListPage> {
             ),
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.4),
+              AppTheme.shadowMedium(
+                color: theme.colorScheme.primary.withAlpha(AppTheme.alphaDark),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -406,13 +405,13 @@ class _ChatListPageState extends State<ChatListPage> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Colors.black.withAlpha(AppTheme.alphaVeryLight),
               blurRadius: 20,
               offset: const Offset(0, 4),
               spreadRadius: 0,
             ),
             BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              color: theme.colorScheme.primary.withAlpha(AppTheme.alphaVeryLight),
               blurRadius: 10,
               offset: const Offset(0, 2),
               spreadRadius: 0,
@@ -466,7 +465,7 @@ class _ChatListPageState extends State<ChatListPage> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                              color: theme.colorScheme.primary.withAlpha(AppTheme.alphaMediumDark),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -573,7 +572,7 @@ class _ChatListPageState extends State<ChatListPage> {
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                                      color: theme.colorScheme.primary.withAlpha(AppTheme.alphaDark),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),

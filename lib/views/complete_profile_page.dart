@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import '../core/validators/form_validators.dart';
 import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
+import '../core/theme/app_theme.dart';
 import 'widgets/modern_loading_widget.dart';
 
 class CompleteProfilePage extends StatefulWidget {
@@ -145,7 +146,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF7F53AC), Color(0xFF647DEE), Color(0xFFFFD54F)],
+            colors: AppTheme.gradientPrimary,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -163,22 +164,19 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withAlpha((0.37 * 255).toInt()),
-                      Colors.deepPurple.withAlpha((0.04 * 255).toInt()),
-                      Colors.blue.withAlpha((0.03 * 255).toInt()),
-                    ],
+                      colors: AppTheme.gradientWithAlpha(
+                        AppTheme.gradientPrimaryLight,
+                        AppTheme.alphaMediumLight,
+                      ),
                   ),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
                   border: Border.all(
-                    color: Colors.deepPurple.withAlpha(40),
+                    color: Colors.deepPurple.withAlpha(AppTheme.alphaDark),
                     width: 1.5,
                   ),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.deepPurple.withAlpha(60),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
+                    AppTheme.shadowLarge(
+                      color: Colors.deepPurple.withAlpha(AppTheme.alphaDarker),
                     ),
                   ],
                 ),
@@ -188,10 +186,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [
-                            Colors.deepPurple.withAlpha(30),
-                            Colors.blue.withAlpha(20),
-                          ],
+                          colors: AppTheme.gradientWithAlpha(
+                            AppTheme.gradientSecondary,
+                            AppTheme.alphaMediumLight,
+                          ),
                         ),
                         shape: BoxShape.circle,
                       ),
@@ -219,16 +217,15 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
                             colors: [
-                              Colors.deepPurple.withAlpha(30),
-                              Colors.blue.withAlpha(20),
-                              Colors.amber.withAlpha(15),
+                              Colors.deepPurple.withAlpha(AppTheme.alphaMediumDark),
+                              Colors.blue.withAlpha(AppTheme.alphaMediumLight),
+                              Colors.amber.withAlpha(AppTheme.alphaLight),
                             ],
                           ),
                           boxShadow: [
-                            BoxShadow(
-                              color: Colors.deepPurple.withAlpha(60),
+                            AppTheme.shadowMedium(
+                              color: Colors.deepPurple.withAlpha(AppTheme.alphaDarker),
                               blurRadius: 16,
-                              offset: const Offset(0, 4),
                             ),
                           ],
                           border: Border.all(
@@ -241,7 +238,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                           backgroundImage: (uploadedPhotoUrl != null)
                               ? NetworkImage(uploadedPhotoUrl!)
                               : (photoFile != null ? FileImage(photoFile!) : null) as ImageProvider?,
-                          backgroundColor: Colors.deepPurple.withAlpha(30),
+                          backgroundColor: Colors.deepPurple.withAlpha(AppTheme.alphaMediumDark),
                           child: (uploadedPhotoUrl == null && photoFile == null)
                               ? Icon(Icons.camera_alt, size: 40, color: Colors.deepPurple.shade600)
                               : null,
@@ -253,10 +250,13 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.amber.withAlpha(20), Colors.orange.withAlpha(15)],
+                          colors: [
+                            Colors.amber.withAlpha(AppTheme.alphaMediumLight),
+                            Colors.orange.withAlpha(AppTheme.alphaLight),
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.amber.withAlpha(40)),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border: Border.all(color: Colors.amber.withAlpha(AppTheme.alphaDark)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -283,12 +283,15 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.deepPurple.withAlpha(15), Colors.blue.withAlpha(10)],
+                          colors: AppTheme.gradientWithAlpha(
+                            AppTheme.gradientSecondary,
+                            AppTheme.alphaVeryLight,
+                          ),
                         ),
                         borderRadius: BorderRadius.circular(
                           ResponsiveHelper.getBorderRadius(context, 16),
                         ),
-                        border: Border.all(color: Colors.deepPurple.withAlpha(40)),
+                        border: Border.all(color: Colors.deepPurple.withAlpha(AppTheme.alphaDark)),
                       ),
                       child: TextFormField(
                         controller: nameController,
@@ -298,30 +301,29 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                           labelText: 'İsim Soyisim',
                           labelStyle: TextStyle(color: Colors.deepPurple.shade700),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                             borderSide: BorderSide.none,
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.deepPurple.withAlpha(40)),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                            borderSide: BorderSide(color: Colors.deepPurple.withAlpha(AppTheme.alphaDark)),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                             borderSide: BorderSide(color: Colors.deepPurple.shade600, width: 2),
                           ),
                           errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                             borderSide: const BorderSide(color: Colors.red),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                             borderSide: const BorderSide(color: Colors.red, width: 2),
                           ),
                           filled: true,
                           fillColor: Colors.transparent,
                           prefixIcon: Icon(Icons.person, color: Colors.deepPurple.shade600),
                           errorStyle: const TextStyle(color: Colors.red),
-                          helperText: 'En az 2 karakter, sadece harf ve boşluk',
                         ),
                       ),
                     ),
@@ -329,12 +331,15 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.blue.withAlpha(15), Colors.cyan.withAlpha(10)],
+                          colors: AppTheme.gradientWithAlpha(
+                            [theme.colorScheme.tertiary, theme.colorScheme.tertiaryContainer],
+                            AppTheme.alphaVeryLight,
+                          ),
                         ),
                         borderRadius: BorderRadius.circular(
                           ResponsiveHelper.getBorderRadius(context, 16),
                         ),
-                        border: Border.all(color: Colors.blue.withAlpha(40)),
+                        border: Border.all(color: Colors.blue.withAlpha(AppTheme.alphaDark)),
                       ),
                       child: TextFormField(
                         controller: bioController,
@@ -345,31 +350,29 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                           labelText: 'Biyografi (Opsiyonel)',
                           labelStyle: TextStyle(color: Colors.blue.shade700),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                             borderSide: BorderSide.none,
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.blue.withAlpha(40)),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                            borderSide: BorderSide(color: Colors.blue.withAlpha(AppTheme.alphaDark)),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                             borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
                           ),
                           errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                             borderSide: const BorderSide(color: Colors.red),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                             borderSide: const BorderSide(color: Colors.red, width: 2),
                           ),
                           filled: true,
                           fillColor: Colors.transparent,
                           prefixIcon: Icon(Icons.description, color: Colors.blue.shade600),
                           errorStyle: const TextStyle(color: Colors.red),
-                          helperText: 'Maksimum 500 karakter',
-                          helperMaxLines: 1,
                         ),
                       ),
                     ),
@@ -379,16 +382,14 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.deepPurple, Colors.blue],
+                          colors: AppTheme.gradientSecondary,
                         ),
                         borderRadius: BorderRadius.circular(
                           ResponsiveHelper.getBorderRadius(context, 16),
                         ),
                         boxShadow: [
-                          BoxShadow(
-                            color: Colors.deepPurple.withAlpha(60),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                          AppTheme.shadowMedium(
+                            color: Colors.deepPurple.withAlpha(AppTheme.alphaDarker),
                           ),
                         ],
                       ),
@@ -407,7 +408,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                           backgroundColor: Colors.transparent,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusXl)),
                           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                         ),
                         child: Text(
