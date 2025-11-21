@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_color_config.dart';
 
 /// App Theme Configuration
 /// 
@@ -57,31 +58,16 @@ class AppTheme {
   /// Gradient Colors
   /// 
   /// Uygulama genelinde kullanılan gradient renk kombinasyonları
-  static const List<Color> gradientPrimary = [
-    Color(0xFF7F53AC), // Deep purple
-    Color(0xFF647DEE), // Blue
-    Color(0xFFFFD54F), // Amber
-  ];
+  /// AppColorConfig'den alınır
+  static List<Color> get gradientPrimary => AppColorConfig.gradientPrimary;
   
-  static const List<Color> gradientPrimaryLight = [
-    Color(0xFFE0E7FF), // Light indigo
-    Color(0xFFF3E8FF), // Light purple
-  ];
+  static List<Color> get gradientPrimaryLight => AppColorConfig.gradientPrimaryLight;
   
-  static const List<Color> gradientSecondary = [
-    Color(0xFF6366F1), // Indigo
-    Color(0xFF8B5CF6), // Purple
-  ];
+  static List<Color> get gradientSecondary => AppColorConfig.gradientSecondary;
   
-  static const List<Color> gradientSuccess = [
-    Color(0xFF10B981), // Green
-    Color(0xFF34D399), // Light green
-  ];
+  static List<Color> get gradientSuccess => AppColorConfig.gradientSuccess;
   
-  static const List<Color> gradientError = [
-    Color(0xFFDC2626), // Red
-    Color(0xFFEF4444), // Light red
-  ];
+  static List<Color> get gradientError => AppColorConfig.gradientError;
   
   /// Helper: Alpha ile gradient oluştur
   static List<Color> gradientWithAlpha(List<Color> colors, int alpha) {
@@ -125,38 +111,38 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF6366F1), // Modern indigo
+        seedColor: AppColorConfig.primaryColor,
         brightness: Brightness.light,
-        primary: const Color(0xFF6366F1), // Indigo
+        primary: AppColorConfig.primaryColor,
         onPrimary: const Color(0xFFFFFFFF), // White on primary
-        primaryContainer: const Color(0xFFE0E7FF), // Light indigo
-        onPrimaryContainer: const Color(0xFF1E1B93), // Dark indigo
-        secondary: const Color(0xFF8B5CF6), // Purple
-        onSecondary: const Color(0xFFFFFFFF), // White on secondary
-        secondaryContainer: const Color(0xFFF3E8FF), // Light purple
-        onSecondaryContainer: const Color(0xFF4C1D95), // Dark purple
-        tertiary: const Color(0xFF06B6D4), // Cyan
+        primaryContainer: AppColorConfig.primaryContainer,
+        onPrimaryContainer: AppColorConfig.primaryContainerText,
+        secondary: AppColorConfig.secondaryColor,
+        onSecondary: const Color(0xFF1C1B1F), // Dark text on secondary
+        secondaryContainer: AppColorConfig.secondaryContainer,
+        onSecondaryContainer: AppColorConfig.secondaryContainerText,
+        tertiary: AppColorConfig.tertiaryColor,
         onTertiary: const Color(0xFFFFFFFF), // White on tertiary
-        tertiaryContainer: const Color(0xFFCCFBF1), // Light cyan
-        onTertiaryContainer: const Color(0xFF0F766E), // Dark cyan
-        error: const Color(0xFFDC2626), // Red
+        tertiaryContainer: AppColorConfig.tertiaryContainer,
+        onTertiaryContainer: AppColorConfig.tertiaryContainerText,
+        error: AppColorConfig.errorColor,
         onError: const Color(0xFFFFFFFF), // White on error
-        errorContainer: const Color(0xFFFEE2E2), // Light red
-        onErrorContainer: const Color(0xFF991B1B), // Dark red
-        surface: const Color(0xFFFFFBFE), // Pure white
-        onSurface: const Color(0xFF1C1B1F), // Dark text
-        surfaceContainerHighest: const Color(0xFFF3F4F6), // Light gray
-        onSurfaceVariant: const Color(0xFF49454F), // Medium gray text
-        outline: const Color(0xFF79747E), // Border color
-        outlineVariant: const Color(0xFFCAC4D0), // Light border
-        shadow: const Color(0xFF000000), // Black shadow
-        scrim: const Color(0xFF000000), // Black scrim
+        errorContainer: AppColorConfig.errorContainer,
+        onErrorContainer: AppColorConfig.errorContainerText,
+        surface: AppColorConfig.surfaceColor,
+        onSurface: AppColorConfig.textPrimary,
+        surfaceContainerHighest: AppColorConfig.surfaceContainerHighest,
+        onSurfaceVariant: AppColorConfig.textSecondary,
+        outline: AppColorConfig.borderColor,
+        outlineVariant: AppColorConfig.borderColorLight,
+        shadow: AppColorConfig.shadowColor,
+        scrim: AppColorConfig.shadowColor,
         inverseSurface: const Color(0xFF313033), // Dark surface
         onInverseSurface: const Color(0xFFF4EFF4), // Light text on dark
-        inversePrimary: const Color(0xFFC5C0FF), // Light indigo
-        surfaceTint: const Color(0xFF6366F1), // Indigo tint
+        inversePrimary: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaMedium),
+        surfaceTint: AppColorConfig.primaryColor,
       ),
-      scaffoldBackgroundColor: const Color(0xFFFFFBFE),
+      scaffoldBackgroundColor: AppColorConfig.surfaceColor,
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
@@ -190,22 +176,22 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFF3F4F6),
+        fillColor: AppColorConfig.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderSide: const BorderSide(color: AppColorConfig.borderColorInput),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderSide: const BorderSide(color: AppColorConfig.borderColorInput),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+          borderSide: BorderSide(color: AppColorConfig.primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFDC2626)),
+          borderSide: const BorderSide(color: AppColorConfig.errorColor),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
@@ -217,7 +203,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF6366F1),
+        seedColor: AppColorConfig.primaryColor,
         brightness: Brightness.dark,
       ),
     );
