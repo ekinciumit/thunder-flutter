@@ -13,7 +13,7 @@ class LoadOlderMessagesUseCase {
 
   /// Daha eski mesajları yükle
   /// 
-  /// Returns: Either<Failure, List<MessageModel>>
+  /// Returns: ``Either<Failure, List<MessageModel>>``
   Future<Either<Failure, List<MessageModel>>> call(
     String chatId,
     DateTime lastMessageTime, {

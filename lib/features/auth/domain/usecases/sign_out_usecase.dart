@@ -15,7 +15,7 @@ class SignOutUseCase {
 
   /// Çıkış yap
   /// 
-  /// Returns: Either<Failure, void>
+  /// Returns: ``Either<Failure, void>``
   Future<Either<Failure, void>> call() async {
     // Business logic: Çıkış yapmadan önce kontrol yapılabilir
     // Şu an direkt repository'yi kullanıyoruz

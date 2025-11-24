@@ -13,7 +13,7 @@ class GetOrCreatePrivateChatUseCase {
 
   /// Özel sohbet oluştur veya getir
   /// 
-  /// Returns: Either<Failure, ChatModel>
+  /// Returns: ``Either<Failure, ChatModel>``
   Future<Either<Failure, ChatModel>> call(String userA, String userB) async {
     // Business logic: Validation
     if (userA.isEmpty || userB.isEmpty) {

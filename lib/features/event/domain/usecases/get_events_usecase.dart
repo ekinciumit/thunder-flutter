@@ -12,7 +12,7 @@ class GetEventsUseCase {
 
   /// Etkinlikleri stream olarak getir
   /// 
-  /// Returns: Stream<List<EventModel>>
+  /// Returns: ``Stream<List<EventModel>>``
   Stream<List<EventModel>> call() {
     return _repository.getEventsStream();
   }

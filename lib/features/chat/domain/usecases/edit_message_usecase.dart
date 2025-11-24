@@ -12,7 +12,7 @@ class EditMessageUseCase {
 
   /// Mesajı düzenle
   /// 
-  /// Returns: Either<Failure, void>
+  /// Returns: ``Either<Failure, void>``
   Future<Either<Failure, void>> call(String messageId, String newText) async {
     // Business logic: Validation
     if (messageId.isEmpty) {

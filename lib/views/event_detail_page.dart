@@ -51,7 +51,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
     
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source, imageQuality: 90);
-    if (picked != null) {
+    if (picked != null && mounted) {
+      // Context'i async öncesi sakla
+      final theme = Theme.of(context);
       // Kırpma işlemi
       final croppedFile = await ImageCropper().cropImage(
         sourcePath: picked.path,
@@ -59,7 +61,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Fotoğrafı Kırp',
-            toolbarColor: Theme.of(context).colorScheme.primary,
+            toolbarColor: theme.colorScheme.primary,
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.ratio16x9,
             lockAspectRatio: false, // Serbest kırpma
@@ -548,10 +550,10 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       Text('Katılımcılar:', style: theme.textTheme.titleMedium),
                       const SizedBox(height: 8),
                       _ParticipantChips(
-                        participantUids: [
+                        participantUids: {
                           ...currentEvent.participants,
                           ...currentEvent.approvedParticipants
-                        ].toSet().toList(), // Duplicate'leri kaldır
+                        }.toList(), // Duplicate'leri kaldır
                       ),
                       // Katılma İstekleri bölümünü katılımcıların hemen altına ekle
                       if ((isOwner /*|| (currentEvent.moderators?.contains(userId) ?? false)*/) && currentEvent.pendingRequests.isNotEmpty) ...[
@@ -624,7 +626,6 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           )).toList(),
                         ),
                       ],
-                      // TODO: event.moderators desteği ekle (ör: if (event.moderators?.contains(userId) ?? false))
                     ],
                   ),
                 ),

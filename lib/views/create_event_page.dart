@@ -179,7 +179,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
     
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source, imageQuality: 90);
-    if (pickedFile != null) {
+    if (pickedFile != null && mounted) {
+      // Context'i async öncesi sakla
+      final theme = Theme.of(context);
       // Kırpma işlemi
       final croppedFile = await ImageCropper().cropImage(
         sourcePath: pickedFile.path,
@@ -187,7 +189,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: 'Fotoğrafı Kırp',
-            toolbarColor: Theme.of(context).colorScheme.primary,
+            toolbarColor: theme.colorScheme.primary,
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.ratio16x9,
             lockAspectRatio: false, // Serbest kırpma

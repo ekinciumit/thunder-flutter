@@ -12,7 +12,7 @@ class GetMessagesUseCase {
 
   /// Mesajları stream olarak getir
   /// 
-  /// Returns: Stream<List<MessageModel>>
+  /// Returns: ``Stream<List<MessageModel>>``
   Stream<List<MessageModel>> call(String chatId, {int limit = 50}) {
     return _repository.getMessagesStream(chatId, limit: limit);
   }

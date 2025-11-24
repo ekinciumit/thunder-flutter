@@ -13,7 +13,7 @@ class UpdateEventUseCase {
 
   /// Etkinlik güncelle
   /// 
-  /// Returns: Either<Failure, void>
+  /// Returns: ``Either<Failure, void>``
   Future<Either<Failure, void>> call(EventModel event) async {
     // Business logic: Validation
     if (event.title.isEmpty) {

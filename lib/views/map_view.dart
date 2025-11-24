@@ -46,7 +46,7 @@ class _MapViewState extends State<MapView> {
       if (e.location.latitude == 0 || e.location.longitude == 0) continue;
       final cellLat = (e.location.latitude / grid).floor();
       final cellLng = (e.location.longitude / grid).floor();
-      final key = '$cellLat\_$cellLng';
+      final key = '$cellLat' '_' '$cellLng';
       (cellToEvents[key] ??= []).add(e);
     }
 

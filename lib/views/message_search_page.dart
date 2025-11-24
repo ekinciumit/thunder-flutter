@@ -266,7 +266,7 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                             color: Colors.white,
                             showMessage: false,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             'Aranıyor...',
                             style: TextStyle(color: Colors.white70),

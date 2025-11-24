@@ -12,7 +12,7 @@ class UpdateTypingStatusUseCase {
 
   /// Yazıyor durumunu güncelle
   /// 
-  /// Returns: Either<Failure, void>
+  /// Returns: ``Either<Failure, void>``
   Future<Either<Failure, void>> call(String chatId, String userId, bool isTyping) async {
     // Business logic: Validation
     if (chatId.isEmpty || userId.isEmpty) {

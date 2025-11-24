@@ -161,7 +161,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         final compressedBytes = await _compressImage(croppedFileObj.path);
         
         if (!mounted) {
-          Navigator.of(context).pop(); // Progress dialog'u kapat
+          // ignore: use_build_context_synchronously
+          final currentContext = context;
+          Navigator.of(currentContext).pop(); // Progress dialog'u kapat
           return;
         }
         
@@ -185,7 +187,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         final url = await ref.getDownloadURL();
         
         if (!mounted) {
-          Navigator.of(context).pop(); // Progress dialog'u kapat
+          // ignore: use_build_context_synchronously
+          final currentContext = context;
+          Navigator.of(currentContext).pop(); // Progress dialog'u kapat
           return;
         }
         
@@ -337,30 +341,30 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         body: SafeArea(
           top: false,
           bottom: false,
-          child: RefreshIndicator(
-            onRefresh: () => _refreshUser(authViewModel),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
+        child: RefreshIndicator(
+          onRefresh: () => _refreshUser(authViewModel),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(
                 AppTheme.spacingMd,
                 MediaQuery.of(context).padding.top + AppTheme.spacingMd,
                 AppTheme.spacingMd,
                 AppTheme.spacingXl + MediaQuery.of(context).padding.bottom,
               ),
-              child: Column(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Instagram tarzı üst kısım - Profil fotoğrafı ve istatistikler yan yana
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
                     child: Row(
-                      children: [
+                  children: [
                         // Profil Fotoğrafı
-                        GestureDetector(
-                          onTap: isUploading ? null : () => _showPhotoDialog(user.photoUrl, authViewModel),
-                          child: Stack(
-                            alignment: Alignment.bottomRight,
-                            children: [
+                    GestureDetector(
+                      onTap: isUploading ? null : () => _showPhotoDialog(user.photoUrl, authViewModel),
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
                               Container(
                                 width: 90,
                                 height: 90,
@@ -371,17 +375,17 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                     width: 2,
                                   ),
                                 ),
-                                child: user.photoUrl != null && user.photoUrl!.isNotEmpty
-                                    ? ClipOval(
-                                        child: CachedNetworkImage(
-                                          imageUrl: user.photoUrl!,
-                                          fit: BoxFit.cover,
+                            child: user.photoUrl != null && user.photoUrl!.isNotEmpty
+                                ? ClipOval(
+                                    child: CachedNetworkImage(
+                                      imageUrl: user.photoUrl!,
+                                      fit: BoxFit.cover,
                                           memCacheWidth: 180,
                                           memCacheHeight: 180,
-                                          placeholder: (context, url) => Container(
+                                      placeholder: (context, url) => Container(
                                             color: theme.colorScheme.surfaceContainerHighest,
-                                            child: const Center(child: CircularProgressIndicator()),
-                                          ),
+                                        child: const Center(child: CircularProgressIndicator()),
+                                      ),
                                           errorWidget: (context, url, error) => Container(
                                             color: theme.colorScheme.surfaceContainerHighest,
                                             child: Icon(
@@ -390,8 +394,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                               color: AppColorConfig.primaryColor,
                                             ),
                                           ),
-                                        ),
-                                      )
+                                    ),
+                                  )
                                     : Container(
                                         color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
                                         child: Icon(
@@ -400,8 +404,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                           color: AppColorConfig.primaryColor,
                                         ),
                                       ),
-                              ),
-                              if (isUploading)
+                          ),
+                          if (isUploading)
                                 Positioned.fill(
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -412,10 +416,10 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                       child: CircularProgressIndicator(
                                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                       ),
-                                    ),
-                                  ),
-                                )
-                              else
+                                ),
+                              ),
+                            )
+                          else
                                 Positioned(
                                   bottom: 0,
                                   right: 0,
@@ -425,18 +429,18 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                       gradient: LinearGradient(
                                         colors: AppTheme.gradientSecondary,
                                       ),
-                                      shape: BoxShape.circle,
+                                shape: BoxShape.circle,
                                       border: Border.all(
                                         color: theme.colorScheme.surface,
                                         width: 2,
                                       ),
-                                    ),
+                              ),
                                     child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                                   ),
-                                ),
-                            ],
-                          ),
-                        ),
+                            ),
+                        ],
+                      ),
+                    ),
                         const SizedBox(width: AppTheme.spacingLg),
                         // İstatistikler
                         Expanded(
@@ -498,26 +502,26 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (isEditing)
-                          _buildEditableTextField(nameController, 'İsim')
-                        else
-                          Text(
-                            user.displayName ?? 'İsim belirtilmemiş',
+                    if (isEditing)
+                      _buildEditableTextField(nameController, 'İsim')
+                    else
+                      Text(
+                        user.displayName ?? 'İsim belirtilmemiş',
                             style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.bold,
                               color: theme.colorScheme.onSurface,
-                            ),
-                          ),
+                        ),
+                      ),
                         const SizedBox(height: AppTheme.spacingXs),
-                        if (isEditing)
-                          _buildEditableTextField(bioController, 'Biyografi', maxLines: 3)
+                    if (isEditing)
+                      _buildEditableTextField(bioController, 'Biyografi', maxLines: 3)
                         else if (user.bio != null && user.bio!.isNotEmpty)
-                          Text(
+                      Text(
                             user.bio!,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
+                        ),
+                      ),
                       ],
                     ),
                   ),
@@ -529,23 +533,24 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () async {
-                              if (isEditing) {
-                                await authViewModel.completeProfile(
-                                  displayName: nameController.text.trim(),
-                                  bio: bioController.text.trim(),
-                                  photoUrl: user.photoUrl,
+                          onPressed: () async {
+                            if (isEditing) {
+                              await authViewModel.completeProfile(
+                                displayName: nameController.text.trim(),
+                                bio: bioController.text.trim(),
+                                photoUrl: user.photoUrl,
+                              );
+                              await _refreshUser(authViewModel);
+                                if (!mounted) return;
+                                // ignore: use_build_context_synchronously
+                                final currentContext = context;
+                                ModernSnackbar.showSuccess(
+                                  currentContext,
+                                  'Profil başarıyla güncellendi!',
                                 );
-                                await _refreshUser(authViewModel);
-                                if (mounted) {
-                                  ModernSnackbar.showSuccess(
-                                    context,
-                                    'Profil başarıyla güncellendi!',
-                                  );
-                                }
-                              }
-                              setState(() => isEditing = !isEditing);
-                            },
+                            }
+                            setState(() => isEditing = !isEditing);
+                          },
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                               shape: RoundedRectangleBorder(
@@ -648,7 +653,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                         bottom: BorderSide(
                                           color: AppColorConfig.primaryColor,
                                           width: 2,
-                                        ),
+                        ),
                                       ),
                                     ),
                                     child: Icon(
@@ -656,9 +661,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                       color: AppColorConfig.primaryColor,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
+                    ),
+                  ],
+                ),
                           ),
                           // Grid
                           GridView.builder(
@@ -742,23 +747,23 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     return GestureDetector(
       onTap: onTap,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$count',
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$count',
             style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.bold, 
               color: AppColorConfig.primaryColor,
             ),
           ),
           const SizedBox(height: AppTheme.spacingXs),
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
-        ],
+        ),
+      ],
       ),
     );
   }

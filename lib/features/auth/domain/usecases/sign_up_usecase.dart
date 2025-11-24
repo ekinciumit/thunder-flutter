@@ -16,7 +16,7 @@ class SignUpUseCase {
 
   /// Email/password ile kayıt ol
   /// 
-  /// Returns: Either<Failure, UserModel>
+  /// Returns: ``Either<Failure, UserModel>``
   /// - Left: Failure if registration fails
   /// - Right: UserModel if successful
   Future<Either<Failure, UserModel>> call(String email, String password) async {

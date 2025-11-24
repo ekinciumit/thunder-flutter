@@ -13,7 +13,7 @@ class SendVoiceMessageUseCase {
 
   /// Sesli mesaj gönder
   /// 
-  /// Returns: Either<Failure, MessageModel>
+  /// Returns: ``Either<Failure, MessageModel>``
   Future<Either<Failure, MessageModel>> call({
     required String chatId,
     required String senderId,

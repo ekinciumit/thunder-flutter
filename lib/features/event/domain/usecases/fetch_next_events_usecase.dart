@@ -13,7 +13,7 @@ class FetchNextEventsUseCase {
 
   /// Daha fazla etkinlik getir
   /// 
-  /// Returns: Either<Failure, List<EventModel>>
+  /// Returns: ``Either<Failure, List<EventModel>>``
   Future<Either<Failure, List<EventModel>>> call({
     DateTime? startAfter,
     int limit = 50,

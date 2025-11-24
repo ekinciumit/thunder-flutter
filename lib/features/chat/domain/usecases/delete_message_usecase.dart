@@ -12,7 +12,7 @@ class DeleteMessageUseCase {
 
   /// Mesajı sil
   /// 
-  /// Returns: Either<Failure, void>
+  /// Returns: ``Either<Failure, void>``
   Future<Either<Failure, void>> call(String messageId, String userId) async {
     // Business logic: Validation
     if (messageId.isEmpty || userId.isEmpty) {

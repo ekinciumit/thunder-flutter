@@ -12,7 +12,7 @@ class GetUserChatsUseCase {
 
   /// Kullanıcının sohbetlerini getir
   /// 
-  /// Returns: Stream<List<ChatModel>>
+  /// Returns: ``Stream<List<ChatModel>>``
   Stream<List<ChatModel>> call(String userId) {
     return _repository.getUserChats(userId);
   }

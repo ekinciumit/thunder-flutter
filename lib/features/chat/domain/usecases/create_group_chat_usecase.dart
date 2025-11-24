@@ -13,7 +13,7 @@ class CreateGroupChatUseCase {
 
   /// Grup sohbeti oluştur
   /// 
-  /// Returns: Either<Failure, ChatModel>
+  /// Returns: ``Either<Failure, ChatModel>``
   Future<Either<Failure, ChatModel>> call({
     required String name,
     required String createdBy,

@@ -254,7 +254,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                             color: Colors.white,
                             showMessage: false,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             'Sohbetler yükleniyor...',
                             style: TextStyle(color: Colors.white70),

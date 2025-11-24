@@ -62,10 +62,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _handleNotificationTap(NotificationModel notification) async {
+    // Context'i async öncesi sakla
+    if (!mounted) return;
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    
     // Bildirimi okundu olarak işaretle
     await _userService.markNotificationAsRead(notification.id);
-
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    
+    if (!mounted) return;
     final currentUserId = authViewModel.user?.uid;
 
     if (currentUserId == null) return;
@@ -170,13 +174,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   icon: const Icon(Icons.done_all, color: Colors.white),
                   tooltip: 'Tümünü okundu işaretle',
                   onPressed: () async {
+                    if (!mounted) return;
+                    final currentContext = context;
                     await _userService.markAllNotificationsAsRead(currentUser.uid);
-                    if (mounted) {
-                      ModernSnackbar.showSuccess(
-                        context,
-                        'Tüm bildirimler okundu olarak işaretlendi',
-                      );
-                    }
+                    if (!mounted) return;
+                    // ignore: use_build_context_synchronously
+                    ModernSnackbar.showSuccess(
+                      currentContext,
+                      'Tüm bildirimler okundu olarak işaretlendi',
+                    );
                   },
                 );
               },

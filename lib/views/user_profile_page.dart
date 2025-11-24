@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import '../models/event_model.dart';
 import 'private_chat_page.dart';
 import 'followers_following_page.dart';
+import 'event_detail_page.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
@@ -280,7 +281,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         subtitle: Text(event.description, maxLines: 1, overflow: TextOverflow.ellipsis),
                         trailing: Text('${event.datetime.day}.${event.datetime.month}.${event.datetime.year}'),
                         onTap: () {
-                          // TODO: Etkinlik detayına git
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => EventDetailPage(
+                                event: event,
+                              ),
+                            ),
+                          );
                         },
                       ),
                     );

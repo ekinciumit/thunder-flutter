@@ -12,7 +12,7 @@ class AddReactionUseCase {
 
   /// Mesaja tepki ekle
   /// 
-  /// Returns: Either<Failure, void>
+  /// Returns: ``Either<Failure, void>``
   Future<Either<Failure, void>> call(String messageId, String userId, String emoji) async {
     // Business logic: Validation
     if (messageId.isEmpty || userId.isEmpty || emoji.isEmpty) {

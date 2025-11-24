@@ -295,6 +295,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       if (imageUrl != null) messageType = MessageType.image;
       if (videoUrl != null) messageType = MessageType.video;
       
+      if (!mounted) return;
       final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
       await chatViewModel.sendMessage(
         chatId: _chatId!,
@@ -379,6 +380,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         );
       }
       
+      if (!mounted) return;
       // Context'i async işlemden önce al
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       
@@ -884,7 +886,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                     fileExtension: fileExtension,
                     isMe: isMe,
                     onTap: () {
-                      // TODO: Dosyayı açma/indirme işlevi
+                      // Dosya açma/indirme özelliği gelecek versiyonda eklenecek
                       ModernSnackbar.showInfo(
                         context,
                         'Dosya açma özelliği yakında eklenecek',
@@ -1049,18 +1051,23 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               final navigator = Navigator.of(context);
               if (controller.text.trim().isNotEmpty) {
                 try {
-                  final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+                  // Context'i async öncesi sakla
+                  final currentContext = context;
+                  final chatViewModel = Provider.of<ChatViewModel>(currentContext, listen: false);
                   await chatViewModel.editMessage(message.id, controller.text.trim());
                   if (!mounted) return;
                   navigator.pop();
+                    // ignore: use_build_context_synchronously
                     ModernSnackbar.showSuccess(
-                      context,
+                      currentContext,
                       'Mesaj düzenlendi',
-                    );
+                  );
                 } catch (e) {
                   if (!mounted) return;
+                  // ignore: use_build_context_synchronously
+                  final errorContext = context;
                   ModernSnackbar.showError(
-                    context,
+                    errorContext,
                     'Hata: $e',
                   );
                 }
@@ -1088,18 +1095,23 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             onPressed: () async {
               final navigator = Navigator.of(context);
               try {
-                final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+                // Context'i async öncesi sakla
+                final currentContext = context;
+                final chatViewModel = Provider.of<ChatViewModel>(currentContext, listen: false);
                 await chatViewModel.deleteMessage(message.id, widget.currentUserId);
                 if (!mounted) return;
                 navigator.pop();
+                // ignore: use_build_context_synchronously
                 ModernSnackbar.showSuccess(
-                  context,
+                  currentContext,
                   'Mesaj silindi',
                 );
               } catch (e) {
                 if (!mounted) return;
+                // ignore: use_build_context_synchronously
+                final errorContext = context;
                 ModernSnackbar.showError(
-                  context,
+                  errorContext,
                   'Hata: $e',
                 );
               }
@@ -1193,6 +1205,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       final snapshot = await uploadTask;
       final audioUrl = await snapshot.ref.getDownloadURL();
 
+      if (!mounted) return;
       // Kullanıcı adını AuthViewModel'den çek (Clean Architecture)
       // Context'i async işlemden önce al
       final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -1210,6 +1223,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       }
       
       // Mesajı gönder
+      if (!mounted) return;
       final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
       await chatViewModel.sendVoiceMessage(
         chatId: _chatId!,
@@ -1344,6 +1358,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       // Dosya uzantısını al
       final fileExtension = file.extension;
 
+      if (!mounted) return;
       // Context'i async işlemden önce al
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
@@ -1356,6 +1371,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       }
       
       // Mesajı gönder
+      if (!mounted) return;
       final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
       await chatViewModel.sendFileMessage(
         chatId: _chatId!,

@@ -13,7 +13,7 @@ class ForwardMessageUseCase {
 
   /// Mesaj ilet
   /// 
-  /// Returns: Either<Failure, MessageModel>
+  /// Returns: ``Either<Failure, MessageModel>``
   Future<Either<Failure, MessageModel>> call({
     required MessageModel originalMessage,
     required String targetChatId,

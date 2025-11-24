@@ -702,7 +702,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
     ).then((confirmed) async {
       if (confirmed == true) {
         await eventViewModel.deleteEvent(event.id);
-        if (!context.mounted) return;
+        if (!mounted) return;
         ModernSnackbar.showSuccess(
           context,
           'Etkinlik silindi',

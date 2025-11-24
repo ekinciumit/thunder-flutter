@@ -12,7 +12,7 @@ class DeleteEventUseCase {
 
   /// Etkinlik sil
   /// 
-  /// Returns: Either<Failure, void>
+  /// Returns: ``Either<Failure, void>``
   Future<Either<Failure, void>> call(String eventId) async {
     // Business logic: Validation
     if (eventId.isEmpty) {

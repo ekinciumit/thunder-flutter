@@ -12,7 +12,7 @@ class ApproveJoinRequestUseCase {
 
   /// Katılma isteğini onayla
   /// 
-  /// Returns: Either<Failure, void>
+  /// Returns: ``Either<Failure, void>``
   Future<Either<Failure, void>> call(String eventId, String userId) async {
     // Business logic: Validation
     if (eventId.isEmpty || userId.isEmpty) {
