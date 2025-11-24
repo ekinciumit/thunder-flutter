@@ -34,8 +34,13 @@ void main() {
 
       // Assert
       expect(find.text('Profilini Tamamla'), findsWidgets); // AppBar'da ve içerikte görünür
-      expect(find.text('İsim Soyisim'), findsOneWidget);
-      expect(find.text('Biyografi'), findsOneWidget);
+      // Label'lar TextField içinde labelText olarak gösteriliyor, text olarak değil
+      expect(find.byWidgetPredicate(
+        (widget) => widget is TextField && widget.decoration?.labelText == 'İsim Soyisim',
+      ), findsOneWidget);
+      expect(find.byWidgetPredicate(
+        (widget) => widget is TextField && widget.decoration?.labelText == 'Biyografi (Opsiyonel)',
+      ), findsOneWidget);
       expect(find.text('Kaydet ve Devam Et'), findsOneWidget);
     });
 
@@ -104,7 +109,7 @@ void main() {
       );
       final bioField = find.byWidgetPredicate(
         (widget) => widget is TextField && 
-                    widget.decoration?.labelText == 'Biyografi',
+                    widget.decoration?.labelText == 'Biyografi (Opsiyonel)',
       );
 
       await tester.enterText(nameField, 'Test Kullanıcı');
@@ -140,7 +145,7 @@ void main() {
       expect(completedPhotoUrl, null);
     });
 
-    testWidgets('CompleteProfilePage - Boş form gönderilebilir', (WidgetTester tester) async {
+    testWidgets('CompleteProfilePage - Boş form gönderilemez (validasyon çalışıyor)', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
         MaterialApp(
@@ -174,13 +179,15 @@ void main() {
         await tester.pumpAndSettle();
       }
       
-      // Butonu tıkla
+      // Butonu tıkla (boş form ile)
       await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
       // Assert
-      // Boş form gönderilebilir (onComplete çağrılmalı ama değerler boş)
-      expect(onCompleteCalled, true, reason: 'onComplete callback çağrılmalı');
+      // Boş form gönderilemez (validasyon hatası gösterilmeli, onComplete çağrılmamalı)
+      expect(onCompleteCalled, false, reason: 'onComplete callback çağrılmamalı (validasyon hatası)');
+      // Validasyon hatası mesajı gösterilmeli
+      expect(find.textContaining('zorunludur'), findsWidgets);
     });
 
     testWidgets('CompleteProfilePage - AppBar görünür', (WidgetTester tester) async {

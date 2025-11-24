@@ -241,8 +241,8 @@ class _ChatListPageState extends State<ChatListPage> {
                 message: 'Etkinliklere katılarak yeni insanlarla tanışın ve sohbet başlatın!',
                 actionLabel: 'Etkinlikleri Keşfet',
                 onAction: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
+                          Navigator.of(context).popUntil((route) => route.isFirst);
+                        },
                 backgroundColor: Colors.transparent,
                 textColor: Colors.white,
               );
@@ -302,7 +302,7 @@ class _ChatListPageState extends State<ChatListPage> {
           },
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
+            onPressed: () {
             ModernSnackbar.showInfo(
               context,
               'Yeni sohbet özelliği yakında eklenecek',

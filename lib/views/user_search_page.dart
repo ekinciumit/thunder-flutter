@@ -47,7 +47,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
           top: false,
           bottom: false,
           child: Column(
-            children: [
+        children: [
               // Header with back button and title
               Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -67,7 +67,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                         ),
-                      ),
+              ),
                     ),
                     const SizedBox(width: AppTheme.spacingMd),
                     Expanded(
@@ -76,7 +76,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                        ),
+                ),
                       ),
                     ),
                   ],
@@ -96,36 +96,36 @@ class _UserSearchPageState extends State<UserSearchPage> {
                     prefixIcon: Icon(
                       Icons.search_rounded,
                       color: AppColorConfig.primaryColor,
-                    ),
-                    suffixIcon: _searchQuery.isNotEmpty
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: Icon(
                               Icons.clear_rounded,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _searchQuery = '';
-                                _searchController.clear();
-                              });
-                            },
-                          )
-                        : null,
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                  ),
-                ),
+                          onPressed: () {
+                            setState(() {
+                              _searchQuery = '';
+                              _searchController.clear();
+                            });
+                          },
+                      )
+                    : null,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+          ),
               ),
               const SizedBox(height: AppTheme.spacingMd),
               // Results
-              Expanded(
-                child: StreamBuilder<List<UserModel>>(
-                  stream: _userStream(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+          Expanded(
+            child: StreamBuilder<List<UserModel>>(
+              stream: _userStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
                         child: ModernLoadingWidget(
                           message: 'Kullanıcılar yükleniyor...',
@@ -141,17 +141,17 @@ class _UserSearchPageState extends State<UserSearchPage> {
                         backgroundColor: Colors.transparent,
                         textColor: Colors.white,
                       );
-                    }
+                }
 
-                    final users = snapshot.data ?? [];
-                    final filtered = users.where((user) {
+                final users = snapshot.data ?? [];
+                final filtered = users.where((user) {
                       if (user.uid == currentUserId) return false; // Kendi profilini gösterme
                       if (_searchQuery.isEmpty) return false; // Arama yoksa gösterme
-                      final query = _searchQuery.toLowerCase();
-                      return (user.displayName ?? '').toLowerCase().contains(query) ||
+                  final query = _searchQuery.toLowerCase();
+                  return (user.displayName ?? '').toLowerCase().contains(query) ||
                              user.email.toLowerCase().contains(query) ||
                              (user.username ?? '').toLowerCase().contains(query);
-                    }).toList();
+                }).toList();
 
                     if (_searchQuery.isEmpty) {
                       return EmptyStateWidget(
@@ -163,22 +163,22 @@ class _UserSearchPageState extends State<UserSearchPage> {
                       );
                     }
 
-                    if (filtered.isEmpty) {
+                if (filtered.isEmpty) {
                       return EmptyStateWidget(
                         icon: Icons.person_search_rounded,
                         title: 'Kullanıcı bulunamadı',
                         message: 'Farklı arama terimleri deneyin',
                         backgroundColor: Colors.transparent,
                         textColor: Colors.white,
-                      );
-                    }
+                  );
+                }
 
-                    return ListView.separated(
+                return ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
-                      itemCount: filtered.length,
+                  itemCount: filtered.length,
                       separatorBuilder: (context, index) => const SizedBox(height: AppTheme.spacingXs),
-                      itemBuilder: (context, index) {
-                        final user = filtered[index];
+                  itemBuilder: (context, index) {
+                    final user = filtered[index];
                         return Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -217,19 +217,19 @@ class _UserSearchPageState extends State<UserSearchPage> {
                                     user.email,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.onSurfaceVariant,
-                                    ),
+                                      ),
                                   ),
                                 if (user.bio != null && user.bio!.isNotEmpty)
-                                  Text(
+                                      Text(
                                     user.bio!,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.onSurfaceVariant,
-                                    ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                              ],
-                            ),
                             trailing: Icon(
                               Icons.chevron_right_rounded,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -240,18 +240,18 @@ class _UserSearchPageState extends State<UserSearchPage> {
                                   builder: (_) => UserProfilePage(
                                     user: user,
                                     currentUserId: currentUserId,
-                                  ),
-                                ),
+                            ),
+                          ),
                               );
                             },
-                          ),
-                        );
-                      },
+                      ),
                     );
                   },
-                ),
-              ),
-            ],
+                );
+              },
+            ),
+          ),
+        ],
           ),
         ),
       ),

@@ -123,7 +123,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                       Icons.lock_outline,
                       color: theme.colorScheme.primary,
                     ),
-                  ),
+                        ),
                   if (authViewModel.error != null) ...[
                     const SizedBox(height: AppTheme.spacingLg),
                     Container(
@@ -170,8 +170,8 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                          ),
                         ),
-                      ),
                       child: authViewModel.isLoading
                           ? SizedBox(
                               height: 20,
@@ -184,12 +184,12 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                               ),
                             )
                           : Text(
-                              isLogin ? l10n.login : l10n.signUp,
+                        isLogin ? l10n.login : l10n.signUp,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
-                              ),
-                            ),
+                      ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppTheme.spacingLg),

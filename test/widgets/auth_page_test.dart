@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:thunder/views/auth_page.dart';
 import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
+import 'package:thunder/l10n/app_localizations.dart';
 
 import 'auth_page_test.mocks.dart';
 
@@ -25,6 +26,7 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'), // Türkçe locale ayarla
           localizationsDelegates: const [
+            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -67,6 +69,7 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'), // Türkçe locale ayarla
           localizationsDelegates: const [
+            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -81,7 +84,7 @@ void main() {
       await tester.pumpAndSettle();
       
       // Assert
-      expect(find.byType(ElevatedButton), findsWidgets);
+      expect(find.byType(FilledButton), findsWidgets);
     });
 
     testWidgets('AuthPage - Kayıt ol / Giriş yap toggle çalışıyor', (WidgetTester tester) async {
@@ -96,6 +99,7 @@ void main() {
         MaterialApp(
           locale: const Locale('tr'), // Türkçe locale ayarla
           localizationsDelegates: const [
+            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,

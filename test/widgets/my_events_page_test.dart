@@ -29,6 +29,10 @@ void main() {
         uid: 'user-1',
         email: 'test@example.com',
         displayName: 'Test User',
+        followers: [],
+        following: [],
+        pendingFollowRequests: [],
+        sentFollowRequests: [],
       );
 
       // Mock repository setup - AuthViewModel constructor'ı getCurrentUser çağırıyor
@@ -65,15 +69,16 @@ void main() {
     });
 
     testWidgets('MyEventsPage - Kullanıcı yoksa hata mesajı gösteriliyor', (WidgetTester tester) async {
-      // Arrange
+      // Arrange - Yeni bir AuthViewModel oluştur (null user ile)
       when(mockAuthRepository.getCurrentUser()).thenReturn(null);
+      final nullUserAuthViewModel = AuthViewModel(authRepository: mockAuthRepository);
 
       // Act
       await tester.pumpWidget(
         MaterialApp(
           home: MultiProvider(
             providers: [
-              ChangeNotifierProvider<AuthViewModel>.value(value: authViewModel),
+              ChangeNotifierProvider<AuthViewModel>.value(value: nullUserAuthViewModel),
               ChangeNotifierProvider<EventViewModel>.value(value: eventViewModel),
             ],
             child: MyEventsPage(),

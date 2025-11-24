@@ -224,24 +224,24 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
               child: ModernInputField(
                 controller: _searchController,
                 hint: widget.chatId != null 
-                    ? 'Bu sohbette ara...'
-                    : 'Tüm mesajlarda ara...',
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: Colors.white.withValues(alpha: 0.6),
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(
-                          Icons.clear,
-                          color: Colors.white.withValues(alpha: 0.6),
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          _performSearch('');
-                        },
-                      )
-                    : null,
+                      ? 'Bu sohbette ara...'
+                      : 'Tüm mesajlarda ara...',
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.clear,
+                            color: Colors.white.withValues(alpha: 0.6),
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            _performSearch('');
+                          },
+                        )
+                      : null,
                 onChanged: (value) {
                   setState(() {});
                   // Debounce için timer kullanılabilir

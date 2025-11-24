@@ -154,21 +154,21 @@ exports.sendNewMessageNotification = onDocumentCreated('messages/{messageId}', a
 
   // Normal mesaj bildirimi gönder
   if (tokens.size > 0) {
-    const payload = {
-      notification: {
-        title: chat.name ? `Yeni mesaj • ${chat.name}` : 'Yeni mesaj',
-        body: text.length > 80 ? `${text.substring(0, 77)}…` : text,
-        click_action: 'FLUTTER_NOTIFICATION_CLICK',
-      },
-      data: {
-        chatId: chatId,
-        messageId: event.params.messageId,
-        type: msg.type || 'text',
-      },
-    };
+  const payload = {
+    notification: {
+      title: chat.name ? `Yeni mesaj • ${chat.name}` : 'Yeni mesaj',
+      body: text.length > 80 ? `${text.substring(0, 77)}…` : text,
+      click_action: 'FLUTTER_NOTIFICATION_CLICK',
+    },
+    data: {
+      chatId: chatId,
+      messageId: event.params.messageId,
+      type: msg.type || 'text',
+    },
+  };
 
-    const response = await admin.messaging().sendToDevice(Array.from(tokens), payload);
-    logger.info('Message notifications sent:', response.successCount);
+  const response = await admin.messaging().sendToDevice(Array.from(tokens), payload);
+  logger.info('Message notifications sent:', response.successCount);
   }
 
   // Mesaj isteği bildirimi gönder

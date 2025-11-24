@@ -180,13 +180,13 @@ class _EventListViewState extends State<EventListView> {
       // Takip edilenlerin etkinlikleri önce gelsin
       if (aIsFollowing && !bIsFollowing) return -1;
       if (!aIsFollowing && bIsFollowing) return 1;
-      
-      // Mesafeye göre sıralama (sadece konum alındıysa ve mesafe filtresi aktifse)
-      if (userPosition != null && isDistanceFilterEnabled) {
+
+    // Mesafeye göre sıralama (sadece konum alındıysa ve mesafe filtresi aktifse)
+    if (userPosition != null && isDistanceFilterEnabled) {
         final da = _calculateDistance(userPosition!.latitude, userPosition!.longitude, a.location.latitude, a.location.longitude);
         final db = _calculateDistance(userPosition!.latitude, userPosition!.longitude, b.location.latitude, b.location.longitude);
         return da.compareTo(db);
-      }
+    }
       
       // Tarihe göre sıralama (yakın tarihli etkinlikler önce)
       return a.datetime.compareTo(b.datetime);
@@ -267,8 +267,8 @@ class _EventListViewState extends State<EventListView> {
                   ),
                   const SizedBox(width: AppTheme.spacingSm),
                   FilledButton(
-                    onPressed: () async {
-                      await showModalBottomSheet(
+                      onPressed: () async {
+                        await showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
@@ -291,17 +291,17 @@ class _EventListViewState extends State<EventListView> {
                                 ),
                               ),
                               child: Padding(
-                                padding: EdgeInsets.only(
+                              padding: EdgeInsets.only(
                                   left: AppTheme.spacingXxl,
                                   right: AppTheme.spacingXxl,
                                   top: AppTheme.spacingXxl,
                                   bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingXxl,
-                                ),
-                                child: StatefulBuilder(
-                                  builder: (context, setModalState) => Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
+                              ),
+                              child: StatefulBuilder(
+                                builder: (context, setModalState) => Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text('Filtreler', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                                     const SizedBox(height: 20),
                                     DropdownButtonFormField<String>(
@@ -566,17 +566,17 @@ class _EventListViewState extends State<EventListView> {
                                     ),
                                   ],
                                 ),
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      );
-                    },
+                            );
+                          },
+                        );
+                      },
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.all(AppTheme.spacingMd),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                      ),
+                    ),
                     ),
                     child: const Icon(Icons.filter_alt_rounded),
                   ),
@@ -614,8 +614,8 @@ class _EventListViewState extends State<EventListView> {
                       ),
                     ],
                   ),
-                ),
               ),
+            ),
             const SizedBox(height: AppTheme.spacingSm),
             Expanded(
               child: eventViewModel.isLoading

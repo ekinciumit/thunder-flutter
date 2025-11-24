@@ -42,7 +42,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     
     if (currentUserDoc.exists) {
       _currentUser = UserModel.fromMap(currentUserDoc.data()!, currentUserDoc.id);
-    }
+  }
 
     // Kullanıcı verilerini stream ile dinle
     FirebaseFirestore.instance
@@ -161,7 +161,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     );
                   },
                   child: Column(
-                    children: [
+                  children: [
                       Text(
                         '$followersCount',
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -169,8 +169,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           color: AppColorConfig.primaryColor,
                         ),
                       ),
-                      const Text('Takipçi'),
-                    ],
+                    const Text('Takipçi'),
+                  ],
                   ),
                 ),
                 const SizedBox(width: 24),
@@ -186,7 +186,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     );
                   },
                   child: Column(
-                    children: [
+                  children: [
                       Text(
                         '$followingCount',
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -194,8 +194,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           color: AppColorConfig.primaryColor,
                         ),
                       ),
-                      const Text('Takip'),
-                    ],
+                    const Text('Takip'),
+                  ],
                   ),
                 ),
               ],

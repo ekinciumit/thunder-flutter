@@ -273,19 +273,19 @@ class _MapViewState extends State<MapView> {
               top: AppTheme.spacingXxl,
               bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingXxl,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                         color: theme.colorScheme.primary.withAlpha(AppTheme.alphaLight),
-                        image: event.coverPhotoUrl != null
+                      image: event.coverPhotoUrl != null
                             ? DecorationImage(
                                 image: NetworkImage(event.coverPhotoUrl!),
                                 fit: BoxFit.cover,
@@ -301,58 +301,58 @@ class _MapViewState extends State<MapView> {
                           : null,
                     ),
                     const SizedBox(width: AppTheme.spacingMd),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                           Text(
                             event.title,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                        const SizedBox(height: 4),
                           Text(
                             event.category,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.primary,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                        const SizedBox(height: 4),
                           Text(
                             event.address,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall,
                           ),
-                        ],
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                    ),
+                ],
+              ),
                 const SizedBox(height: AppTheme.spacingXl),
-                SizedBox(
-                  width: double.infinity,
+              SizedBox(
+                width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).push(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => EventDetailPage(event: event),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.open_in_new),
-                    label: const Text('Etkinlik Detayına Git'),
+                    );
+                  },
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Etkinlik Detayına Git'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                       ),
-                    ),
                   ),
                 ),
-              ],
+              ),
+            ],
             ),
           ),
         );
