@@ -8,6 +8,8 @@ class UserModel {
   final List<String> followers;
   final List<String> following;
   final List<String> fcmTokens; // Yeni alan
+  final List<String> pendingFollowRequests; // Gelen takip istekleri
+  final List<String> sentFollowRequests; // Gönderilen takip istekleri
 
   UserModel({
     required this.uid,
@@ -19,6 +21,8 @@ class UserModel {
     this.followers = const [],
     this.following = const [],
     this.fcmTokens = const [], // Yeni alan
+    this.pendingFollowRequests = const [],
+    this.sentFollowRequests = const [],
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
@@ -32,6 +36,8 @@ class UserModel {
       followers: List<String>.from(map['followers'] ?? []),
       following: List<String>.from(map['following'] ?? []),
       fcmTokens: List<String>.from(map['fcmTokens'] ?? []), // Yeni alan
+      pendingFollowRequests: List<String>.from(map['pendingFollowRequests'] ?? []),
+      sentFollowRequests: List<String>.from(map['sentFollowRequests'] ?? []),
     );
   }
 
@@ -45,6 +51,8 @@ class UserModel {
       'followers': followers,
       'following': following,
       'fcmTokens': fcmTokens, // Yeni alan
+      'pendingFollowRequests': pendingFollowRequests,
+      'sentFollowRequests': sentFollowRequests,
     };
   }
 
@@ -58,6 +66,8 @@ class UserModel {
     List<String>? followers,
     List<String>? following,
     List<String>? fcmTokens, // Yeni alan
+    List<String>? pendingFollowRequests,
+    List<String>? sentFollowRequests,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -69,6 +79,8 @@ class UserModel {
       followers: followers ?? this.followers,
       following: following ?? this.following,
       fcmTokens: fcmTokens ?? this.fcmTokens, // Yeni alan
+      pendingFollowRequests: pendingFollowRequests ?? this.pendingFollowRequests,
+      sentFollowRequests: sentFollowRequests ?? this.sentFollowRequests,
     );
   }
 } 

@@ -143,5 +143,25 @@ service cloud.firestore {
         request.auth.uid == resource.data.senderId;
     }
 
+    // Bildirimler koleksiyonu için kurallar
+    match /notifications/{notificationId} {
+      // Okuma: Sadece kendi bildirimlerini okuyabilir
+      allow read: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+
+      // Oluşturma: Sistem bildirimleri oluşturabilir (takip bildirimleri için)
+      // Kullanıcılar kendi bildirimlerini oluşturamaz, sadece sistem oluşturur
+      allow create: if request.auth != null;
+
+      // Güncelleme: Sadece kendi bildirimlerini güncelleyebilir (okundu işaretleme)
+      allow update: if request.auth != null && 
+        resource.data.userId == request.auth.uid &&
+        // Sadece isRead alanı güncellenebilir
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+
+      // Silme: Bildirimler silinemez
+      allow delete: if false;
+    }
+
   }
 }

@@ -8,6 +8,7 @@ import 'profile_view.dart';
 import 'create_event_page.dart';
 import 'chat_list_page.dart';
 import 'private_chat_page.dart';
+import 'notifications_page.dart';
 import '../services/notification_service.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../models/chat_model.dart';
@@ -26,6 +27,7 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final NotificationService _notificationService = NotificationService();
   int _totalUnreadCount = 0;
+  int _unreadNotificationCount = 0;
 
   static final List<Widget> _pages = <Widget>[
     EventListView(),
@@ -39,6 +41,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _setupNotificationRouting();
     _loadUnreadCount();
+    _loadUnreadNotificationCount();
     // Tam ekran için system UI'ı ayarla
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.edgeToEdge,
@@ -149,6 +152,25 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _loadUnreadNotificationCount() {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final currentUser = authViewModel.user;
+    if (currentUser == null) return;
+
+    FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: currentUser.uid)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _unreadNotificationCount = snapshot.docs.length;
+        });
+      }
+    });
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -159,10 +181,41 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: _pages[_selectedIndex],
+      body: Stack(
+        children: [
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: _pages[_selectedIndex],
+          ),
+          // Bildirimler Butonu (Sadece ana sayfada)
+          if (_selectedIndex == 0)
+            Positioned(
+              bottom: 90,
+              right: 16,
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                  );
+                },
+                backgroundColor: AppColorConfig.secondaryColor,
+                foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                elevation: 4,
+                child: Badge(
+                  label: _unreadNotificationCount > 0
+                      ? Text(
+                          _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
+                          style: const TextStyle(fontSize: 10),
+                        )
+                      : null,
+                  isLabelVisible: _unreadNotificationCount > 0,
+                  backgroundColor: AppColorConfig.errorColor,
+                  child: const Icon(Icons.notifications_rounded, size: 24),
+                ),
+              ),
+            ),
+        ],
       ),
       bottomNavigationBar: Container(
         margin: EdgeInsets.only(
@@ -260,7 +313,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton.extended(
+          ? FloatingActionButton(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const CreateEventPage()),
@@ -269,14 +322,7 @@ class _HomePageState extends State<HomePage> {
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               elevation: 4,
-              icon: const Icon(Icons.add_rounded, size: 24),
-              label: const Text(
-                'Etkinlik Oluştur',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
+              child: const Icon(Icons.add_rounded, size: 24),
             )
           : null,
     );

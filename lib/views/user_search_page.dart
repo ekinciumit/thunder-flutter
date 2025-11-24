@@ -5,8 +5,11 @@ import '../models/user_model.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'user_profile_page.dart';
 import 'widgets/modern_loading_widget.dart';
+import 'widgets/app_gradient_container.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class UserSearchPage extends StatefulWidget {
   const UserSearchPage({super.key});
@@ -35,235 +38,221 @@ class _UserSearchPageState extends State<UserSearchPage> {
   Widget build(BuildContext context) {
     final currentUserId = Provider.of<AuthViewModel>(context, listen: false).user?.uid ?? '';
     final theme = Theme.of(context);
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.of(context).pop(),
-                  color: theme.colorScheme.onSurface,
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withAlpha(AppTheme.alphaLight),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                    ),
-                  ),
+    
+    return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: Column(
+            children: [
+              // Header with back button and title
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppTheme.spacingMd,
+                  MediaQuery.of(context).padding.top + AppTheme.spacingMd,
+                  AppTheme.spacingMd,
+                  AppTheme.spacingMd,
                 ),
-              ),
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.deepPurple.withAlpha(20),
-                  Colors.blue.withAlpha(15),
-                  Colors.amber.withAlpha(10),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.deepPurple.withAlpha(40),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.deepPurple.withAlpha((0.3 * 255).toInt()),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ModernInputField(
-              controller: _searchController,
-              hint: 'Kullanıcı ara (isim, e-posta)',
-              prefixIcon: Container(
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.search,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? Container(
-                      margin: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [theme.colorScheme.error, theme.colorScheme.errorContainer],
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      onPressed: () => Navigator.of(context).pop(),
+                      color: Colors.white,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withAlpha(AppTheme.alphaLight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                         ),
-                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white, size: 20),
-                        onPressed: () {
-                          setState(() {
-                            _searchQuery = '';
-                            _searchController.clear();
-                          });
-                        },
+                    ),
+                    const SizedBox(width: AppTheme.spacingMd),
+                    Expanded(
+                      child: Text(
+                        'Kullanıcı Ara',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    )
-                  : null,
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<List<UserModel>>(
-              stream: _userStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: ModernLoadingWidget(message: 'Aranıyor...'));
-                }
-                final users = snapshot.data ?? [];
-                final filtered = users.where((user) {
-                  final query = _searchQuery.toLowerCase();
-                  return (user.displayName ?? '').toLowerCase().contains(query) ||
-                         (user.email).toLowerCase().contains(query);
-                }).toList();
-                if (filtered.isEmpty) {
-                  return EmptyStateWidget(
-                    icon: Icons.person_search,
-                    title: 'Kriterlere uygun kullanıcı bulunamadı',
-                    message: 'Farklı arama terimleri deneyin',
-                  );
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filtered.length,
-                  separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final user = filtered[index];
-                    return Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                      elevation: 4,
-                      shadowColor: Colors.deepPurple.withAlpha(40),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        splashColor: Colors.deepPurple.withAlpha(40),
-                        highlightColor: Colors.deepPurple.withAlpha(20),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            PageRouteBuilder(
-                              pageBuilder: (routeContext, primaryAnimation, secondaryAnimation) => UserProfilePage(user: user, currentUserId: currentUserId),
-                              transitionsBuilder: (routeContext, animation, secondaryAnimation, child) => FadeTransition(
-                                opacity: animation,
-                                child: child,
+                    ),
+                  ],
+                ),
+              ),
+              // Search Field
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                child: Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  ),
+                  child: ModernInputField(
+                    controller: _searchController,
+                    hint: 'Kullanıcı ara (isim, e-posta)',
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: AppColorConfig.primaryColor,
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.clear_rounded,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _searchQuery = '';
+                                _searchController.clear();
+                              });
+                            },
+                          )
+                        : null,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingMd),
+              // Results
+              Expanded(
+                child: StreamBuilder<List<UserModel>>(
+                  stream: _userStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: ModernLoadingWidget(
+                          message: 'Kullanıcılar yükleniyor...',
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return ErrorStateWidget(
+                        message: 'Kullanıcılar yüklenirken bir hata oluştu',
+                        error: snapshot.error.toString(),
+                        onRetry: () => setState(() {}),
+                        backgroundColor: Colors.transparent,
+                        textColor: Colors.white,
+                      );
+                    }
+
+                    final users = snapshot.data ?? [];
+                    final filtered = users.where((user) {
+                      if (user.uid == currentUserId) return false; // Kendi profilini gösterme
+                      if (_searchQuery.isEmpty) return false; // Arama yoksa gösterme
+                      final query = _searchQuery.toLowerCase();
+                      return (user.displayName ?? '').toLowerCase().contains(query) ||
+                             user.email.toLowerCase().contains(query) ||
+                             (user.username ?? '').toLowerCase().contains(query);
+                    }).toList();
+
+                    if (_searchQuery.isEmpty) {
+                      return EmptyStateWidget(
+                        icon: Icons.search_rounded,
+                        title: 'Kullanıcı ara',
+                        message: 'Aramak istediğiniz kullanıcının ismini veya e-postasını yazın',
+                        backgroundColor: Colors.transparent,
+                        textColor: Colors.white,
+                      );
+                    }
+
+                    if (filtered.isEmpty) {
+                      return EmptyStateWidget(
+                        icon: Icons.person_search_rounded,
+                        title: 'Kullanıcı bulunamadı',
+                        message: 'Farklı arama terimleri deneyin',
+                        backgroundColor: Colors.transparent,
+                        textColor: Colors.white,
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                      itemCount: filtered.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: AppTheme.spacingXs),
+                      itemBuilder: (context, index) {
+                        final user = filtered[index];
+                        return Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppTheme.spacingMd,
+                              vertical: AppTheme.spacingXs,
+                            ),
+                            leading: CircleAvatar(
+                              radius: 28,
+                              backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
+                              backgroundImage: user.photoUrl != null && user.photoUrl!.isNotEmpty
+                                  ? CachedNetworkImageProvider(user.photoUrl!)
+                                  : null,
+                              child: user.photoUrl == null || user.photoUrl!.isEmpty
+                                  ? Icon(
+                                      Icons.person_rounded,
+                                      color: AppColorConfig.primaryColor,
+                                      size: 28,
+                                    )
+                                  : null,
+                            ),
+                            title: Text(
+                              user.displayName ?? user.username ?? 'İsimsiz',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Colors.deepPurple.withAlpha(10),
-                                Colors.blue.withAlpha(8),
-                                Colors.amber.withAlpha(5),
-                              ],
-                            ),
-                            border: Border.all(
-                              color: Colors.deepPurple.withAlpha(30),
-                              width: 1,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.deepPurple.withAlpha(40),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
+                                if (user.email.isNotEmpty)
+                                  Text(
+                                    user.email,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
-                                  child: user.photoUrl != null && user.photoUrl!.isNotEmpty
-                                      ? CircleAvatar(
-                                          radius: 28,
-                                          backgroundImage: NetworkImage(user.photoUrl!),
-                                        )
-                                      : CircleAvatar(
-                                          radius: 28,
-                                          backgroundColor: Colors.deepPurple.withAlpha(30),
-                                          child: Icon(
-                                            Icons.person,
-                                            size: 32,
-                                            color: Colors.deepPurple.shade600,
-                                          ),
-                                        ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        user.displayName ?? 'İsimsiz',
-                                        style: theme.textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.deepPurple.shade700,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        user.email,
-                                        style: theme.textTheme.bodyMedium?.copyWith(
-                                          color: theme.textTheme.bodyMedium?.color?.withAlpha(160),
-                                        ),
-                                      ),
-                                    ],
+                                if (user.bio != null && user.bio!.isNotEmpty)
+                                  Text(
+                                    user.bio!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
-                                Icon(
-                                  Icons.arrow_forward_ios,
-                                  color: Colors.deepPurple.shade400,
-                                  size: 16,
-                                ),
                               ],
                             ),
+                            trailing: Icon(
+                              Icons.chevron_right_rounded,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => UserProfilePage(
+                                    user: user,
+                                    currentUserId: currentUserId,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

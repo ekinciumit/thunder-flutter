@@ -9,7 +9,6 @@ import '../models/event_model.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../core/validators/form_validators.dart';
-import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';

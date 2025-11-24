@@ -3,9 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../models/event_model.dart';
 import 'private_chat_page.dart';
+import 'followers_following_page.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
+import '../services/user_service.dart';
 
 class UserProfilePage extends StatefulWidget {
   final UserModel user;
@@ -17,39 +20,95 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
-  bool isFollowing = false;
+  final UserService _userService = UserService();
+  bool isMutualFollow = false; // Karşılıklı takip
+  bool hasSentRequest = false; // Takip isteği gönderilmiş
+  bool hasPendingRequest = false; // Bekleyen takip isteği var
   int followersCount = 0;
   int followingCount = 0;
+  UserModel? _currentUser;
 
   @override
   void initState() {
     super.initState();
-    isFollowing = widget.user.followers.contains(widget.currentUserId);
-    followersCount = widget.user.followers.length;
-    followingCount = widget.user.following.length;
+    _loadUserData();
   }
 
-  Future<void> _toggleFollow() async {
-    final userRef = FirebaseFirestore.instance.collection('users').doc(widget.user.uid);
-    final currentUserRef = FirebaseFirestore.instance.collection('users').doc(widget.currentUserId);
-    setState(() {
-      isFollowing = !isFollowing;
-      followersCount += isFollowing ? 1 : -1;
+  Future<void> _loadUserData() async {
+    final currentUserDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.currentUserId)
+        .get();
+    
+    if (currentUserDoc.exists) {
+      _currentUser = UserModel.fromMap(currentUserDoc.data()!, currentUserDoc.id);
+    }
+
+    // Kullanıcı verilerini stream ile dinle
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.user.uid)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists && mounted) {
+        final userData = UserModel.fromMap(snapshot.data()!, snapshot.id);
+        _updateFollowStatus(userData);
+      }
     });
-    if (isFollowing) {
-      await userRef.update({
-        'followers': FieldValue.arrayUnion([widget.currentUserId])
-      });
-      await currentUserRef.update({
-        'following': FieldValue.arrayUnion([widget.user.uid])
-      });
-    } else {
-      await userRef.update({
-        'followers': FieldValue.arrayRemove([widget.currentUserId])
-      });
-      await currentUserRef.update({
-        'following': FieldValue.arrayRemove([widget.user.uid])
-      });
+
+    // Mevcut kullanıcı verilerini de dinle
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.currentUserId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists && mounted) {
+        _currentUser = UserModel.fromMap(snapshot.data()!, snapshot.id);
+        _updateFollowStatus(widget.user);
+      }
+    });
+  }
+
+  void _updateFollowStatus(UserModel targetUser) {
+    if (_currentUser == null) return;
+
+    final isCurrentFollowingTarget = _currentUser!.following.contains(targetUser.uid);
+    final isTargetFollowingCurrent = targetUser.followers.contains(widget.currentUserId);
+    
+    setState(() {
+      isMutualFollow = isCurrentFollowingTarget && isTargetFollowingCurrent;
+      hasSentRequest = _currentUser!.sentFollowRequests.contains(targetUser.uid);
+      hasPendingRequest = targetUser.pendingFollowRequests.contains(widget.currentUserId);
+      followersCount = targetUser.followers.length;
+      followingCount = targetUser.following.length;
+    });
+  }
+
+  Future<void> _handleFollowAction() async {
+    try {
+      if (isMutualFollow) {
+        // Takibi bırak
+        await _userService.unfollowUser(widget.currentUserId, widget.user.uid);
+        if (mounted) {
+          ModernSnackbar.showSuccess(context, 'Takip bırakıldı');
+        }
+      } else if (hasSentRequest) {
+        // İsteği iptal et
+        await _userService.cancelFollowRequest(widget.currentUserId, widget.user.uid);
+        if (mounted) {
+          ModernSnackbar.showSuccess(context, 'Takip isteği iptal edildi');
+        }
+      } else {
+        // Takip isteği gönder
+        await _userService.sendFollowRequest(widget.currentUserId, widget.user.uid);
+        if (mounted) {
+          ModernSnackbar.showSuccess(context, 'Takip isteği gönderildi');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ModernSnackbar.showError(context, 'Bir hata oluştu: ${e.toString()}');
+      }
     }
   }
 
@@ -90,36 +149,84 @@ class _UserProfilePageState extends State<UserProfilePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Column(
-                  children: [
-                    Text('$followersCount', style: theme.textTheme.titleMedium),
-                    const Text('Takipçi'),
-                  ],
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FollowersFollowingPage(
+                          userId: widget.user.uid,
+                          showFollowers: true,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      Text(
+                        '$followersCount',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColorConfig.primaryColor,
+                        ),
+                      ),
+                      const Text('Takipçi'),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 24),
-                Column(
-                  children: [
-                    Text('$followingCount', style: theme.textTheme.titleMedium),
-                    const Text('Takip'),
-                  ],
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FollowersFollowingPage(
+                          userId: widget.user.uid,
+                          showFollowers: false,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      Text(
+                        '$followingCount',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColorConfig.primaryColor,
+                        ),
+                      ),
+                      const Text('Takip'),
+                    ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             if (widget.user.uid != widget.currentUserId)
               FilledButton(
-                onPressed: _toggleFollow,
+                onPressed: _handleFollowAction,
                 style: FilledButton.styleFrom(
-                  backgroundColor: isFollowing ? Colors.grey : theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: isMutualFollow 
+                      ? Colors.grey 
+                      : hasSentRequest 
+                          ? theme.colorScheme.surfaceContainerHighest
+                          : theme.colorScheme.primary,
+                  foregroundColor: isMutualFollow || hasSentRequest
+                      ? theme.colorScheme.onSurface
+                      : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
-                child: Text(isFollowing ? 'Takibi Bırak' : 'Takip Et'),
+                child: Text(
+                  isMutualFollow 
+                      ? 'Takibi Bırak' 
+                      : hasSentRequest 
+                          ? 'İstek Gönderildi' 
+                          : 'Takip Et',
+                ),
               ),
-            if (widget.user.uid != widget.currentUserId && isFollowing)
+            if (widget.user.uid != widget.currentUserId && isMutualFollow)
               FilledButton.icon(
                 icon: const Icon(Icons.chat),
                 label: const Text('Sohbet Başlat'),

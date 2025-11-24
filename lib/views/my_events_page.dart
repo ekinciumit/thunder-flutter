@@ -5,7 +5,6 @@ import '../models/event_model.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'event_detail_page.dart';
-import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';

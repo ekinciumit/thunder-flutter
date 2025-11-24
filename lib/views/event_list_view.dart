@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../models/event_model.dart';
 import 'dart:math';
 import '../views/event_detail_page.dart';
@@ -141,7 +142,10 @@ class _EventListViewState extends State<EventListView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final eventViewModel = Provider.of<EventViewModel>(context);
+    final authViewModel = Provider.of<AuthViewModel>(context);
+    final currentUser = authViewModel.user;
     final events = eventViewModel.events;
+    final followingIds = currentUser?.following ?? [];
 
     // Filtreleme
     final filteredEvents = events.where((event) {
@@ -168,14 +172,25 @@ class _EventListViewState extends State<EventListView> {
       return matchesSearch && matchesCategory && matchesDate && matchesDistance;
     }).toList();
 
-    // Mesafeye göre sıralama (sadece konum alındıysa ve mesafe filtresi aktifse)
-    if (userPosition != null && isDistanceFilterEnabled) {
-      filteredEvents.sort((a, b) {
+    // Takip edilenlerin etkinliklerini öne çıkar
+    filteredEvents.sort((a, b) {
+      final aIsFollowing = followingIds.contains(a.createdBy);
+      final bIsFollowing = followingIds.contains(b.createdBy);
+      
+      // Takip edilenlerin etkinlikleri önce gelsin
+      if (aIsFollowing && !bIsFollowing) return -1;
+      if (!aIsFollowing && bIsFollowing) return 1;
+      
+      // Mesafeye göre sıralama (sadece konum alındıysa ve mesafe filtresi aktifse)
+      if (userPosition != null && isDistanceFilterEnabled) {
         final da = _calculateDistance(userPosition!.latitude, userPosition!.longitude, a.location.latitude, a.location.longitude);
         final db = _calculateDistance(userPosition!.latitude, userPosition!.longitude, b.location.latitude, b.location.longitude);
         return da.compareTo(db);
-      });
-    }
+      }
+      
+      // Tarihe göre sıralama (yakın tarihli etkinlikler önce)
+      return a.datetime.compareTo(b.datetime);
+    });
 
     return AppGradientContainer(
       gradientColors: AppTheme.gradientPrimary,
