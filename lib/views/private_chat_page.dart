@@ -1047,7 +1047,6 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           TextButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
-              final messenger = ScaffoldMessenger.of(context);
               if (controller.text.trim().isNotEmpty) {
                 try {
                   final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
@@ -1088,7 +1087,6 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           TextButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
-              final messenger = ScaffoldMessenger.of(context);
               try {
                 final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
                 await chatViewModel.deleteMessage(message.id, widget.currentUserId);

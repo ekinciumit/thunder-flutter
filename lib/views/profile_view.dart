@@ -36,7 +36,6 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
   late TextEditingController nameController;
   late TextEditingController bioController;
   late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -46,7 +45,6 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     nameController = TextEditingController(text: user?.displayName ?? '');
     bioController = TextEditingController(text: user?.bio ?? '');
     _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    _scaleAnimation = CurvedAnimation(parent: _animationController, curve: Curves.elasticOut);
     _animationController.forward();
     // Kullanıcı profilini yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {

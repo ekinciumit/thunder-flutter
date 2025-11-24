@@ -24,8 +24,6 @@ class AppGradientContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     // AppColorConfig renklerini kullanarak daha canlı gradient
     // Gündüz modu için daha belirgin ama yine de yumuşak gradient
     final defaultGradient = gradientColors ?? AppColorConfig.gradientPrimaryLight.map((color) => 

@@ -141,20 +141,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
       );
     }
 
-    final unreadCount = StreamBuilder<List<NotificationModel>>(
-      stream: _getNotificationsStream(currentUser.uid),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
-        final count = snapshot.data!.where((n) => !n.isRead).length;
-        return count > 0
-            ? Badge(
-                label: Text('$count'),
-                child: const SizedBox.shrink(),
-              )
-            : const SizedBox.shrink();
-      },
-    );
-
     return AppGradientContainer(
       gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
