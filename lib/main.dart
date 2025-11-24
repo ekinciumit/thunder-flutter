@@ -1,19 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'dart:async';
 import 'l10n/app_localizations.dart';
 import 'firebase_options.dart';
-import 'viewmodels/auth_viewmodel.dart';
-import 'viewmodels/event_viewmodel.dart';
-import 'services/auth_service.dart';
-import 'services/event_service.dart';
+import 'features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import 'features/event/presentation/viewmodels/event_viewmodel.dart';
+import 'features/event/domain/repositories/event_repository.dart';
+import 'features/event/data/repositories/event_repository_impl.dart';
+import 'features/chat/domain/repositories/chat_repository.dart';
+import 'features/chat/data/repositories/chat_repository_impl.dart';
 import 'services/language_service.dart';
+import 'core/theme/app_theme.dart';
+import 'core/providers/app_providers.dart';
 import 'views/home_page.dart';
 import 'views/auth_page.dart';
 import 'views/complete_profile_page.dart';
 import 'services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'core/di/service_locator.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/domain/repositories/auth_repository.dart';
 
 // Arka plan bildirimleri için handler (üst düzey bir fonksiyon olmalı)
 @pragma('vm:entry-point')
@@ -28,30 +37,61 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  
+  // Service Locator'ı başlat ve servisleri kaydet (async, uygulama başlamasını engellemez)
+  unawaited(_setupServiceLocator());
+  
   runApp(const MyApp());
 }
+
+/// Service Locator'ı başlatır ve tüm servisleri kaydeder
+/// 
+/// Clean Architecture: Repository'ler ve servisler Service Locator'a kaydediliyor
+Future<void> _setupServiceLocator() async {
+  final sl = ServiceLocator();
+  
+  // Language servisini kaydet
+  sl.registerSingleton<LanguageService>(LanguageService());
+  
+  // Clean Architecture: Repository'leri kaydet
+  try {
+    final authRepository = await createAuthRepository();
+    sl.registerSingleton<AuthRepository>(authRepository);
+    
+    final eventRepository = await createEventRepository();
+    sl.registerSingleton<EventRepository>(eventRepository);
+    
+    final chatRepository = await createChatRepository();
+    sl.registerSingleton<ChatRepository>(chatRepository);
+    
+    if (kDebugMode) {
+      debugPrint('✅ Service Locator: Tüm repository\'ler kaydedildi');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('⚠️ Service Locator: Repository kayıt hatası: $e');
+    }
+  }
+}
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Servisleri oluştur ve DI ile ViewModel'lere ver
-    final IAuthService authService = AuthService();
-    final IEventService eventService = EventService();
-    final LanguageService languageService = LanguageService();
-    
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthViewModel(authService: authService)),
-        ChangeNotifierProvider(create: (_) => EventViewModel(eventService: eventService)),
-        ChangeNotifierProvider(create: (_) => languageService),
+        ...AppProviders.getFutureProviders(),
+        ...AppProviders.getProxyProviders(),
+        ...AppProviders.getProviders(),
       ],
       child: Consumer<LanguageService>(
         builder: (context, languageService, _) {
           return MaterialApp(
             title: 'Thunder',
-            localizationsDelegates: const [
+            localizationsDelegates: [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
@@ -62,166 +102,11 @@ class MyApp extends StatelessWidget {
               Locale('en', ''), // İngilizce
             ],
             locale: languageService.currentLocale, // Dinamik dil
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6366F1), // Modern indigo
-            brightness: Brightness.light,
-            primary: const Color(0xFF6366F1), // Indigo
-            onPrimary: const Color(0xFFFFFFFF), // White on primary
-            primaryContainer: const Color(0xFFE0E7FF), // Light indigo
-            onPrimaryContainer: const Color(0xFF1E1B93), // Dark indigo
-            secondary: const Color(0xFF8B5CF6), // Purple
-            onSecondary: const Color(0xFFFFFFFF), // White on secondary
-            secondaryContainer: const Color(0xFFF3E8FF), // Light purple
-            onSecondaryContainer: const Color(0xFF4C1D95), // Dark purple
-            tertiary: const Color(0xFF06B6D4), // Cyan
-            onTertiary: const Color(0xFFFFFFFF), // White on tertiary
-            tertiaryContainer: const Color(0xFFCCFBF1), // Light cyan
-            onTertiaryContainer: const Color(0xFF0F766E), // Dark cyan
-            error: const Color(0xFFDC2626), // Red
-            onError: const Color(0xFFFFFFFF), // White on error
-            errorContainer: const Color(0xFFFEE2E2), // Light red
-            onErrorContainer: const Color(0xFF991B1B), // Dark red
-            surface: const Color(0xFFFFFBFE), // Pure white
-            onSurface: const Color(0xFF1C1B1F), // Dark text
-            surfaceContainerHighest: const Color(0xFFF3F4F6), // Light gray
-            onSurfaceVariant: const Color(0xFF49454F), // Medium gray text
-            outline: const Color(0xFF79747E), // Border color
-            outlineVariant: const Color(0xFFCAC4D0), // Light border
-            shadow: const Color(0xFF000000), // Black shadow
-            scrim: const Color(0xFF000000), // Black scrim
-            inverseSurface: const Color(0xFF313033), // Dark surface
-            onInverseSurface: const Color(0xFFF4EFF4), // Light text on dark
-            inversePrimary: const Color(0xFFA5B4FC), // Light indigo
-          ),
-          textTheme: TextTheme(
-            displayLarge: TextStyle(
-              fontSize: 32, 
-              fontWeight: FontWeight.bold, 
-              letterSpacing: -0.5,
-              color: const Color(0xFF1C1B1F), // High contrast dark
-            ),
-            displayMedium: TextStyle(
-              fontSize: 28, 
-              fontWeight: FontWeight.bold, 
-              letterSpacing: -0.25,
-              color: const Color(0xFF1C1B1F),
-            ),
-            displaySmall: TextStyle(
-              fontSize: 24, 
-              fontWeight: FontWeight.w600, 
-              letterSpacing: 0,
-              color: const Color(0xFF1C1B1F),
-            ),
-            headlineLarge: TextStyle(
-              fontSize: 22, 
-              fontWeight: FontWeight.w600, 
-              letterSpacing: 0,
-              color: const Color(0xFF1C1B1F),
-            ),
-            headlineMedium: TextStyle(
-              fontSize: 20, 
-              fontWeight: FontWeight.w600, 
-              letterSpacing: 0.15,
-              color: const Color(0xFF1C1B1F),
-            ),
-            headlineSmall: TextStyle(
-              fontSize: 18, 
-              fontWeight: FontWeight.w600, 
-              letterSpacing: 0.15,
-              color: const Color(0xFF1C1B1F),
-            ),
-            titleLarge: TextStyle(
-              fontSize: 16, 
-              fontWeight: FontWeight.w600, 
-              letterSpacing: 0.15,
-              color: const Color(0xFF1C1B1F),
-            ),
-            titleMedium: TextStyle(
-              fontSize: 14, 
-              fontWeight: FontWeight.w500, 
-              letterSpacing: 0.1,
-              color: const Color(0xFF49454F), // Medium contrast
-            ),
-            titleSmall: TextStyle(
-              fontSize: 12, 
-              fontWeight: FontWeight.w500, 
-              letterSpacing: 0.1,
-              color: const Color(0xFF49454F),
-            ),
-            bodyLarge: TextStyle(
-              fontSize: 16, 
-              fontWeight: FontWeight.normal, 
-              letterSpacing: 0.15,
-              color: const Color(0xFF1C1B1F),
-            ),
-            bodyMedium: TextStyle(
-              fontSize: 14, 
-              fontWeight: FontWeight.normal, 
-              letterSpacing: 0.25,
-              color: const Color(0xFF49454F),
-            ),
-            bodySmall: TextStyle(
-              fontSize: 12, 
-              fontWeight: FontWeight.normal, 
-              letterSpacing: 0.4,
-              color: const Color(0xFF79747E), // Lower contrast for secondary text
-            ),
-            labelLarge: TextStyle(
-              fontSize: 14, 
-              fontWeight: FontWeight.w500, 
-              letterSpacing: 0.1,
-              color: const Color(0xFF1C1B1F),
-            ),
-            labelMedium: TextStyle(
-              fontSize: 12, 
-              fontWeight: FontWeight.w500, 
-              letterSpacing: 0.5,
-              color: const Color(0xFF49454F),
-            ),
-            labelSmall: TextStyle(
-              fontSize: 10, 
-              fontWeight: FontWeight.w500, 
-              letterSpacing: 0.5,
-              color: const Color(0xFF79747E),
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              textStyle: const TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.1),
-            ),
-          ),
-          filledButtonTheme: FilledButtonThemeData(
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              textStyle: const TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.1),
-            ),
-          ),
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              textStyle: const TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.1),
-            ),
-          ),
-          cardTheme: CardThemeData(
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
-        ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          // ... (isteğe bağlı olarak karanlık tema tanımlanabilir)
-        ),
-        themeMode: ThemeMode.light, // Şimdilik sadece aydınlık mod
-        debugShowCheckedModeBanner: false,
-        home: const RootPage(),
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: ThemeMode.light, // Şimdilik sadece aydınlık mod
+            debugShowCheckedModeBanner: false,
+            home: const RootPage(),
           );
         },
       ),
@@ -237,6 +122,9 @@ class RootPage extends StatefulWidget {
 }
 
 class _RootPageState extends State<RootPage> {
+  NotificationService? _notificationService;
+  bool _servicesInitialized = false;
+
   @override
   void initState() {
     super.initState();
@@ -247,19 +135,50 @@ class _RootPageState extends State<RootPage> {
     });
   }
 
+  /// Servisleri asenkron olarak başlatır (build metodunu bloklamaz)
+  Future<void> _initializeServices(AuthViewModel authViewModel) async {
+    if (_servicesInitialized) return;
+    
+    // Kullanıcı giriş yaptığında ve profil tamamlama gerekmediğinde servisleri başlat
+    if (authViewModel.user != null && !authViewModel.needsProfileCompletion) {
+      _servicesInitialized = true;
+      
+      // Bildirim servisini başlat (async, build'i bloklamaz)
+      _notificationService = NotificationService();
+      unawaited(_notificationService!.initialize(authViewModel));
+      
+      // Giriş sonrası etkinlik dinlemeyi başlat
+      final eventVm = Provider.of<EventViewModel>(context, listen: false);
+      eventVm.listenEvents();
+    }
+  }
+
+  @override
+  void dispose() {
+    _notificationService?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // AuthViewModel'i dinle ve kullanıcı durumuna göre UI'ı ve servisleri yönet
-    return Consumer<AuthViewModel>(
+    // Clean Architecture: FutureProvider'dan AuthViewModel'i kontrol et
+    // ViewModel hazır olana kadar loading göster, hazır olunca kullan
+    return Consumer<AuthViewModel?>(
       builder: (context, authViewModel, _) {
-        // Kullanıcı giriş yaptığında ve profil tamamlama gerekmediğinde bildirim servisini başlat
-        if (authViewModel.user != null && !authViewModel.needsProfileCompletion) {
-          final notificationService = NotificationService();
-          notificationService.initialize();
-          // Giriş sonrası etkinlik dinlemeyi başlat
-          final eventVm = Provider.of<EventViewModel>(context, listen: false);
-          eventVm.listenEvents();
+        // ViewModel henüz hazır değilse loading göster
+        if (authViewModel == null) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
+        
+        // ViewModel hazır, servisleri başlat (async, build'i bloklamaz)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _initializeServices(authViewModel);
+        });
+        
         return _buildHome(authViewModel, context);
       },
     );
@@ -268,16 +187,40 @@ class _RootPageState extends State<RootPage> {
   Widget _buildHome(AuthViewModel authViewModel, BuildContext context) {
     if (authViewModel.user != null) {
       if (authViewModel.needsProfileCompletion) {
+        // SignUp başarılı mesajını burada göster (sadece yeni kayıt olduysa)
+        if (authViewModel.justSignedUp) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final l10n = AppLocalizations.of(context);
+            if (l10n != null && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n.signUpSuccess),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+              // Flag'i sıfırla (bir kere göster)
+              authViewModel.justSignedUp = false;
+            }
+          });
+        }
+        
         return CompleteProfilePage(
           onComplete: (name, bio, photoUrl) async {
-            await authViewModel.completeProfile(
-              displayName: name,
-              bio: bio,
-              photoUrl: photoUrl,
-            );
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              // İleride context tabanlı bir işlem eklenirse burada güvenli olur
-            });
+            try {
+              await authViewModel.completeProfile(
+                displayName: name,
+                bio: bio,
+                photoUrl: photoUrl,
+              );
+              // Activity result işlenmesi için kısa bir gecikme
+              await Future.delayed(const Duration(milliseconds: 300));
+            } catch (e) {
+              // Hata durumunda sessizce devam et (hata zaten ViewModel'de gösterilir)
+              if (kDebugMode) {
+                debugPrint('Profil tamamlama hatası: $e');
+              }
+            }
           },
         );
       }

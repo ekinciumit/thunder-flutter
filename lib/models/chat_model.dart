@@ -65,13 +65,35 @@ class ChatModel {
         orElse: () => ChatType.private,
       ),
       participants: List<String>.from(map['participants'] ?? []),
-      participantDetails: (map['participantDetails'] as Map<String, dynamic>?)?.map(
-        (key, value) => MapEntry(key, ChatParticipant.fromMap(value)),
-      ) ?? {},
+      participantDetails: () {
+        final details = <String, ChatParticipant>{};
+        final participantDetailsMap = map['participantDetails'] as Map<String, dynamic>?;
+        if (participantDetailsMap != null) {
+          participantDetailsMap.forEach((key, value) {
+            try {
+              details[key] = ChatParticipant.fromMap(value as Map<String, dynamic>);
+            } catch (e) {
+              // Parse hatası olan participant'ları atla
+            }
+          });
+        }
+        return details;
+      }(),
       createdBy: map['createdBy'],
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lastMessageAt: (map['lastMessageAt'] as Timestamp?)?.toDate(),
-      lastMessage: map['lastMessage'] != null ? MessageModel.fromMap(map['lastMessage'], '') : null,
+      lastMessage: () {
+        try {
+          final lastMsg = map['lastMessage'];
+          if (lastMsg != null && lastMsg is Map<String, dynamic>) {
+            return MessageModel.fromMap(lastMsg, '');
+          }
+          return null;
+        } catch (e) {
+          // Parse hatası durumunda null döndür
+          return null;
+        }
+      }(),
       unreadCounts: Map<String, int>.from(map['unreadCounts'] ?? {}),
       lastSeen: (map['lastSeen'] as Map<String, dynamic>?)?.map(
         (key, value) => MapEntry(key, (value as Timestamp).toDate()),

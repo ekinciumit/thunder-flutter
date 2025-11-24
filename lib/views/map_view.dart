@@ -3,11 +3,14 @@ import '../models/event_model.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import '../viewmodels/event_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'event_detail_page.dart';
 import 'dart:async';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
 import 'package:flutter/foundation.dart';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_theme.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -130,8 +133,10 @@ class _MapViewState extends State<MapView> {
           foregroundColor: Colors.white,
         ),
         body: events.isEmpty
-            ? const Center(
-                child: Text('Henüz etkinlik bulunmuyor'),
+            ? EmptyStateWidget(
+                icon: Icons.map_outlined,
+                title: 'Henüz etkinlik bulunmuyor',
+                message: 'Haritada görüntülenecek etkinlik yok',
               )
             : ListView.builder(
                 padding: const EdgeInsets.all(16),
@@ -187,10 +192,11 @@ class _MapViewState extends State<MapView> {
         : const CameraPosition(target: LatLng(39.925533, 32.866287), zoom: 6); // Ankara default
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: !iconsLoaded
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: ModernLoadingWidget(message: 'Harita yükleniyor...'))
             : Stack(
                 children: [
                   GoogleMap(
@@ -207,11 +213,10 @@ class _MapViewState extends State<MapView> {
                     padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
                   ),
                   Positioned(
-                    left: 16,
-                    bottom: 16,
+                    left: AppTheme.spacingMd,
+                    bottom: AppTheme.spacingMd,
                     child: FloatingActionButton(
                       heroTag: 'my_location_btn',
-                      mini: true,
                       onPressed: () async {
                         if (userPosition == null) {
                           await _getUserLocation();
@@ -228,7 +233,12 @@ class _MapViewState extends State<MapView> {
                         }
                       },
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: const Icon(Icons.my_location, color: Colors.white),
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                      ),
+                      child: const Icon(Icons.my_location),
                     ),
                   ),
                 ],
@@ -241,13 +251,28 @@ class _MapViewState extends State<MapView> {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: theme.colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusRound),
+        ),
       ),
       builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppTheme.radiusRound),
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: AppTheme.spacingXxl,
+              right: AppTheme.spacingXxl,
+              top: AppTheme.spacingXxl,
+              bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingXxl,
+            ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,52 +283,77 @@ class _MapViewState extends State<MapView> {
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: theme.colorScheme.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                        color: theme.colorScheme.primary.withAlpha(AppTheme.alphaLight),
                       image: event.coverPhotoUrl != null
-                          ? DecorationImage(image: NetworkImage(event.coverPhotoUrl!), fit: BoxFit.cover)
+                            ? DecorationImage(
+                                image: NetworkImage(event.coverPhotoUrl!),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                      child: event.coverPhotoUrl == null
+                          ? Icon(
+                              Icons.event,
+                              color: theme.colorScheme.primary,
+                              size: 32,
+                            )
                           : null,
                     ),
-                    child: event.coverPhotoUrl == null
-                        ? Icon(Icons.event, color: theme.colorScheme.primary)
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
+                    const SizedBox(width: AppTheme.spacingMd),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(event.title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          Text(
+                            event.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         const SizedBox(height: 4),
-                        Text(event.category, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary)),
+                          Text(
+                            event.category,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
                         const SizedBox(height: 4),
-                        Text(event.address, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(
+                            event.address,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall,
+                          ),
                       ],
                     ),
-                  )
+                    ),
                 ],
               ),
-              const SizedBox(height: 16),
+                const SizedBox(height: AppTheme.spacingXl),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
+                  child: FilledButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => EventDetailPage(event: event)),
+                        MaterialPageRoute(
+                          builder: (_) => EventDetailPage(event: event),
+                        ),
                     );
                   },
                   icon: const Icon(Icons.open_in_new),
                   label: const Text('Etkinlik Detayına Git'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                      ),
                   ),
                 ),
               ),
             ],
+            ),
           ),
         );
       },

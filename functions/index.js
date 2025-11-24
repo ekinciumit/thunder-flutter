@@ -99,29 +99,61 @@ exports.sendNewMessageNotification = onDocumentCreated('messages/{messageId}', a
     return null;
   }
 
-  // Alıcıların tokenlarını topla
+  // Gönderen kullanıcının bilgilerini al
+  const senderDoc = await admin.firestore().collection('users').doc(senderId).get();
+  if (!senderDoc.exists) {
+    logger.warn('Sender not found:', senderId);
+    return null;
+  }
+  const senderData = senderDoc.data();
+  const senderName = senderData?.displayName || 'Birisi';
+
+  // Alıcıların tokenlarını topla ve takip durumunu kontrol et
   const batches = [];
+  const messageRequestBatches = [];
   const tokens = new Set();
-  // Firestore where-in 10 limitine takılmamak için tek tek çekiyoruz (katılımcı sayısı düşük varsayım)
-  for (const uid of recipients) {
+  const messageRequestTokens = new Set();
+  
+  for (const recipientId of recipients) {
     batches.push(
-      admin.firestore().collection('users').doc(uid).get().then((doc) => {
-        if (doc.exists) {
-          const data = doc.data();
-          if (Array.isArray(data.fcmTokens)) {
-            data.fcmTokens.forEach((t) => tokens.add(t));
+      admin.firestore().collection('users').doc(recipientId).get().then(async (doc) => {
+        if (!doc.exists) return;
+        
+        const recipientData = doc.data();
+        if (Array.isArray(recipientData.fcmTokens)) {
+          // Karşılıklı takip kontrolü
+          const senderFollowing = Array.isArray(senderData.following) ? senderData.following : [];
+          const recipientFollowing = Array.isArray(recipientData.following) ? recipientData.following : [];
+          
+          const isMutualFollow = senderFollowing.includes(recipientId) && recipientFollowing.includes(senderId);
+          
+          if (isMutualFollow) {
+            // Normal mesaj bildirimi
+            recipientData.fcmTokens.forEach((t) => tokens.add(t));
+          } else {
+            // Mesaj isteği bildirimi
+            recipientData.fcmTokens.forEach((t) => messageRequestTokens.add(t));
+            
+            // Mesaj isteği bildirimi oluştur
+            await admin.firestore().collection('notifications').add({
+              userId: recipientId,
+              type: 'message_request',
+              relatedUserId: senderId,
+              relatedChatId: chatId,
+              title: 'Mesaj İsteği',
+              body: `${senderName} sana mesaj gönderdi`,
+              isRead: false,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
           }
         }
       })
     );
   }
   await Promise.all(batches);
-  if (tokens.size === 0) {
-    logger.info('No FCM tokens for recipients.');
-    return null;
-  }
 
-  // Bildirim içeriği
+  // Normal mesaj bildirimi gönder
+  if (tokens.size > 0) {
   const payload = {
     notification: {
       title: chat.name ? `Yeni mesaj • ${chat.name}` : 'Yeni mesaj',
@@ -137,5 +169,94 @@ exports.sendNewMessageNotification = onDocumentCreated('messages/{messageId}', a
 
   const response = await admin.messaging().sendToDevice(Array.from(tokens), payload);
   logger.info('Message notifications sent:', response.successCount);
+  }
+
+  // Mesaj isteği bildirimi gönder
+  if (messageRequestTokens.size > 0) {
+    const payload = {
+      notification: {
+        title: 'Mesaj İsteği',
+        body: `${senderName} sana mesaj gönderdi`,
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      },
+      data: {
+        chatId: chatId,
+        messageId: event.params.messageId,
+        type: 'message_request',
+      },
+    };
+
+    const response = await admin.messaging().sendToDevice(Array.from(messageRequestTokens), payload);
+    logger.info('Message request notifications sent:', response.successCount);
+  }
+
+  return null;
+});
+
+// Takip bildirimi oluşturulduğunda push bildirimi gönder
+exports.sendFollowNotification = onDocumentCreated('notifications/{notificationId}', async (event) => {
+  const notification = event.data.data();
+  
+  // Takip isteği, takip isteği kabul edildi ve mesaj isteği bildirimleri için push gönder
+  if (!['follow_request', 'follow_request_accepted', 'message_request'].includes(notification.type) || !notification.userId) {
+    return null;
+  }
+
+  // Bildirimi alan kullanıcının FCM tokenlarını al
+  const userDoc = await admin.firestore().collection('users').doc(notification.userId).get();
+  if (!userDoc.exists) {
+    logger.warn('User not found for notification:', notification.userId);
+    return null;
+  }
+
+  const userData = userDoc.data();
+  const tokens = Array.isArray(userData.fcmTokens) ? userData.fcmTokens : [];
+  
+  if (tokens.length === 0) {
+    logger.info('No FCM tokens for user:', notification.userId);
+    return null;
+  }
+
+  // İlgili kullanıcının bilgilerini al
+  let relatedUserName = 'Birisi';
+  if (notification.relatedUserId) {
+    const relatedUserDoc = await admin.firestore().collection('users').doc(notification.relatedUserId).get();
+    if (relatedUserDoc.exists) {
+      relatedUserName = relatedUserDoc.data().displayName || relatedUserName;
+    }
+  }
+
+  // Bildirim tipine göre içerik hazırla
+  let title = '';
+  let body = '';
+  
+  if (notification.type === 'follow_request') {
+    title = 'Takip İsteği';
+    body = `${relatedUserName} sana takip isteği gönderdi`;
+  } else if (notification.type === 'follow_request_accepted') {
+    title = 'Takip İsteği Kabul Edildi';
+    body = `${relatedUserName} takip isteğini kabul etti`;
+  } else if (notification.type === 'message_request') {
+    title = 'Mesaj İsteği';
+    body = `${relatedUserName} sana mesaj gönderdi`;
+  }
+
+  // Bildirim içeriği
+  const payload = {
+    notification: {
+      title: title,
+      body: body,
+      click_action: 'FLUTTER_NOTIFICATION_CLICK',
+    },
+    data: {
+      type: notification.type,
+      notificationId: event.params.notificationId,
+      relatedUserId: notification.relatedUserId || '',
+      relatedChatId: notification.relatedChatId || '',
+    },
+  };
+
+  const response = await admin.messaging().sendToDevice(tokens, payload);
+  logger.info(`${notification.type} notifications sent:`, response.successCount);
   return null;
 });

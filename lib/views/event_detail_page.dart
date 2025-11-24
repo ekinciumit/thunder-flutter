@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/event_model.dart';
-import '../viewmodels/event_viewmodel.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'user_profile_page.dart';
 import '../models/user_model.dart';
+import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_theme.dart';
 
 class EventDetailPage extends StatefulWidget {
   final EventModel event;
@@ -37,16 +41,45 @@ class _EventDetailPageState extends State<EventDetailPage> {
   }
 
   Future<void> _pickPhoto() async {
+    // Önce galeri veya kamera seçimi göster
+    final source = await ModernDialog.showImageSource(
+      context: context,
+      title: 'Fotoğraf Seç',
+    );
+    
+    if (source == null) return;
+    
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final picked = await picker.pickImage(source: source, imageQuality: 90);
     if (picked != null) {
-      setState(() { isUploading = true; });
-      newPhotoFile = File(picked.path);
-      final fileName = 'event_${event.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = FirebaseStorage.instance.ref().child('event_photos').child(fileName);
-      await ref.putFile(newPhotoFile!);
-      uploadedPhotoUrl = await ref.getDownloadURL();
-      setState(() { isUploading = false; });
+      // Kırpma işlemi
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Fotoğrafı Kırp',
+            toolbarColor: Theme.of(context).colorScheme.primary,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.ratio16x9,
+            lockAspectRatio: false, // Serbest kırpma
+          ),
+          IOSUiSettings(
+            title: 'Fotoğrafı Kırp',
+            aspectRatioPresets: [CropAspectRatioPreset.ratio16x9],
+          ),
+        ],
+      );
+      
+      if (croppedFile != null) {
+        setState(() { isUploading = true; });
+        newPhotoFile = File(croppedFile.path);
+        final fileName = 'event_${event.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final ref = FirebaseStorage.instance.ref().child('event_photos').child(fileName);
+        await ref.putFile(newPhotoFile!);
+        uploadedPhotoUrl = await ref.getDownloadURL();
+        setState(() { isUploading = false; });
+      }
     }
   }
 
@@ -80,7 +113,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       color: Colors.deepPurple.withAlpha(10),
                     ),
                     child: isUploading
-                        ? const Center(child: CircularProgressIndicator())
+                        ? Center(child: ModernLoadingWidget(size: 32, message: 'Yükleniyor...', showMessage: false))
                         : (uploadedPhotoUrl != null && uploadedPhotoUrl!.isNotEmpty)
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
@@ -96,25 +129,25 @@ class _EventDetailPageState extends State<EventDetailPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextField(
+                ModernInputField(
                   controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Başlık'),
+                  label: 'Başlık',
                 ),
                 const SizedBox(height: 8),
-                TextField(
+                ModernInputField(
                   controller: descController,
-                  decoration: const InputDecoration(labelText: 'Açıklama'),
+                  label: 'Açıklama',
                   maxLines: 2,
                 ),
                 const SizedBox(height: 8),
-                TextField(
+                ModernInputField(
                   controller: addressController,
-                  decoration: const InputDecoration(labelText: 'Adres'),
+                  label: 'Adres',
                 ),
                 const SizedBox(height: 8),
-                TextField(
+                ModernInputField(
                   controller: quotaController,
-                  decoration: const InputDecoration(labelText: 'Kota'),
+                  label: 'Kota',
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 8),
@@ -187,9 +220,10 @@ class _EventDetailPageState extends State<EventDetailPage> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return AppGradientContainer(
+            gradientColors: AppTheme.gradientPrimary,
             child: Scaffold(
               appBar: AppBar(title: Text(event.title)),
-              body: const Center(child: CircularProgressIndicator()),
+              body: Center(child: ModernLoadingWidget(message: 'Yükleniyor...')),
             ),
           );
         }
@@ -204,6 +238,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         final hasPendingRequest = currentEvent.pendingRequests.contains(userId);
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -405,8 +440,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.all(8),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -431,17 +466,15 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           ),
                         )
                       else if (hasPendingRequest)
-                        ElevatedButton.icon(
-                          onPressed: () async {
+                      OutlinedButton.icon(
+                        onPressed: () async {
                             await eventViewModel.cancelJoinRequest(currentEvent, userId);
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Katılma isteği geri alındı'),
-                                duration: Duration(seconds: 2),
-                              ),
+                          if (!context.mounted) return;
+                            ModernSnackbar.showSuccess(
+                              context,
+                              'Katılma isteği geri alındı',
                             );
-                          },
+                        },
                           icon: Icon(Icons.hourglass_empty, color: Colors.orange[700]),
                           label: Text(
                             'İstek Gönderildi (Geri Al)',
@@ -451,58 +484,56 @@ class _EventDetailPageState extends State<EventDetailPage> {
                               fontSize: 16,
                             ),
                           ),
-                          style: ElevatedButton.styleFrom(
+                        style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.orange.withValues(alpha: 0.1),
                             foregroundColor: Colors.orange[700],
+                            side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
+                              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                         )
                       else if (isApproved || isParticipant)
-                        ElevatedButton.icon(
-                          onPressed: () async {
+                      FilledButton.icon(
+                        onPressed: () async {
                             await eventViewModel.leaveEvent(currentEvent, userId);
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Etkinlikten ayrıldınız'),
-                                duration: Duration(seconds: 2),
-                              ),
+                          if (!context.mounted) return;
+                            ModernSnackbar.showSuccess(
+                              context,
+                              'Etkinlikten ayrıldınız',
                             );
-                          },
-                          icon: const Icon(Icons.exit_to_app),
-                          label: const Text('Ayrıl'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                        },
+                        icon: const Icon(Icons.exit_to_app),
+                        label: const Text('Ayrıl'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                           ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                         )
                       else
-                        ElevatedButton.icon(
+                        FilledButton.icon(
                           onPressed: () async {
                             await eventViewModel.sendJoinRequest(currentEvent, userId);
                             if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Katılma isteği gönderildi. Etkinlik sahibi onayladığında bildirim alacaksınız.'),
-                                duration: Duration(seconds: 3),
-                              ),
+                            ModernSnackbar.showSuccess(
+                              context,
+                              'Katılma isteği gönderildi. Etkinlik sahibi onayladığında bildirim alacaksınız.',
                             );
                           },
                           icon: const Icon(Icons.person_add),
                           label: const Text('Katılma İsteği Gönder'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.secondary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          style: FilledButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                        ),
+                      ),
                   ],
                 ),
               ),
@@ -931,7 +962,7 @@ class _ParticipantChips extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const SizedBox(
               width: 32, height: 32,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: ModernLoadingWidget(size: 32, showMessage: false),
             );
           }
           if (snapshot.hasError) {

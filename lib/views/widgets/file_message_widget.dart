@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_color_config.dart';
 
 class FileMessageWidget extends StatelessWidget {
   final String fileName;
@@ -125,12 +126,12 @@ class FileMessageWidget extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isMe 
-              ? Colors.deepPurple[500] 
+              ? AppColorConfig.primaryColor 
               : Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isMe 
-                ? Colors.deepPurple.withValues(alpha: 0.3)
+                ? AppColorConfig.primaryColor.withValues(alpha: 0.3)
                 : Colors.grey.withValues(alpha: 0.3),
             width: 1,
           ),
@@ -177,12 +178,16 @@ class FileMessageWidget extends StatelessWidget {
                   
                   // File size and extension
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        _formatFileSize(fileSize),
-                        style: TextStyle(
-                          color: isMe ? Colors.white70 : Colors.grey[600],
-                          fontSize: 12,
+                      Flexible(
+                        child: Text(
+                          _formatFileSize(fileSize),
+                          style: TextStyle(
+                            color: isMe ? Colors.white70 : Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (fileExtension != null) ...[

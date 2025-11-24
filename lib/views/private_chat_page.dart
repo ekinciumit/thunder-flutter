@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 
-import '../services/chat_service.dart';
-import '../services/auth_service.dart';
-
+import 'package:provider/provider.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import '../models/message_model.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,9 +18,13 @@ import 'widgets/message_reactions.dart';
 import 'widgets/voice_message_widget.dart';
 import 'widgets/voice_recorder_widget.dart';
 import 'widgets/file_picker_widget.dart';
+import 'widgets/modern_loading_widget.dart';
 import 'widgets/file_message_widget.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_color_config.dart';
+import '../core/theme/app_theme.dart';
 
 class PrivateChatPage extends StatefulWidget {
   final String currentUserId;
@@ -40,8 +45,6 @@ class PrivateChatPage extends StatefulWidget {
 
 class _PrivateChatPageState extends State<PrivateChatPage> {
   final TextEditingController _controller = TextEditingController();
-  final ChatService _chatService = ChatService();
-  final AuthService _authService = AuthService();
   bool _showEmojiPicker = false;
   final ImagePicker _picker = ImagePicker();
   String? _chatId;
@@ -75,25 +78,32 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Future<void> _initializeChat() async {
+    final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
     try {
-      final chat = await _chatService.getOrCreatePrivateChat(
+      final chat = await chatViewModel.getOrCreatePrivateChat(
         widget.currentUserId, 
         widget.otherUserId
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Chat initialization timeout');
-        },
       );
-      setState(() {
-        _chatId = chat.id;
-      });
-      
-      // Mesaj stream'ini başlat
-      _startListeningToMessages();
+      if (chat != null) {
+        setState(() {
+          _chatId = chat.id;
+        });
+        
+        // Mesaj stream'ini başlat
+        _startListeningToMessages();
+      } else {
+        // Hata durumunda da bir chat ID'si oluştur
+        final fallbackChatId = chatViewModel.getChatId(widget.currentUserId, widget.otherUserId);
+        setState(() {
+          _chatId = fallbackChatId;
+        });
+        
+        // Mesaj stream'ini başlat
+        _startListeningToMessages();
+      }
     } catch (e) {
       // Hata durumunda da bir chat ID'si oluştur
-      final fallbackChatId = '${widget.currentUserId}_${widget.otherUserId}';
+      final fallbackChatId = chatViewModel.getChatId(widget.currentUserId, widget.otherUserId);
       setState(() {
         _chatId = fallbackChatId;
       });
@@ -106,8 +116,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   void _startListeningToMessages() {
     if (_chatId == null) return;
     
+    final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
     _messagesSubscription?.cancel();
-    _messagesSubscription = _chatService.getMessagesStream(_chatId!, limit: 50).listen(
+    _messagesSubscription = chatViewModel.getMessagesStream(_chatId!, limit: 50).listen(
       (streamMessages) {
         if (!mounted) return;
         
@@ -141,14 +152,13 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         }
       },
       onError: (error) {
-        print('❌ Stream hatası: $error');
+        if (kDebugMode) {
+          debugPrint('❌ Stream hatası: $error');
+        }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Mesajlar yüklenirken hata: $error'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
-            ),
+          ModernSnackbar.showError(
+            context,
+            'Mesajlar yüklenirken hata: $error',
           );
         }
       },
@@ -214,8 +224,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     });
 
     try {
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
       final oldestMessage = _allMessages.first;
-      final olderMessages = await _chatService.loadOlderMessages(
+      final olderMessages = await chatViewModel.loadOlderMessages(
         _chatId!,
         oldestMessage.timestamp,
         limit: 20,
@@ -254,22 +265,29 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     if ((text == null || text.trim().isEmpty) && imageUrl == null && videoUrl == null) return;
     if (_chatId == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sohbet başlatılamadı. Lütfen tekrar deneyin.'),
-            backgroundColor: Colors.red,
-          ),
+        ModernSnackbar.showError(
+          context,
+          'Sohbet başlatılamadı. Lütfen tekrar deneyin.',
         );
       }
       return;
     }
     
     try {
-      // Kullanıcı adını Firestore'dan çek
+      // Kullanıcı adını AuthViewModel'den çek (Clean Architecture)
+      // widget.currentUserName "Kullanıcı" olabilir, bu yüzden her zaman Firestore'dan çekiyoruz
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       String senderName = widget.currentUserName;
+      
+      // Eğer currentUserName "Kullanıcı" veya boşsa, Firestore'dan çek
       if (senderName == 'Kullanıcı' || senderName.isEmpty) {
-        final userProfile = await _authService.fetchUserProfile(widget.currentUserId);
-        senderName = userProfile?.displayName ?? widget.currentUserName;
+        final userProfile = await authViewModel.fetchUserProfile(widget.currentUserId);
+        senderName = userProfile?.displayName ?? 'Kullanıcı';
+      }
+      
+      // Eğer hala "Kullanıcı" ise, mevcut kullanıcının displayName'ini kullan
+      if (senderName == 'Kullanıcı' && authViewModel.user != null) {
+        senderName = authViewModel.user!.displayName ?? 'Kullanıcı';
       }
       
       // Mesaj tipini belirle
@@ -277,7 +295,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       if (imageUrl != null) messageType = MessageType.image;
       if (videoUrl != null) messageType = MessageType.video;
       
-      await _chatService.sendMessage(
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      await chatViewModel.sendMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
         senderName: senderName,
@@ -293,35 +312,127 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       _scrollToBottom();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Mesaj gönderilemedi: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
+        ModernSnackbar.showError(
+          context,
+          'Mesaj gönderilemedi: ${e.toString()}',
         );
       }
     }
   }
 
   Future<void> _pickMedia(ImageSource source, {bool isVideo = false}) async {
-    final picked = isVideo
-        ? await _picker.pickVideo(source: source)
-        : await _picker.pickImage(source: source, imageQuality: 80);
-    if (picked == null) return;
-    final file = File(picked.path);
-    final ext = isVideo ? 'mp4' : 'jpg';
-    final ref = FirebaseStorage.instance
-        .ref()
-        .child('chat_media')
-        .child('${DateTime.now().millisecondsSinceEpoch}.$ext');
-    final uploadTask = ref.putFile(file);
-    final snapshot = await uploadTask;
-    final url = await snapshot.ref.getDownloadURL();
-    if (isVideo) {
-      await _sendMessage(videoUrl: url);
-    } else {
-      await _sendMessage(imageUrl: url);
+    if (!mounted || _chatId == null) return;
+    
+    try {
+      final picked = isVideo
+          ? await _picker.pickVideo(source: source)
+          : await _picker.pickImage(source: source, imageQuality: 80);
+      if (picked == null) return;
+      
+      final file = File(picked.path);
+      
+      // Dosya kontrolü
+      if (!await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Dosya bulunamadı'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Dosya boyutu kontrolü (max 50MB)
+      final fileSize = await file.length();
+      const maxFileSize = 50 * 1024 * 1024; // 50MB
+      if (fileSize > maxFileSize) {
+        if (mounted) {
+          ModernSnackbar.showError(
+            context,
+            'Dosya boyutu çok büyük (Max: 50MB)',
+          );
+        }
+        return;
+      }
+      
+      // Loading göstergesi göster
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: ModernLoadingWidget(size: 20, showMessage: false),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('${isVideo ? 'Video' : 'Resim'} yükleniyor...'),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 60),
+          ),
+        );
+      }
+      
+      // Context'i async işlemden önce al
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      
+      final ext = isVideo ? 'mp4' : 'jpg';
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('chat_media')
+          .child('${DateTime.now().millisecondsSinceEpoch}.$ext');
+      
+      final uploadTask = ref.putFile(file);
+      
+      // Upload progress dinle
+      uploadTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        if (kDebugMode) {
+          debugPrint('${isVideo ? 'Video' : 'Resim'} yükleme ilerlemesi: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      });
+      
+      final snapshot = await uploadTask;
+      final url = await snapshot.ref.getDownloadURL();
+      
+      // Başarılı mesajı göster
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('${isVideo ? 'Video' : 'Resim'} yüklendi'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      if (isVideo) {
+        await _sendMessage(videoUrl: url);
+      } else {
+        await _sendMessage(imageUrl: url);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${isVideo ? 'Video' : 'Resim'} gönderme hatası: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      
+      if (kDebugMode) {
+        debugPrint('${isVideo ? 'Video' : 'Resim'} gönderme hatası: $e');
+      }
     }
   }
 
@@ -361,7 +472,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isMe ? Colors.deepPurple : Colors.grey[200],
+                  color: isMe ? AppColorConfig.primaryColor : Colors.grey[200],
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(20),
                     topRight: const Radius.circular(20),
@@ -385,7 +496,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
-                          color: Colors.deepPurple[700],
+                          color: AppColorConfig.primaryColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -432,7 +543,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.deepPurple[100],
+                backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
                 backgroundImage: widget.currentUserName.isNotEmpty 
                     ? null // Kullanıcı fotoğrafı varsa buraya eklenebilir
                     : null,
@@ -440,7 +551,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   widget.currentUserName.isNotEmpty 
                       ? widget.currentUserName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
                 ),
               ),
             ],
@@ -504,7 +615,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         height: 200,
                         color: Colors.grey[300],
                         child: const Center(
-                          child: CircularProgressIndicator(),
+                          child: ModernLoadingWidget(size: 32, showMessage: false),
                         ),
                       );
                     },
@@ -539,12 +650,12 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.deepPurple[100],
+              backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
               child: Text(
                 widget.currentUserName.isNotEmpty 
                     ? widget.currentUserName[0].toUpperCase()
                     : '?',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
               ),
             ),
           ],
@@ -618,12 +729,12 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.deepPurple[100],
+              backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
               child: Text(
                 widget.currentUserName.isNotEmpty 
                     ? widget.currentUserName[0].toUpperCase()
                     : '?',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
               ),
             ),
           ],
@@ -674,7 +785,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: Colors.deepPurple[700],
+                        color: AppColorConfig.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -706,12 +817,12 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.deepPurple[100],
+                backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
                 child: Text(
                   widget.currentUserName.isNotEmpty 
                       ? widget.currentUserName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
                 ),
               ),
             ],
@@ -761,7 +872,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: Colors.deepPurple[700],
+                        color: AppColorConfig.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -774,8 +885,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                     isMe: isMe,
                     onTap: () {
                       // TODO: Dosyayı açma/indirme işlevi
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Dosya açma özelliği yakında eklenecek')),
+                      ModernSnackbar.showInfo(
+                        context,
+                        'Dosya açma özelliği yakında eklenecek',
                       );
                     },
                     onLongPress: () => _showMessageOptions(message),
@@ -801,12 +913,12 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.deepPurple[100],
+                backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
                 child: Text(
                   widget.currentUserName.isNotEmpty 
                       ? widget.currentUserName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
                 ),
               ),
             ],
@@ -880,8 +992,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                 Navigator.pop(context);
                 if (message.text != null) {
                   Clipboard.setData(ClipboardData(text: message.text!));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mesaj kopyalandı')),
+                  ModernSnackbar.showSuccess(
+                    context,
+                    'Mesaj kopyalandı',
                   );
                 }
               },
@@ -934,19 +1047,21 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           TextButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
-              final messenger = ScaffoldMessenger.of(context);
               if (controller.text.trim().isNotEmpty) {
                 try {
-                  await _chatService.editMessage(message.id, controller.text.trim());
+                  final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+                  await chatViewModel.editMessage(message.id, controller.text.trim());
                   if (!mounted) return;
                   navigator.pop();
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Mesaj düzenlendi')),
-                  );
+                    ModernSnackbar.showSuccess(
+                      context,
+                      'Mesaj düzenlendi',
+                    );
                 } catch (e) {
                   if (!mounted) return;
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('Hata: $e')),
+                  ModernSnackbar.showError(
+                    context,
+                    'Hata: $e',
                   );
                 }
               }
@@ -972,18 +1087,20 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           TextButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
-              final messenger = ScaffoldMessenger.of(context);
               try {
-                await _chatService.deleteMessage(message.id, widget.currentUserId);
+                final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+                await chatViewModel.deleteMessage(message.id, widget.currentUserId);
                 if (!mounted) return;
                 navigator.pop();
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Mesaj silindi')),
+                ModernSnackbar.showSuccess(
+                  context,
+                  'Mesaj silindi',
                 );
               } catch (e) {
                 if (!mounted) return;
-                messenger.showSnackBar(
-                  SnackBar(content: Text('Hata: $e')),
+                ModernSnackbar.showError(
+                  context,
+                  'Hata: $e',
                 );
               }
             },
@@ -997,15 +1114,16 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
 
   void _handleReactionTap(MessageModel message, String emoji) async {
     try {
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
       // Kullanıcının bu tepkiyi daha önce verip vermediğini kontrol et
       final userReactions = message.reactions[widget.currentUserId] ?? [];
       
       if (userReactions.contains(emoji)) {
         // Tepkiyi kaldır
-        await _chatService.removeReaction(message.id, widget.currentUserId, emoji);
+        await chatViewModel.removeReaction(message.id, widget.currentUserId, emoji);
       } else {
         // Tepkiyi ekle
-        await _chatService.addReaction(message.id, widget.currentUserId, emoji);
+        await chatViewModel.addReaction(message.id, widget.currentUserId, emoji);
       }
     } catch (e) {
       if (!mounted) return;
@@ -1027,8 +1145,34 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Future<void> _sendVoiceMessage(String filePath, Duration duration) async {
+    if (!mounted || _chatId == null) return;
+    
+    // Loading göstergesi göster
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Text('Sesli mesaj yükleniyor...'),
+            ],
+          ),
+          duration: Duration(seconds: 30),
+        ),
+      );
+    }
+
     try {
-      if (_chatId == null) return;
+      // Dosya kontrolü
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('Ses dosyası bulunamadı');
+      }
 
       // Ses dosyasını Firebase Storage'a yükle
       final storageRef = FirebaseStorage.instance
@@ -1036,33 +1180,73 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           .child('voice_messages')
           .child('${DateTime.now().millisecondsSinceEpoch}.m4a');
       
-      final uploadTask = storageRef.putFile(File(filePath));
+      final uploadTask = storageRef.putFile(file);
+      
+      // Upload progress dinle
+      uploadTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        if (kDebugMode) {
+          debugPrint('Ses yükleme ilerlemesi: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      });
+      
       final snapshot = await uploadTask;
       final audioUrl = await snapshot.ref.getDownloadURL();
 
-      // Mesajı gönder
-      // Kullanıcı adını Firestore'dan çek
+      // Kullanıcı adını AuthViewModel'den çek (Clean Architecture)
+      // Context'i async işlemden önce al
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      
       String senderName = widget.currentUserName;
+      // Eğer currentUserName "Kullanıcı" veya boşsa, Firestore'dan çek
       if (senderName == 'Kullanıcı' || senderName.isEmpty) {
-        final userProfile = await _authService.fetchUserProfile(widget.currentUserId);
-        senderName = userProfile?.displayName ?? widget.currentUserName;
+        final userProfile = await authViewModel.fetchUserProfile(widget.currentUserId);
+        senderName = userProfile?.displayName ?? 'Kullanıcı';
+      }
+      // Eğer hala "Kullanıcı" ise, mevcut kullanıcının displayName'ini kullan
+      if (senderName == 'Kullanıcı' && authViewModel.user != null) {
+        senderName = authViewModel.user!.displayName ?? 'Kullanıcı';
       }
       
-      await _chatService.sendVoiceMessage(
+      // Mesajı gönder
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      await chatViewModel.sendVoiceMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
         senderName: senderName,
-        senderPhotoUrl: null, // TODO: Kullanıcı fotoğrafı ekle
+        senderPhotoUrl: null,
         audioUrl: audioUrl,
         duration: duration,
       );
 
-      _scrollToBottom();
+      // Başarılı mesajı göster
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('Sesli mesaj gönderildi'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        _scrollToBottom();
+      }
     } catch (e) {
       if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sesli mesaj gönderme hatası: $e')),
+        SnackBar(
+          content: Text('Sesli mesaj gönderme hatası: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
       );
+      
+      if (kDebugMode) {
+        debugPrint('Sesli mesaj gönderme hatası: $e');
+      }
     }
   }
 
@@ -1079,8 +1263,64 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Future<void> _sendFileMessage(PlatformFile file) async {
+    if (!mounted || _chatId == null) return;
+    
+    // Null kontrolü
+    if (file.path == null || file.path!.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dosya yolu bulunamadı'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Dosya boyutu kontrolü (max 50MB)
+    const maxFileSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxFileSize) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dosya boyutu çok büyük (Max: 50MB)'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Loading göstergesi göster
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('${file.name} yükleniyor...'),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 60),
+        ),
+      );
+    }
+
     try {
-      if (_chatId == null) return;
+      // Dosya kontrolü
+      final fileObj = File(file.path!);
+      if (!await fileObj.exists()) {
+        throw Exception('Dosya bulunamadı');
+      }
 
       // Dosyayı Firebase Storage'a yükle
       final storageRef = FirebaseStorage.instance
@@ -1088,38 +1328,73 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           .child('chat_files')
           .child('${DateTime.now().millisecondsSinceEpoch}_${file.name}');
       
-      final uploadTask = storageRef.putFile(File(file.path!));
+      final uploadTask = storageRef.putFile(fileObj);
+      
+      // Upload progress dinle
+      uploadTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        if (kDebugMode) {
+          debugPrint('Dosya yükleme ilerlemesi: ${(progress * 100).toStringAsFixed(1)}%');
+        }
+      });
+      
       final snapshot = await uploadTask;
       final fileUrl = await snapshot.ref.getDownloadURL();
 
       // Dosya uzantısını al
       final fileExtension = file.extension;
 
-      // Mesajı gönder
-      // Kullanıcı adını Firestore'dan çek
+      // Context'i async işlemden önce al
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      
+      // Kullanıcı adını Firestore'dan çek (Clean Architecture: AuthViewModel kullan)
       String senderName = widget.currentUserName;
       if (senderName == 'Kullanıcı' || senderName.isEmpty) {
-        final userProfile = await _authService.fetchUserProfile(widget.currentUserId);
+        final userProfile = await authViewModel.fetchUserProfile(widget.currentUserId);
         senderName = userProfile?.displayName ?? widget.currentUserName;
       }
       
-      await _chatService.sendFileMessage(
+      // Mesajı gönder
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      await chatViewModel.sendFileMessage(
         chatId: _chatId!,
         senderId: widget.currentUserId,
         senderName: senderName,
-        senderPhotoUrl: null, // TODO: Kullanıcı fotoğrafı ekle
+        senderPhotoUrl: null,
         fileUrl: fileUrl,
         fileName: file.name,
         fileSize: file.size,
         fileExtension: fileExtension,
       );
 
-      _scrollToBottom();
+      // Başarılı mesajı göster
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('${file.name} gönderildi'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        _scrollToBottom();
+      }
     } catch (e) {
       if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Dosya gönderme hatası: $e')),
+        SnackBar(
+          content: Text('Dosya gönderme hatası: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
       );
+      
+      if (kDebugMode) {
+        debugPrint('Dosya gönderme hatası: $e');
+      }
     }
   }
 
@@ -1235,15 +1510,15 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.emoji_emotions, color: Colors.deepPurple),
+                  icon: Icon(Icons.emoji_emotions, color: AppColorConfig.primaryColor),
                   onPressed: () => setState(() => _showEmojiPicker = !_showEmojiPicker),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.mic, color: Colors.deepPurple),
+                  icon: Icon(Icons.mic, color: AppColorConfig.primaryColor),
                   onPressed: _showVoiceRecorder,
                 ),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.attach_file, color: Colors.deepPurple),
+                  icon: Icon(Icons.attach_file, color: AppColorConfig.primaryColor),
                   onSelected: (value) {
                     switch (value) {
                       case 'photo':
@@ -1456,7 +1731,7 @@ class _VideoMessageWidgetState extends State<_VideoMessageWidget> {
                 ],
               ),
             )
-          : const Center(child: CircularProgressIndicator()),
+          : Center(child: ModernLoadingWidget(message: 'Yükleniyor...')),
     );
   }
 } 

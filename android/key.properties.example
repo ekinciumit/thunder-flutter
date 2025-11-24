@@ -1,0 +1,13 @@
+# Android Release Signing Configuration
+# Bu dosyayı kopyalayıp "key.properties" olarak kaydedin ve değerleri doldurun
+# 
+# Keystore oluşturma komutu:
+# keytool -genkey -v -keystore android/app/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# NOT: key.properties dosyasını git'e eklemeyin! (.gitignore'da olmalı)
+
+storePassword=your_keystore_password
+keyPassword=your_key_password
+keyAlias=upload
+storeFile=../app/upload-keystore.jks
+

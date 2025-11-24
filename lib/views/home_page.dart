@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'event_list_view.dart';
@@ -7,11 +8,13 @@ import 'profile_view.dart';
 import 'create_event_page.dart';
 import 'chat_list_page.dart';
 import 'private_chat_page.dart';
+import 'notifications_page.dart';
 import '../services/notification_service.dart';
-import '../services/chat_service.dart';
-import '../services/auth_service.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../models/chat_model.dart';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -23,9 +26,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final NotificationService _notificationService = NotificationService();
-  final ChatService _chatService = ChatService();
-  final AuthService _authService = AuthService();
   int _totalUnreadCount = 0;
+  int _unreadNotificationCount = 0;
 
   static final List<Widget> _pages = <Widget>[
     EventListView(),
@@ -39,6 +41,29 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _setupNotificationRouting();
     _loadUnreadCount();
+    _loadUnreadNotificationCount();
+    // Tam ekran için system UI'ı ayarla
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.edgeToEdge,
+    );
+    // Status bar'ı şeffaf yap
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    // System UI ayarlarını sıfırla (opsiyonel)
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
+    super.dispose();
   }
 
   void _setupNotificationRouting() {
@@ -69,8 +94,8 @@ class _HomePageState extends State<HomePage> {
 
         if (otherParticipant.isEmpty) return;
 
-        // Kullanıcı bilgilerini al
-        final otherUser = await _authService.fetchUserProfile(otherParticipant);
+        // Kullanıcı bilgilerini al (Clean Architecture: AuthViewModel kullan)
+        final otherUser = await authViewModel.fetchUserProfile(otherParticipant);
         final otherUserName = otherUser?.displayName ?? 
                              chat.participantDetails[otherParticipant]?.name ?? 
                              'Bilinmeyen';
@@ -98,9 +123,7 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sohbet açılamadı: $e')),
-        );
+        ModernSnackbar.showError(context, 'Sohbet açılamadı: $e');
       }
     }
   }
@@ -129,6 +152,25 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _loadUnreadNotificationCount() {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final currentUser = authViewModel.user;
+    if (currentUser == null) return;
+
+    FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: currentUser.uid)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _unreadNotificationCount = snapshot.docs.length;
+        });
+      }
+    });
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -138,27 +180,59 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: null, // Başlık kaldırıldı
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.primary,
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: _pages[_selectedIndex],
+          ),
+          // Bildirimler Butonu (Sadece ana sayfada)
+          if (_selectedIndex == 0)
+            Positioned(
+              bottom: 90,
+              right: 16,
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                  );
+                },
+                backgroundColor: AppColorConfig.secondaryColor,
+                foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                elevation: 4,
+                child: Badge(
+                  label: _unreadNotificationCount > 0
+                      ? Text(
+                          _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
+                          style: const TextStyle(fontSize: 10),
+                        )
+                      : null,
+                  isLabelVisible: _unreadNotificationCount > 0,
+                  backgroundColor: AppColorConfig.errorColor,
+                  child: const Icon(Icons.notifications_rounded, size: 24),
+                ),
+              ),
+            ),
+        ],
       ),
-      body: _pages[_selectedIndex],
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom,
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              color: Theme.of(context).colorScheme.primary.withAlpha(AppTheme.alphaLight),
               blurRadius: 20,
               offset: const Offset(0, 8),
               spreadRadius: 0,
             ),
             BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
+              color: Theme.of(context).colorScheme.shadow.withAlpha(AppTheme.alphaVeryLight),
               blurRadius: 6,
               offset: const Offset(0, 2),
               spreadRadius: 0,
@@ -166,7 +240,10 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingXxl,
+            vertical: AppTheme.spacingMd,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -187,17 +264,24 @@ class _HomePageState extends State<HomePage> {
                   ),
                   if (_totalUnreadCount > 0)
                     Positioned(
-                      right: 0,
-                      top: 0,
+                      right: -2,
+                      top: -2,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColorConfig.errorColor,
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.surface,
+                            width: 2,
+                          ),
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
+                          minWidth: 18,
+                          minHeight: 18,
                         ),
                         child: Text(
                           _totalUnreadCount > 99 ? '99+' : _totalUnreadCount.toString(),
@@ -229,34 +313,16 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButton: _selectedIndex == 0
-          ? Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.secondary,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: FloatingActionButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CreateEventPage()),
-                  );
-                },
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-              ),
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const CreateEventPage()),
+                );
+              },
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              child: const Icon(Icons.add_rounded, size: 24),
             )
           : null,
     );

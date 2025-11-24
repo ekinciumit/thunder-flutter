@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
-import '../viewmodels/event_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../models/event_model.dart';
 import 'dart:math';
 import '../views/event_detail_page.dart';
@@ -10,6 +10,10 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
+import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
+import '../core/widgets/modern_components.dart';
 
 class EventListView extends StatefulWidget {
   const EventListView({super.key});
@@ -57,14 +61,26 @@ class _EventListViewState extends State<EventListView> {
   @override
   void initState() {
     super.initState();
-    _getUserLocation();
+    // Konum otomatik alınmıyor - kullanıcı "Konumuma en yakın etkinlikleri bul" butonuna tıkladığında alınacak
+    // Sayfa yenilendiğinde (widget yeniden oluşturulduğunda) konum filtresini sıfırla
+    _resetLocationFilter();
     _loadCategoryIcons();
+  }
+
+  /// Konum filtresini sıfırla
+  /// Sayfa yenilendiğinde veya kullanıcı istediğinde çağrılır
+  void _resetLocationFilter() {
+    isDistanceFilterEnabled = false;
+    userPosition = null;
+    locationHint = null;
+    _distanceCache.clear(); // Mesafe cache'ini de temizle
   }
 
   Future<void> _getUserLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
+        if (!mounted) return;
         setState(() { locationHint = 'Konum servisi kapalı. Lütfen açın.'; });
         return;
       }
@@ -72,19 +88,23 @@ class _EventListViewState extends State<EventListView> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
+          if (!mounted) return;
           setState(() { locationHint = 'Konum izni reddedildi.'; });
           return;
         }
       }
       if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
         setState(() { locationHint = 'Konum izni kalıcı reddedildi. Ayarlardan izin verin.'; });
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
+      if (!mounted) return;
       setState(() { userPosition = pos; locationHint = null; });
     } catch (_) {
+      if (!mounted) return;
       setState(() { locationHint = 'Konum alınamadı. Tekrar deneyin.'; });
     }
   }
@@ -96,6 +116,7 @@ class _EventListViewState extends State<EventListView> {
         loadedIcons[entry.key] = AssetImage(entry.value);
       } catch (_) {}
     }
+    if (!mounted) return;
     setState(() {
       categoryIconImages = loadedIcons;
       iconsLoaded = true;
@@ -121,7 +142,10 @@ class _EventListViewState extends State<EventListView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final eventViewModel = Provider.of<EventViewModel>(context);
+    final authViewModel = Provider.of<AuthViewModel>(context);
+    final currentUser = authViewModel.user;
     final events = eventViewModel.events;
+    final followingIds = currentUser?.following ?? [];
 
     // Filtreleme
     final filteredEvents = events.where((event) {
@@ -148,70 +172,50 @@ class _EventListViewState extends State<EventListView> {
       return matchesSearch && matchesCategory && matchesDate && matchesDistance;
     }).toList();
 
-    // Mesafeye göre sıralama
-    if (userPosition != null) {
-      filteredEvents.sort((a, b) {
+    // Takip edilenlerin etkinliklerini öne çıkar
+    filteredEvents.sort((a, b) {
+      final aIsFollowing = followingIds.contains(a.createdBy);
+      final bIsFollowing = followingIds.contains(b.createdBy);
+      
+      // Takip edilenlerin etkinlikleri önce gelsin
+      if (aIsFollowing && !bIsFollowing) return -1;
+      if (!aIsFollowing && bIsFollowing) return 1;
+
+    // Mesafeye göre sıralama (sadece konum alındıysa ve mesafe filtresi aktifse)
+    if (userPosition != null && isDistanceFilterEnabled) {
         final da = _calculateDistance(userPosition!.latitude, userPosition!.longitude, a.location.latitude, a.location.longitude);
         final db = _calculateDistance(userPosition!.latitude, userPosition!.longitude, b.location.latitude, b.location.longitude);
         return da.compareTo(db);
-      });
     }
+      
+      // Tarihe göre sıralama (yakın tarihli etkinlikler önce)
+      return a.datetime.compareTo(b.datetime);
+    });
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: null,
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              padding: EdgeInsets.fromLTRB(
+                AppTheme.spacingLg, 
+                MediaQuery.of(context).padding.top + AppTheme.spacingLg, 
+                AppTheme.spacingLg, 
+                AppTheme.spacingSm
+              ),
               child: Row(
                 children: [
-                  if (userPosition == null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: OutlinedButton.icon(
-                        onPressed: _getUserLocation,
-                        icon: const Icon(Icons.my_location),
-                        label: const Text('Konum al'),
-                      ),
-                    ),
-                  if (userPosition == null && locationHint != null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final action = await showDialog<String>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Konum İzni/Ayarı'),
-                              content: Text(locationHint!),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(context, 'loc'), child: const Text('Konum Ayarları')),
-                                TextButton(onPressed: () => Navigator.pop(context, 'app'), child: const Text('Uygulama Ayarları')),
-                                TextButton(onPressed: () => Navigator.pop(context, 'cancel'), child: const Text('Kapat')),
-                              ],
-                            ),
-                          );
-                          if (!mounted) return;
-                          if (action == 'loc') {
-                            await Geolocator.openLocationSettings();
-                          } else if (action == 'app') {
-                            await Geolocator.openAppSettings();
-                          }
-                        },
-                        icon: const Icon(Icons.settings),
-                        label: const Text('Ayarlar'),
-                      ),
-                    ),
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(32),
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withAlpha(20),
+                            color: theme.colorScheme.primary.withAlpha(AppTheme.alphaLight),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -222,12 +226,20 @@ class _EventListViewState extends State<EventListView> {
                         decoration: InputDecoration(
                           hintText: 'Etkinlik ara (başlık, açıklama, adres)',
                           hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.primary.withAlpha(120),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary, size: 20),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: theme.colorScheme.primary,
+                            size: 20,
+                          ),
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear, color: Colors.red, size: 20),
+                                  icon: Icon(
+                                    Icons.clear_rounded,
+                                    color: theme.colorScheme.error,
+                                    size: 20,
+                                  ),
                                   onPressed: () {
                                     setState(() {
                                       _searchQuery = '';
@@ -237,10 +249,12 @@ class _EventListViewState extends State<EventListView> {
                                 )
                               : null,
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingXl,
+                            vertical: AppTheme.spacingLg,
+                          ),
                         ),
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.textTheme.bodyMedium?.color,
                           fontWeight: FontWeight.w500,
                         ),
                         onChanged: (value) {
@@ -251,35 +265,37 @@ class _EventListViewState extends State<EventListView> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.filter_alt_rounded, color: Colors.white),
-                      tooltip: 'Filtrele',
+                  const SizedBox(width: AppTheme.spacingSm),
+                  FilledButton(
                       onPressed: () async {
                         await showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                          backgroundColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(AppTheme.radiusRound),
+                            ),
                           ),
                           builder: (context) {
                             String tempSelectedCategory = selectedCategory;
                             DateTime? tempStartDate = startDate;
                             DateTime? tempEndDate = endDate;
                             double tempSelectedDistance = selectedDistance;
-                            return Padding(
+                            bool tempIsDistanceFilterEnabled = isDistanceFilterEnabled;
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface,
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(AppTheme.radiusRound),
+                                ),
+                              ),
+                              child: Padding(
                               padding: EdgeInsets.only(
-                                left: 24,
-                                right: 24,
-                                top: 24,
-                                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                                  left: AppTheme.spacingXxl,
+                                  right: AppTheme.spacingXxl,
+                                  top: AppTheme.spacingXxl,
+                                  bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingXxl,
                               ),
                               child: StatefulBuilder(
                                 builder: (context, setModalState) => Column(
@@ -364,16 +380,142 @@ class _EventListViewState extends State<EventListView> {
                                       ],
                                     ),
                                     const SizedBox(height: 16),
-                                    Text('Mesafe: ${tempSelectedDistance.round()} km', style: theme.textTheme.bodyMedium),
-                                    Slider(
-                                      value: tempSelectedDistance,
-                                      min: 1,
-                                      max: 50,
-                                      divisions: 49,
-                                      label: '${tempSelectedDistance.round()} km',
-                                      onChanged: (val) => setModalState(() => tempSelectedDistance = val),
+                                    // Mesafe filtresi checkbox
+                                    Row(
+                                      children: [
+                                        Checkbox(
+                                          value: tempIsDistanceFilterEnabled && userPosition != null,
+                                          onChanged: userPosition != null
+                                              ? (value) {
+                                                  setModalState(() {
+                                                    tempIsDistanceFilterEnabled = value ?? false;
+                                                  });
+                                                }
+                                              : null,
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            'Mesafe filtresini aktif et (${tempSelectedDistance.round()} km)',
+                                            style: theme.textTheme.bodyMedium,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                    if (tempIsDistanceFilterEnabled && userPosition != null) ...[
+                                      const SizedBox(height: 8),
+                                      Text('Mesafe: ${tempSelectedDistance.round()} km', style: theme.textTheme.bodySmall),
+                                      Slider(
+                                        value: tempSelectedDistance,
+                                        min: 1,
+                                        max: 50,
+                                        divisions: 49,
+                                        label: '${tempSelectedDistance.round()} km',
+                                        onChanged: (val) => setModalState(() => tempSelectedDistance = val),
+                                      ),
+                                    ],
                                     const SizedBox(height: 24),
+                                    // Konumuma en yakın etkinlikleri bul butonu (en altta, diğer filtrelerden sonra)
+                                    Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: AppTheme.gradientWithAlpha(
+                                            AppTheme.gradientSecondary,
+                                            AppTheme.alphaMediumLight,
+                                          ),
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.deepPurple.withAlpha(AppTheme.alphaMediumDark),
+                                        ),
+                                      ),
+                                      child: ElevatedButton.icon(
+                                        onPressed: () async {
+                                          // Konum al ve mesafe filtresini aktif et - otomatik uygula
+                                          await _getUserLocation();
+                                          if (!context.mounted) return;
+                                          if (userPosition != null) {
+                                            // Filtreleri otomatik uygula ve modal'ı kapat
+                                            setState(() {
+                                              isDistanceFilterEnabled = true;
+                                              selectedCategory = tempSelectedCategory;
+                                              startDate = tempStartDate;
+                                              endDate = tempEndDate;
+                                              selectedDistance = tempSelectedDistance;
+                                            });
+                                            // Modal'ı güvenli şekilde kapat
+                                            if (Navigator.canPop(context)) {
+                                              Navigator.of(context).pop();
+                                            }
+                                            if (context.mounted) {
+                                              ModernSnackbar.showSuccess(
+                                                context,
+                                                'Konum alındı! En yakın etkinlikler gösteriliyor.',
+                                              );
+                                            }
+                                          } else {
+                                            // Hata durumunda ayarlar dialog'u göster
+                                            final action = await showDialog<String>(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                                                ),
+                                                title: const Text(
+                                                  'Konum İzni/Ayarı',
+                                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                                ),
+                                                content: Text(
+                                                  locationHint ?? 'Konum alınamadı. Lütfen ayarları kontrol edin.',
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, 'loc'),
+                                                    child: const Text('Konum Ayarları'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, 'app'),
+                                                    child: const Text('Uygulama Ayarları'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, 'cancel'),
+                                                    child: const Text('Kapat'),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                            if (!context.mounted) return;
+                                            if (action == 'loc') {
+                                              await Geolocator.openLocationSettings();
+                                            } else if (action == 'app') {
+                                              await Geolocator.openAppSettings();
+                                            }
+                                          }
+                                        },
+                                        icon: Icon(
+                                          userPosition != null ? Icons.check_circle : Icons.my_location,
+                                          color: userPosition != null ? Colors.green : Colors.deepPurple,
+                                        ),
+                                        label: Text(
+                                          userPosition != null
+                                              ? 'Konumum alındı ✓'
+                                              : 'Konumuma en yakın etkinlikleri bul',
+                                          style: TextStyle(
+                                            color: userPosition != null ? Colors.green.shade700 : Colors.deepPurple.shade700,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          elevation: 0,
+                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
                                     Row(
                                       children: [
                                         Expanded(
@@ -384,13 +526,16 @@ class _EventListViewState extends State<EventListView> {
                                                 startDate = tempStartDate;
                                                 endDate = tempEndDate;
                                                 selectedDistance = tempSelectedDistance;
+                                                isDistanceFilterEnabled = tempIsDistanceFilterEnabled;
                                               });
-                                              Navigator.of(context).pop();
+                                              if (Navigator.canPop(context)) {
+                                                Navigator.of(context).pop();
+                                              }
                                             },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: theme.colorScheme.primary,
                                               foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
                                               padding: const EdgeInsets.symmetric(vertical: 14),
                                             ),
                                             child: const Text('Uygula'),
@@ -405,12 +550,13 @@ class _EventListViewState extends State<EventListView> {
                                                 tempStartDate = null;
                                                 tempEndDate = null;
                                                 tempSelectedDistance = 10;
+                                                tempIsDistanceFilterEnabled = false;
                                               });
                                             },
                                             style: OutlinedButton.styleFrom(
                                               foregroundColor: theme.colorScheme.primary,
                                               side: BorderSide(color: theme.colorScheme.primary),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
                                               padding: const EdgeInsets.symmetric(vertical: 14),
                                             ),
                                             child: const Text('Temizle'),
@@ -420,86 +566,117 @@ class _EventListViewState extends State<EventListView> {
                                     ),
                                   ],
                                 ),
+                                ),
                               ),
                             );
                           },
                         );
                       },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.all(AppTheme.spacingMd),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                     ),
+                    ),
+                    child: const Icon(Icons.filter_alt_rounded),
                   ),
                 ],
               ),
             ),
             if (locationHint != null && userPosition == null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingLg),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppTheme.spacingMd),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                    color: AppColorConfig.warningColor.withAlpha(AppTheme.alphaLight),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(
+                      color: AppColorConfig.warningColor.withAlpha(AppTheme.alphaMediumDark),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info, color: Colors.amber),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(locationHint!, style: Theme.of(context).textTheme.bodySmall)),
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColorConfig.warningColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppTheme.spacingSm),
+                      Expanded(
+                        child: Text(
+                          locationHint!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColorConfig.warningColor,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTheme.spacingSm),
             Expanded(
               child: eventViewModel.isLoading
-                  ? const Center(child: CupertinoActivityIndicator(radius: 18))
+                  ? Center(
+                      child: ModernLoadingWidget(message: 'Etkinlikler yükleniyor...'),
+                    )
                   : filteredEvents.isEmpty
-                      ? ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: 6,
-                          separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: 16),
-                          itemBuilder: (context, index) {
-                            return AppCard(
-                            borderRadius: 24,
-                              gradientColors: [Colors.grey.withAlpha(10), Colors.grey.withAlpha(6)],
-                              boxShadow: const [],
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(height: 160, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(16))),
-                                  const SizedBox(height: 12),
-                                  Container(height: 16, width: 180, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(8))),
-                                  const SizedBox(height: 8),
-                                  Container(height: 12, width: double.infinity, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8))),
-                                  const SizedBox(height: 6),
-                                  Container(height: 12, width: 220, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8))),
-                                  const SizedBox(height: 12),
-                                ],
-                            ),
-                            );
-                          },
+                      ? EmptyStateWidget(
+                          icon: Icons.event_busy,
+                          title: 'Etkinlik bulunamadı',
+                          message: _searchQuery.isNotEmpty
+                              ? 'Arama kriterlerinize uygun etkinlik bulunamadı.'
+                              : 'Henüz etkinlik bulunmuyor.',
+                          actionText: _searchQuery.isNotEmpty ? 'Filtreleri Temizle' : null,
+                          onAction: _searchQuery.isNotEmpty
+                              ? () {
+                                  setState(() {
+                                    _searchQuery = '';
+                                    _searchController.clear();
+                                    selectedCategory = 'Tümü';
+                                    startDate = null;
+                                    endDate = null;
+                                    isDistanceFilterEnabled = false;
+                                  });
+                                }
+                              : null,
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingMd,
+                            vertical: AppTheme.spacingSm,
+                          ),
                           itemCount: filteredEvents.length + 1,
-                          separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: 16),
+                          separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: AppTheme.spacingLg),
                           itemBuilder: (context, index) {
                             if (index == filteredEvents.length) {
-                              // Load more footer as a button
                               return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                                 child: Center(
                                   child: eventViewModel.canLoadMore
-                                      ? ElevatedButton.icon(
-                                          onPressed: eventViewModel.isLoadingMore ? null : () => eventViewModel.loadMore(),
+                                      ? FilledButton.icon(
+                                          onPressed: eventViewModel.isLoadingMore
+                                              ? null
+                                              : () => eventViewModel.loadMore(),
                                           icon: eventViewModel.isLoadingMore
                                               ? const SizedBox(
-                                                  width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                )
                                               : const Icon(Icons.expand_more),
-                                          label: Text(eventViewModel.isLoadingMore ? 'Yükleniyor...' : 'Daha fazla yükle'),
+                                          label: Text(
+                                            eventViewModel.isLoadingMore ? 'Yükleniyor...' : 'Daha fazla yükle',
+                                          ),
                                         )
-                                      : const Text('Hepsi bu kadar'),
+                                      : Text(
+                                          'Hepsi bu kadar',
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
                                 ),
                               );
                             }

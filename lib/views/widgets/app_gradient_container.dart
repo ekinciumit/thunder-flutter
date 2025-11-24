@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_color_config.dart';
+import '../../core/theme/app_theme.dart';
 
 class AppGradientContainer extends StatelessWidget {
   final Widget child;
@@ -22,13 +24,17 @@ class AppGradientContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    final defaultGradient = [
-      theme.colorScheme.primary.withValues(alpha: 0.1),
-      theme.colorScheme.secondary.withValues(alpha: 0.05),
-      theme.colorScheme.tertiary.withValues(alpha: 0.03),
-    ];
+    // AppColorConfig renklerini kullanarak daha canlı gradient
+    // Gündüz modu için daha belirgin ama yine de yumuşak gradient
+    final defaultGradient = gradientColors ?? AppColorConfig.gradientPrimaryLight.map((color) => 
+      color.withAlpha(AppTheme.alphaMediumLight)
+    ).toList();
+
+    final colors = gradientColors ?? defaultGradient;
+    final stops = List.generate(
+      colors.length,
+      (index) => index / (colors.length - 1),
+    );
 
     if (enableAnimatedGradient) {
       return AnimatedContainer(
@@ -36,10 +42,10 @@ class AppGradientContainer extends StatelessWidget {
         padding: padding,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: gradientColors ?? defaultGradient,
+            colors: colors,
             begin: begin,
             end: end,
-            stops: const [0.0, 0.5, 1.0],
+            stops: stops,
           ),
         ),
         child: child,
@@ -50,10 +56,10 @@ class AppGradientContainer extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: gradientColors ?? defaultGradient,
+          colors: colors,
           begin: begin,
           end: end,
-          stops: const [0.0, 0.5, 1.0],
+          stops: stops,
         ),
       ),
       child: child,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/chat_service.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
+import '../core/theme/app_theme.dart';
 
 class MessageForwardPage extends StatefulWidget {
   final MessageModel message;
@@ -19,7 +21,6 @@ class MessageForwardPage extends StatefulWidget {
 }
 
 class _MessageForwardPageState extends State<MessageForwardPage> {
-  final ChatService _chatService = ChatService();
   List<ChatModel> _chats = [];
   bool _isLoading = true;
   bool _isForwarding = false;
@@ -38,7 +39,8 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
       if (currentUser == null) return;
 
       // Kullanıcının sohbetlerini al
-      final chatsStream = _chatService.getUserChats(currentUser.uid);
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      final chatsStream = chatViewModel.getUserChats(currentUser.uid);
       await for (final chats in chatsStream) {
         if (mounted) {
           setState(() {
@@ -71,7 +73,8 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
       
       if (currentUser == null) return;
 
-      await _chatService.forwardMessage(
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      await chatViewModel.forwardMessage(
         originalMessage: widget.message,
         targetChatId: targetChat.id,
         senderId: currentUser.uid,
@@ -216,6 +219,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
     }
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -245,8 +249,12 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(color: Colors.white),
-                          SizedBox(height: 16),
+                          ModernLoadingWidget(
+                            size: 32,
+                            color: Colors.white,
+                            showMessage: false,
+                          ),
+                          const SizedBox(height: 16),
                           Text(
                             'Sohbetler yükleniyor...',
                             style: TextStyle(color: Colors.white70),
@@ -367,9 +375,10 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                                           ? const SizedBox(
                                               width: 20,
                                               height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
+                                              child: ModernLoadingWidget(
+                                                size: 20,
                                                 color: Colors.white,
+                                                showMessage: false,
                                               ),
                                             )
                                           : const Icon(

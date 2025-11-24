@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/event_model.dart';
-import '../viewmodels/event_viewmodel.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../core/validators/form_validators.dart';
+import '../core/utils/responsive_helper.dart';
+import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
+import '../core/widgets/modern_components.dart';
+import 'widgets/modern_loading_widget.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
@@ -76,6 +83,62 @@ class _CreateEventPageState extends State<CreateEventPage> {
     });
   }
 
+  /// Kategori renk şemasını döndürür
+  Map<String, Color> _getCategoryColorScheme(String category) {
+    switch (category) {
+      case 'Müzik':
+        return {
+          'primary': const Color(0xFF7C3AED), // Deep purple
+          'secondary': const Color(0xFFA855F7), // Lighter purple
+        };
+      case 'Spor':
+        return {
+          'primary': const Color(0xFF2563EB), // Blue
+          'secondary': const Color(0xFF3B82F6), // Lighter blue
+        };
+      case 'Yemek':
+        return {
+          'primary': const Color(0xFFEA580C), // Orange
+          'secondary': const Color(0xFFFB923C), // Lighter orange
+        };
+      case 'Sanat':
+        return {
+          'primary': const Color(0xFFDC2626), // Red
+          'secondary': const Color(0xFFEF4444), // Lighter red
+        };
+      case 'Parti':
+        return {
+          'primary': const Color(0xFF059669), // Teal
+          'secondary': const Color(0xFF10B981), // Lighter teal
+        };
+      case 'Teknoloji':
+        return {
+          'primary': const Color(0xFF4F46E5), // Indigo
+          'secondary': const Color(0xFF6366F1), // Lighter indigo
+        };
+      case 'Doğa':
+        return {
+          'primary': const Color(0xFF16A34A), // Green
+          'secondary': const Color(0xFF22C55E), // Lighter green
+        };
+      case 'Eğitim':
+        return {
+          'primary': const Color(0xFF92400E), // Brown
+          'secondary': const Color(0xFFB45309), // Lighter brown
+        };
+      case 'Oyun':
+        return {
+          'primary': const Color(0xFF7C2D12), // Dark brown
+          'secondary': const Color(0xFF991B1B), // Lighter brown
+        };
+      default: // Diğer
+        return {
+          'primary': const Color(0xFF6B7280), // Gray
+          'secondary': Colors.grey.shade400,
+        };
+    }
+  }
+
   BitmapDescriptor _getCategoryIcon(String category) {
     if (iconsLoaded && categoryIcons.containsKey(category)) {
       return categoryIcons[category]!;
@@ -106,11 +169,40 @@ class _CreateEventPageState extends State<CreateEventPage> {
   }
 
   Future<void> _pickCoverPhoto() async {
+    // Önce galeri veya kamera seçimi göster
+    final source = await ModernDialog.showImageSource(
+      context: context,
+      title: 'Fotoğraf Seç',
+    );
+    
+    if (source == null) return;
+    
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 90);
     if (pickedFile != null) {
-      setState(() { coverPhotoFile = File(pickedFile.path); });
-      await _uploadCoverPhoto();
+      // Kırpma işlemi
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Fotoğrafı Kırp',
+            toolbarColor: Theme.of(context).colorScheme.primary,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.ratio16x9,
+            lockAspectRatio: false, // Serbest kırpma
+          ),
+          IOSUiSettings(
+            title: 'Fotoğrafı Kırp',
+            aspectRatioPresets: [CropAspectRatioPreset.ratio16x9],
+          ),
+        ],
+      );
+      
+      if (croppedFile != null) {
+        setState(() { coverPhotoFile = File(croppedFile.path); });
+        await _uploadCoverPhoto();
+      }
     }
   }
 
@@ -125,6 +217,132 @@ class _CreateEventPageState extends State<CreateEventPage> {
       uploadedPhotoUrl = url;
       isUploading = false;
     });
+  }
+
+  Future<void> _pickCategory() async {
+    final theme = Theme.of(context);
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusRound),
+        ),
+      ),
+      builder: (context) {
+        String tempCategory = selectedCategory;
+        return StatefulBuilder(
+          builder: (context, setModalState) => Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppTheme.radiusRound),
+              ),
+            ),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: AppTheme.spacingMd),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Title
+                Padding(
+                  padding: const EdgeInsets.all(AppTheme.spacingXl),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Kategori Seç',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                // Categories Grid
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingXl,
+                  ),
+                  child: Wrap(
+                    spacing: AppTheme.spacingMd,
+                    runSpacing: AppTheme.spacingMd,
+                    children: categories.map((category) {
+                      final isSelected = tempCategory == category;
+                      final colorScheme = _getCategoryColorScheme(category);
+                      return GestureDetector(
+                        onTap: () {
+                          setModalState(() => tempCategory = category);
+                          setState(() => selectedCategory = category);
+                          Navigator.of(context).pop();
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingLg,
+                            vertical: AppTheme.spacingMd,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? LinearGradient(
+                                    colors: [colorScheme['primary']!, colorScheme['secondary']!],
+                                  )
+                                : null,
+                            color: isSelected
+                                ? null
+                                : colorScheme['primary']!.withAlpha(AppTheme.alphaVeryLight),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                            border: Border.all(
+                              color: isSelected
+                                  ? colorScheme['primary']!
+                                  : colorScheme['primary']!.withAlpha(AppTheme.alphaMedium),
+                              width: isSelected ? 2 : 1.5,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    AppTheme.shadowSoft(
+                                      color: colorScheme['primary']!.withAlpha(AppTheme.alphaMedium),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            category,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: isSelected
+                                  ? Colors.white
+                                  : colorScheme['primary']!,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingXl),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _pickDateTime() async {
@@ -179,7 +397,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   children: [
                     Expanded(
                       child: !iconsLoaded
-                          ? const Center(child: CircularProgressIndicator())
+                          ? Center(child: ModernLoadingWidget(message: 'Harita yükleniyor...'))
                           : GoogleMap(
                               initialCameraPosition: CameraPosition(target: tempLatLng, zoom: 14),
                               markers: {
@@ -220,7 +438,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   },
                   child: const Text('İptal'),
                 ),
-                ElevatedButton(
+                FilledButton(
                   onPressed: () {
                     setState(() {
                       selectedLatLng = tempLatLng;
@@ -245,310 +463,400 @@ class _CreateEventPageState extends State<CreateEventPage> {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Etkinlik Oluştur')),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF7F53AC), Color(0xFF647DEE), Color(0xFFFFD54F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      body: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: AppTheme.gradientPrimary,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                GestureDetector(
-                  onTap: isUploading ? null : _pickCoverPhoto,
-                  child: Container(
-                    height: 180,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.deepPurple.withAlpha(30),
-                          Colors.blue.withAlpha(20),
-                          Colors.amber.withAlpha(15),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.deepPurple.withAlpha(40),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.deepPurple.withAlpha(40),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+          child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: ResponsiveHelper.getPadding(context),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 56), // Geri butonu için boşluk
+                // Modern Photo Upload Card
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                    child: Stack(
+                      children: [
+                        // Photo or Placeholder
+                        GestureDetector(
+                          onTap: isUploading ? null : _pickCoverPhoto,
+                          child: Container(
+                            height: 200,
+                            width: double.infinity,
+                            decoration: uploadedPhotoUrl != null
+                                ? null
+                                : BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
+                                        AppColorConfig.secondaryColor.withAlpha(AppTheme.alphaVeryLight),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                            child: uploadedPhotoUrl != null
+                                ? Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.network(
+                                        uploadedPhotoUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Container(
+                                          color: theme.colorScheme.surfaceContainerHighest,
+                                          child: const Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                                        ),
+                                      ),
+                                      // Overlay for change button
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.black.withAlpha(AppTheme.alphaMedium),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(AppTheme.spacingLg),
+                                          decoration: BoxDecoration(
+                                            color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.add_photo_alternate_outlined,
+                                            size: 48,
+                                            color: AppColorConfig.primaryColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppTheme.spacingMd),
+                                        Text(
+                                          'Kapak Fotoğrafı Ekle',
+                                          style: theme.textTheme.titleMedium?.copyWith(
+                                            color: AppColorConfig.primaryColor,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppTheme.spacingXs),
+                                        Text(
+                                          'Galeri veya kameradan seç',
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: theme.colorScheme.onSurface.withAlpha(AppTheme.alphaMedium),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        // Upload Progress Overlay
+                        if (isUploading)
+                          Container(
+                            height: 200,
+                            color: Colors.black.withAlpha(AppTheme.alphaMedium),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColorConfig.primaryColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppTheme.spacingMd),
+                                  Text(
+                                    'Fotoğraf yükleniyor...',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        // Change Photo Button (when photo is uploaded)
+                        if (uploadedPhotoUrl != null && !isUploading)
+                          Positioned(
+                            bottom: AppTheme.spacingMd,
+                            right: AppTheme.spacingMd,
+                            child: FilledButton.icon(
+                              onPressed: _pickCoverPhoto,
+                              icon: const Icon(Icons.edit, size: 18),
+                              label: const Text('Değiştir'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white.withAlpha(AppTheme.alphaAlmostOpaque),
+                                foregroundColor: AppColorConfig.primaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppTheme.spacingMd,
+                                  vertical: AppTheme.spacingSm,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingXl),
+                // Form Fields - Modern Card Style
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    side: BorderSide(
+                      color: theme.colorScheme.outline.withAlpha(AppTheme.alphaVeryLight),
+                      width: 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppTheme.spacingMd),
+                    child: Column(
+                      children: [
+                        ModernInputField(
+                          controller: titleController,
+                          label: 'Başlık',
+                          textInputAction: TextInputAction.next,
+                          validator: FormValidators.title,
+                          prefixIcon: Icon(Icons.title, color: AppColorConfig.primaryColor),
+                        ),
+                        const SizedBox(height: AppTheme.spacingMd),
+                        ModernInputField(
+                          controller: descController,
+                          label: 'Açıklama',
+                          textInputAction: TextInputAction.next,
+                          maxLines: 3,
+                          validator: FormValidators.description,
+                          prefixIcon: Icon(Icons.description, color: AppColorConfig.secondaryColor),
+                        ),
+                        const SizedBox(height: AppTheme.spacingMd),
+                        ModernInputField(
+                          controller: addressController,
+                          label: 'Adres',
+                          textInputAction: TextInputAction.next,
+                          validator: FormValidators.address,
+                          prefixIcon: Icon(Icons.location_on, color: AppColorConfig.tertiaryColor),
+                        ),
+                        const SizedBox(height: AppTheme.spacingMd),
+                        ModernInputField(
+                          controller: quotaController,
+                          label: 'Kota',
+                          textInputAction: TextInputAction.next,
+                          keyboardType: TextInputType.number,
+                          validator: FormValidators.quota,
+                          prefixIcon: Icon(Icons.people, color: AppColorConfig.primaryColor),
                         ),
                       ],
-                      image: uploadedPhotoUrl != null
-                          ? DecorationImage(image: NetworkImage(uploadedPhotoUrl!), fit: BoxFit.cover)
-                          : null,
                     ),
-                    child: uploadedPhotoUrl == null
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_a_photo, size: 48, color: Colors.deepPurple.shade600),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Kapak Fotoğrafı Ekle',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.deepPurple.shade600,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingMd),
+                // Kategori ve Tarih - Modern Card Style
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    side: BorderSide(
+                      color: theme.colorScheme.outline.withAlpha(AppTheme.alphaVeryLight),
+                      width: 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppTheme.spacingMd),
+                    child: Column(
+                      children: [
+                        Builder(
+                          builder: (context) {
+                            final categoryColors = _getCategoryColorScheme(selectedCategory);
+                            return OutlinedButton.icon(
+                              onPressed: _pickCategory,
+                              icon: Icon(
+                                Icons.category,
+                                color: categoryColors['primary']!,
+                              ),
+                              label: Text(
+                                selectedCategory,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: categoryColors['primary']!,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              ],
-                            ),
-                          )
-                        : null,
-                  ),
-                ),
-                if (isUploading) Container(
-                  margin: const EdgeInsets.all(8.0),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.deepPurple.withAlpha(20), Colors.blue.withAlpha(15)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.deepPurple.withAlpha(40)),
-                  ),
-                  child: Column(
-                    children: [
-                      const LinearProgressIndicator(),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Fotoğraf yükleniyor...',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.deepPurple.shade700,
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppTheme.spacingMd,
+                                  vertical: AppTheme.spacingMd,
+                                ),
+                                minimumSize: const Size(double.infinity, 56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                ),
+                                side: BorderSide(
+                                  color: categoryColors['primary']!.withAlpha(AppTheme.alphaMedium),
+                                  width: 1.5,
+                                ),
+                                backgroundColor: categoryColors['primary']!.withAlpha(AppTheme.alphaVeryLight),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: AppTheme.spacingMd),
+                        OutlinedButton.icon(
+                          onPressed: _pickDateTime,
+                          icon: const Icon(Icons.calendar_today),
+                          label: Text(
+                            selectedDateTime == null
+                                ? 'Tarih/Saat seçiniz'
+                                : '${selectedDateTime!.day}.${selectedDateTime!.month}.${selectedDateTime!.year} - ${selectedDateTime!.hour.toString().padLeft(2, '0')}:${selectedDateTime!.minute.toString().padLeft(2, '0')}',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppTheme.spacingMd,
+                              vertical: AppTheme.spacingMd,
+                            ),
+                            minimumSize: const Size(double.infinity, 56),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.deepPurple.withAlpha(15), Colors.blue.withAlpha(10)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.deepPurple.withAlpha(40)),
-                  ),
-                  child: TextFormField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      labelText: 'Başlık',
-                      labelStyle: TextStyle(color: Colors.deepPurple.shade700),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                    ),
-                    validator: (v) => v == null || v.isEmpty ? 'Başlık giriniz' : null,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue.withAlpha(15), Colors.cyan.withAlpha(10)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.blue.withAlpha(40)),
-                  ),
-                  child: TextFormField(
-                    controller: descController,
-                    decoration: InputDecoration(
-                      labelText: 'Açıklama',
-                      labelStyle: TextStyle(color: Colors.blue.shade700),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                    ),
-                    maxLines: 2,
-                    validator: (v) => v == null || v.isEmpty ? 'Açıklama giriniz' : null,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.amber.withAlpha(15), Colors.orange.withAlpha(10)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.amber.withAlpha(40)),
-                  ),
-                  child: TextFormField(
-                    controller: addressController,
-                    decoration: InputDecoration(
-                      labelText: 'Adres',
-                      labelStyle: TextStyle(color: Colors.amber.shade700),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                    ),
-                    validator: (v) => v == null || v.isEmpty ? 'Adres giriniz' : null,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.green.withAlpha(15), Colors.lightGreen.withAlpha(10)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.green.withAlpha(40)),
-                  ),
-                  child: TextFormField(
-                    controller: quotaController,
-                    decoration: InputDecoration(
-                      labelText: 'Kota',
-                      labelStyle: TextStyle(color: Colors.green.shade700),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v == null || v.isEmpty ? 'Kota giriniz' : null,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Kategori Dropdown
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.purple.withAlpha(15), Colors.deepPurple.withAlpha(10)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.purple.withAlpha(40)),
-                  ),
-                  child: DropdownButtonFormField<String>(
-                    initialValue: selectedCategory,
-                    decoration: InputDecoration(
-                      labelText: 'Kategori',
-                      labelStyle: TextStyle(color: Colors.purple.shade700),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                    ),
-                    items: categories.map((cat) => DropdownMenuItem(
-                      value: cat,
-                      child: Text(cat),
-                    )).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => selectedCategory = val);
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.teal.withAlpha(15), Colors.cyan.withAlpha(10)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.teal.withAlpha(40)),
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      selectedDateTime == null
-                          ? 'Tarih/Saat seçiniz'
-                          : '${selectedDateTime!.day}.${selectedDateTime!.month}.${selectedDateTime!.year} - ${selectedDateTime!.hour.toString().padLeft(2, '0')}:${selectedDateTime!.minute.toString().padLeft(2, '0')}',
-                      style: TextStyle(color: Colors.teal.shade700),
-                    ),
-                    trailing: Icon(Icons.calendar_today, color: Colors.teal.shade600),
-                    onTap: _pickDateTime,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    tileColor: Colors.transparent,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Konum seçme butonu ve seçili konumu göster
-                ElevatedButton.icon(
+                const SizedBox(height: AppTheme.spacingMd),
+                // Konum seçme butonu
+                FilledButton.icon(
                   onPressed: isLocating ? null : _selectLocationOnMap,
                   icon: const Icon(Icons.location_on),
                   label: Text(selectedLatLng == null
                       ? 'Haritadan Konum Seç'
                       : 'Konum Seçildi: (${selectedLatLng!.latitude.toStringAsFixed(4)}, ${selectedLatLng!.longitude.toStringAsFixed(4)})'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColorConfig.primaryColor,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingXl,
+                      vertical: AppTheme.spacingLg,
+                    ),
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.deepPurple, Colors.blue],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.deepPurple.withAlpha(60),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: eventViewModel.isLoading
-                        ? null
-                        : () async {
-                            final navigator = Navigator.of(context);
-                            if (_formKey.currentState?.validate() != true || selectedDateTime == null || selectedLatLng == null) return;
-                            final event = EventModel(
-                              id: '',
-                              title: titleController.text.trim(),
-                              description: descController.text.trim(),
-                              location: GeoPoint(selectedLatLng!.latitude, selectedLatLng!.longitude),
-                              address: addressController.text.trim(),
-                              datetime: selectedDateTime!,
-                              quota: int.tryParse(quotaController.text.trim()) ?? 0,
-                              createdBy: authViewModel.user?.uid ?? '',
-                              participants: [authViewModel.user?.uid ?? ''],
-                              coverPhotoUrl: uploadedPhotoUrl,
-                              category: selectedCategory,
+                const SizedBox(height: AppTheme.spacingXl),
+                // Etkinlik Oluştur butonu
+                FilledButton.icon(
+                  onPressed: eventViewModel.isLoading
+                      ? null
+                      : () async {
+                          final navigator = Navigator.of(context);
+                          // Form validasyonu
+                          if (_formKey.currentState?.validate() != true) {
+                            ModernSnackbar.showError(
+                              context,
+                              'Lütfen tüm zorunlu alanları doldurun',
                             );
-                            await eventViewModel.addEvent(event);
-                            if (!mounted) return;
-                            navigator.pop();
-                          },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Etkinlik Oluştur'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                            return;
+                          }
+                          // Tarih kontrolü
+                          if (selectedDateTime == null) {
+                            ModernSnackbar.showError(
+                              context,
+                              'Lütfen etkinlik tarihi ve saatini seçin',
+                            );
+                            return;
+                          }
+                          // Konum kontrolü
+                          if (selectedLatLng == null) {
+                            ModernSnackbar.showError(
+                              context,
+                              'Lütfen etkinlik konumunu haritadan seçin',
+                            );
+                            return;
+                          }
+                          final event = EventModel(
+                            id: '',
+                            title: titleController.text.trim(),
+                            description: descController.text.trim(),
+                            location: GeoPoint(selectedLatLng!.latitude, selectedLatLng!.longitude),
+                            address: addressController.text.trim(),
+                            datetime: selectedDateTime!,
+                            quota: int.tryParse(quotaController.text.trim()) ?? 0,
+                            createdBy: authViewModel.user?.uid ?? '',
+                            participants: [authViewModel.user?.uid ?? ''],
+                            coverPhotoUrl: uploadedPhotoUrl,
+                            category: selectedCategory,
+                          );
+                          await eventViewModel.addEvent(event);
+                          if (!mounted) return;
+                          navigator.pop();
+                        },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Etkinlik Oluştur'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColorConfig.tertiaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingXl,
+                      vertical: AppTheme.spacingLg,
                     ),
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    ),
+                    elevation: 2,
                   ),
                 ),
-              ],
+                  ],
+                ),
+              ),
             ),
-          ),
+            // Geri butonu
+            Positioned(
+              top: 8,
+              left: 8,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+                color: theme.colorScheme.onSurface,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withAlpha(AppTheme.alphaLight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
         ),
       ),
     );

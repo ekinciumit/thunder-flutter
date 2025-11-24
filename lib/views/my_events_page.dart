@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/event_model.dart';
-import '../services/event_service.dart';
-import '../services/auth_service.dart';
-import '../viewmodels/auth_viewmodel.dart';
-import '../viewmodels/event_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'event_detail_page.dart';
-import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_color_config.dart';
+import '../core/theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class MyEventsPage extends StatefulWidget {
@@ -19,9 +20,6 @@ class MyEventsPage extends StatefulWidget {
 }
 
 class _MyEventsPageState extends State<MyEventsPage> {
-  final EventService _eventService = EventService();
-  final AuthService _authService = AuthService();
-
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
@@ -37,102 +35,94 @@ class _MyEventsPageState extends State<MyEventsPage> {
     }
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text(
-            'Etkinliklerim',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
-              letterSpacing: -0.5,
-            ),
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          foregroundColor: Colors.white,
-        ),
-        body: StreamBuilder<List<EventModel>>(
-          stream: _eventService.getUserEventsStream(currentUser.uid),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+        extendBodyBehindAppBar: true,
+        appBar: null,
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: Column(
+            children: [
+              // Custom Header
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppTheme.spacingMd,
+                  MediaQuery.of(context).padding.top + AppTheme.spacingMd,
+                  AppTheme.spacingMd,
+                  AppTheme.spacingMd,
+                ),
+                child: Row(
                   children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.white70),
-                    const SizedBox(height: 16),
                     Text(
-                      'Hata: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.white70),
-                      textAlign: TextAlign.center,
+                      'Etkinliklerim',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
-              );
-            }
+              ),
+              // Events List
+              Expanded(
+                child: StreamBuilder<List<EventModel>>(
+                  stream: eventViewModel.getUserEventsStream(currentUser.uid),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: ModernLoadingWidget(
+                          message: 'Etkinlikler yükleniyor...',
+                        ),
+                      );
+                    }
 
-            final events = snapshot.data ?? [];
+                    if (snapshot.hasError) {
+                      return ErrorStateWidget(
+                        message: 'Etkinlikler yüklenirken bir hata oluştu',
+                        error: snapshot.error.toString(),
+                        onRetry: () => setState(() {}),
+                        backgroundColor: Colors.transparent,
+                        textColor: Colors.white,
+                      );
+                    }
 
-            if (events.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
+                    final events = snapshot.data ?? [];
+
+                    if (events.isEmpty) {
+                      return EmptyStateWidget(
+                        icon: Icons.event_note_rounded,
+                        title: 'Henüz etkinlik oluşturmadınız',
+                        message: 'Yeni bir etkinlik oluşturarak başlayın!',
+                        actionLabel: 'Etkinlik Oluştur',
+                        onAction: () {
+                          Navigator.of(context).pop();
+                        },
+                        backgroundColor: Colors.transparent,
+                        textColor: Colors.white,
+                      );
+                    }
+
+                    return Container(
+                      color: Colors.transparent,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppTheme.spacingMd,
+                          vertical: AppTheme.spacingSm,
                         ),
-                        child: Icon(
-                          Icons.event_note_rounded,
-                          size: 64,
-                          color: Colors.white.withValues(alpha: 0.6),
-                        ),
+                        itemCount: events.length,
+                        itemBuilder: (context, index) {
+                          final event = events[index];
+                          return _buildEventCard(event, eventViewModel, theme);
+                        },
                       ),
-                      const SizedBox(height: 32),
-                      Text(
-                        'Henüz etkinlik oluşturmadınız',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Yeni bir etkinlik oluşturarak başlayın!',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 16,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: events.length,
-              itemBuilder: (context, index) {
-                final event = events[index];
-                return _buildEventCard(event, eventViewModel, theme);
-              },
-            );
-          },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -142,10 +132,12 @@ class _MyEventsPageState extends State<MyEventsPage> {
     final hasPendingRequests = event.pendingRequests.isNotEmpty;
     final isPast = event.datetime.isBefore(DateTime.now());
 
-    return AppCard(
-      margin: const EdgeInsets.only(bottom: 16),
-      borderRadius: 24,
-      padding: EdgeInsets.zero,
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+      ),
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -155,48 +147,65 @@ class _MyEventsPageState extends State<MyEventsPage> {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Kapak fotoğrafı
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppTheme.radiusXl),
+              ),
               child: Stack(
                 children: [
                   if (event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty)
                     CachedNetworkImage(
                       imageUrl: event.coverPhotoUrl!,
-                      height: 180,
+                      height: 200,
                       width: double.infinity,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
-                        height: 180,
-                        color: Colors.grey[300],
+                        height: 200,
+                        color: theme.colorScheme.surfaceContainerHighest,
                         child: const Center(child: CircularProgressIndicator()),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        height: 180,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image_not_supported, size: 48),
+                        height: 200,
+                        color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 48,
+                          color: AppColorConfig.primaryColor,
+                        ),
                       ),
                     )
                   else
                     Container(
-                      height: 180,
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      child: const Icon(Icons.event, size: 64, color: Colors.grey),
+                      height: 200,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
+                            AppColorConfig.secondaryColor.withAlpha(AppTheme.alphaVeryLight),
+                          ],
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.event,
+                        size: 64,
+                        color: AppColorConfig.primaryColor,
+                      ),
                     ),
                   // Overlay
                   Container(
-                    height: 180,
+                    height: 200,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withValues(alpha: 0.6),
+                          Colors.black.withAlpha(AppTheme.alphaMedium),
                         ],
                       ),
                     ),
@@ -209,15 +218,16 @@ class _MyEventsPageState extends State<MyEventsPage> {
                       children: [
                         if (hasPendingRequests)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppTheme.spacingSm,
+                              vertical: AppTheme.spacingXs,
+                            ),
                             decoration: BoxDecoration(
-                              color: Colors.orange,
-                              borderRadius: BorderRadius.circular(12),
+                              color: AppColorConfig.warningColor,
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                               boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
+                                AppTheme.shadowSoft(
+                                  color: Colors.black.withAlpha(AppTheme.alphaMedium),
                                 ),
                               ],
                             ),
@@ -225,7 +235,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(Icons.person_add, size: 14, color: Colors.white),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: AppTheme.spacingXs),
                                 Text(
                                   '${event.pendingRequests.length}',
                                   style: const TextStyle(
@@ -237,13 +247,16 @@ class _MyEventsPageState extends State<MyEventsPage> {
                               ],
                             ),
                           ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppTheme.spacingSm),
                         if (isPast)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppTheme.spacingSm,
+                              vertical: AppTheme.spacingXs,
+                            ),
                             decoration: BoxDecoration(
-                              color: Colors.grey[700]!.withValues(alpha: 0.9),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.grey[700]!.withAlpha(AppTheme.alphaAlmostOpaque),
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                             ),
                             child: const Text(
                               'Geçmiş',
@@ -266,10 +279,13 @@ class _MyEventsPageState extends State<MyEventsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingSm,
+                            vertical: AppTheme.spacingXs,
+                          ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaAlmostOpaque),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                           ),
                           child: Text(
                             event.category,
@@ -303,7 +319,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
             ),
             // İçerik
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppTheme.spacingMd),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -315,11 +331,15 @@ class _MyEventsPageState extends State<MyEventsPage> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacingSm),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 16, color: theme.colorScheme.primary),
-                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: AppColorConfig.primaryColor,
+                      ),
+                      const SizedBox(width: AppTheme.spacingXs),
                       Expanded(
                         child: Text(
                           event.address,
@@ -332,11 +352,15 @@ class _MyEventsPageState extends State<MyEventsPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacingSm),
                   Row(
                     children: [
-                      Icon(Icons.people, size: 16, color: theme.colorScheme.primary),
-                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.people,
+                        size: 16,
+                        color: AppColorConfig.primaryColor,
+                      ),
+                      const SizedBox(width: AppTheme.spacingXs),
                       Text(
                         '${event.approvedParticipants.length + event.participants.length}/${event.quota}',
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -346,16 +370,21 @@ class _MyEventsPageState extends State<MyEventsPage> {
                       const Spacer(),
                       if (hasPendingRequests)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingSm,
+                            vertical: AppTheme.spacingXs,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                            color: AppColorConfig.warningColor.withAlpha(AppTheme.alphaVeryLight),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            border: Border.all(
+                              color: AppColorConfig.warningColor.withAlpha(AppTheme.alphaMedium),
+                            ),
                           ),
                           child: Text(
                             '${event.pendingRequests.length} bekleyen istek',
                             style: TextStyle(
-                              color: Colors.orange[700],
+                              color: AppColorConfig.warningColor,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -363,7 +392,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppTheme.spacingMd),
                   // Butonlar
                   Row(
                     children: [
@@ -380,25 +409,27 @@ class _MyEventsPageState extends State<MyEventsPage> {
                           icon: const Icon(Icons.visibility),
                           label: const Text('Görüntüle'),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
+                            minimumSize: const Size(double.infinity, 48),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppTheme.spacingSm),
                       Expanded(
-                        child: ElevatedButton.icon(
+                        child: FilledButton.icon(
                           onPressed: () => _showManageDialog(event, eventViewModel),
                           icon: const Icon(Icons.settings),
                           label: const Text('Yönet'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primary,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColorConfig.primaryColor,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
+                            minimumSize: const Size(double.infinity, 48),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                             ),
                           ),
                         ),
@@ -415,41 +446,50 @@ class _MyEventsPageState extends State<MyEventsPage> {
   }
 
   void _showManageDialog(EventModel event, EventViewModel eventViewModel) {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusRound),
+        ),
+      ),
       builder: (context) => Container(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.8,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppTheme.radiusRound),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              margin: const EdgeInsets.only(top: AppTheme.spacingMd),
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppTheme.spacingXl),
               child: Row(
                 children: [
-                  Text(
-                    event.title,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                  Expanded(
+                    child: Text(
+                      event.title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
@@ -461,16 +501,22 @@ class _MyEventsPageState extends State<MyEventsPage> {
             // Katılma İstekleri
             if (event.pendingRequests.isNotEmpty) ...[
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacingXl,
+                  vertical: AppTheme.spacingMd,
+                ),
                 child: Row(
                   children: [
-                    Icon(Icons.person_add, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.person_add,
+                      color: AppColorConfig.primaryColor,
+                    ),
+                    const SizedBox(width: AppTheme.spacingSm),
                     Text(
                       'Katılma İstekleri (${event.pendingRequests.length})',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -499,8 +545,9 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                     await eventViewModel.approveJoinRequest(event, userId);
                                     if (!context.mounted) return;
                                     Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('İstek onaylandı')),
+                                    ModernSnackbar.showSuccess(
+                                      context,
+                                      'İstek onaylandı',
                                     );
                                   },
                                 ),
@@ -510,8 +557,9 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                     await eventViewModel.rejectJoinRequest(event, userId);
                                     if (!context.mounted) return;
                                     Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('İstek reddedildi')),
+                                    ModernSnackbar.showInfo(
+                                      context,
+                                      'İstek reddedildi',
                                     );
                                   },
                                 ),
@@ -546,8 +594,9 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                   await eventViewModel.approveJoinRequest(event, userId);
                                   if (!context.mounted) return;
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('İstek onaylandı')),
+                                  ModernSnackbar.showSuccess(
+                                    context,
+                                    'İstek onaylandı',
                                   );
                                 },
                               ),
@@ -558,8 +607,9 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                   await eventViewModel.rejectJoinRequest(event, userId);
                                   if (!context.mounted) return;
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('İstek reddedildi')),
+                                  ModernSnackbar.showInfo(
+                                    context,
+                                    'İstek reddedildi',
                                   );
                                 },
                               ),
@@ -574,29 +624,30 @@ class _MyEventsPageState extends State<MyEventsPage> {
             ],
             // Düzenle ve Sil butonları
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppTheme.spacingXl),
               child: Column(
                 children: [
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
                         _showEditDialog(event, eventViewModel);
                       },
                       icon: const Icon(Icons.edit),
                       label: const Text('Etkinliği Düzenle'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColorConfig.primaryColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
+                        minimumSize: const Size(double.infinity, 56),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacingSm),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -604,14 +655,16 @@ class _MyEventsPageState extends State<MyEventsPage> {
                         Navigator.pop(context);
                         _showDeleteDialog(event, eventViewModel);
                       },
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      label: const Text('Etkinliği Sil', style: TextStyle(color: Colors.red)),
+                      icon: const Icon(Icons.delete),
+                      label: const Text('Etkinliği Sil'),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        foregroundColor: AppColorConfig.errorColor,
+                        padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
+                        minimumSize: const Size(double.infinity, 56),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                         ),
-                        side: const BorderSide(color: Colors.red),
+                        side: BorderSide(color: AppColorConfig.errorColor),
                       ),
                     ),
                   ),
@@ -639,35 +692,23 @@ class _MyEventsPageState extends State<MyEventsPage> {
   }
 
   void _showDeleteDialog(EventModel event, EventViewModel eventViewModel) {
-    showDialog(
+    ModernDialog.showConfirmation(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Etkinliği Sil'),
-        content: Text('"${event.title}" etkinliğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              await eventViewModel.deleteEvent(event.id);
-              if (!context.mounted) return;
-              navigator.pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Etkinlik silindi')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Sil'),
-          ),
-        ],
-      ),
-    );
+      title: 'Etkinliği Sil',
+      message: '"${event.title}" etkinliğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+      confirmText: 'Sil',
+      cancelText: 'İptal',
+      confirmColor: AppColorConfig.errorColor,
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        await eventViewModel.deleteEvent(event.id);
+        if (!context.mounted) return;
+        ModernSnackbar.showSuccess(
+          context,
+          'Etkinlik silindi',
+        );
+      }
+    });
   }
 }
 

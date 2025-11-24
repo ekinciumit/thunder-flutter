@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/chat_service.dart';
-import '../services/auth_service.dart';
 import '../models/chat_model.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'private_chat_page.dart';
 import 'message_search_page.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
+import '../core/theme/app_theme.dart';
+import '../core/widgets/modern_components.dart';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -16,8 +18,6 @@ class ChatListPage extends StatefulWidget {
 }
 
 class _ChatListPageState extends State<ChatListPage> {
-  final ChatService _chatService = ChatService();
-  final AuthService _authService = AuthService();
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -83,6 +83,7 @@ class _ChatListPageState extends State<ChatListPage> {
     }
 
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -95,7 +96,7 @@ class _ChatListPageState extends State<ChatListPage> {
               letterSpacing: -0.5,
               shadows: [
                 Shadow(
-                  color: Colors.black.withValues(alpha: 0.3),
+                  color: Colors.black.withAlpha(AppTheme.alphaMediumDark),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -106,21 +107,9 @@ class _ChatListPageState extends State<ChatListPage> {
           elevation: 0,
           foregroundColor: Colors.white,
           actions: [
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.25),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.search_rounded, size: 24),
+            Padding(
+              padding: const EdgeInsets.only(right: AppTheme.spacingMd),
+              child: FilledButton.icon(
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -129,13 +118,26 @@ class _ChatListPageState extends State<ChatListPage> {
                     ),
                   );
                 },
-                tooltip: 'Ara',
+                icon: const Icon(Icons.search_rounded, size: 20),
+                label: const Text('Ara'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white.withAlpha(AppTheme.alphaMedium),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingMd,
+                    vertical: AppTheme.spacingSm,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                  ),
+                  elevation: 0,
+                ),
               ),
             ),
           ],
         ),
         body: StreamBuilder<List<ChatModel>>(
-          stream: _chatService.getUserChats(currentUser.uid),
+          stream: Provider.of<ChatViewModel>(context, listen: false).getUserChats(currentUser.uid),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(
@@ -145,19 +147,20 @@ class _ChatListPageState extends State<ChatListPage> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: Colors.white.withAlpha(AppTheme.alphaLight),
                         shape: BoxShape.circle,
                       ),
-                      child: const CircularProgressIndicator(
+                      child: ModernLoadingWidget(
+                        size: 24,
                         color: Colors.white,
-                        strokeWidth: 3,
+                        showMessage: false,
                       ),
                     ),
                     const SizedBox(height: 24),
                     Text(
                       'Sohbetler yükleniyor...',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white.withAlpha(AppTheme.alphaAlmostOpaque),
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -177,13 +180,13 @@ class _ChatListPageState extends State<ChatListPage> {
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: Colors.white.withAlpha(AppTheme.alphaVeryLight),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.error_outline_rounded,
                           size: 48,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -199,7 +202,7 @@ class _ChatListPageState extends State<ChatListPage> {
                       Text(
                         '${snapshot.error}',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
                           fontSize: 14,
                         ),
                         textAlign: TextAlign.center,
@@ -232,68 +235,16 @@ class _ChatListPageState extends State<ChatListPage> {
             final chats = snapshot.data ?? [];
             
             if (chats.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          size: 64,
-                          color: Colors.white.withValues(alpha: 0.6),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      Text(
-                        'Henüz sohbet yok',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Etkinliklere katılarak yeni insanlarla tanışın ve sohbet başlatın!',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // Ana sayfaya yönlendir
+              return EmptyStateWidget(
+                icon: Icons.chat_bubble_outline_rounded,
+                title: 'Henüz sohbet yok',
+                message: 'Etkinliklere katılarak yeni insanlarla tanışın ve sohbet başlatın!',
+                actionLabel: 'Etkinlikleri Keşfet',
+                onAction: () {
                           Navigator.of(context).popUntil((route) => route.isFirst);
                         },
-                        icon: const Icon(Icons.explore_rounded),
-                        label: const Text('Etkinlikleri Keşfet'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: theme.colorScheme.primary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                backgroundColor: Colors.transparent,
+                textColor: Colors.white,
               );
             }
 
@@ -309,12 +260,13 @@ class _ChatListPageState extends State<ChatListPage> {
                       )
                     : '';
                 
-                // Eğer participantDetails yoksa, Firestore'dan çek
+                // Eğer participantDetails yoksa, Firestore'dan çek (Clean Architecture: AuthViewModel kullan)
                 if (chat.type == ChatType.private && 
                     otherParticipant.isNotEmpty &&
                     !chat.participantDetails.containsKey(otherParticipant)) {
+                  final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
                   return FutureBuilder(
-                    future: _authService.fetchUserProfile(otherParticipant),
+                    future: authViewModel.fetchUserProfile(otherParticipant),
                     builder: (context, snapshot) {
                       String displayName = 'Bilinmeyen Kullanıcı';
                       String? photoUrl;
@@ -349,38 +301,20 @@ class _ChatListPageState extends State<ChatListPage> {
             );
           },
         ),
-        floatingActionButton: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.primary,
-                theme.colorScheme.secondary,
-              ],
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: FloatingActionButton(
+        floatingActionButton: FloatingActionButton.extended(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Yeni sohbet özelliği yakında eklenecek'),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-            },
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 28),
+            ModernSnackbar.showInfo(
+              context,
+              'Yeni sohbet özelliği yakında eklenecek',
+            );
+          },
+          icon: const Icon(Icons.chat_bubble_rounded),
+          label: const Text('Yeni Sohbet'),
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusFull),
           ),
         ),
       ),
@@ -406,13 +340,13 @@ class _ChatListPageState extends State<ChatListPage> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Colors.black.withAlpha(AppTheme.alphaVeryLight),
               blurRadius: 20,
               offset: const Offset(0, 4),
               spreadRadius: 0,
             ),
             BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              color: theme.colorScheme.primary.withAlpha(AppTheme.alphaVeryLight),
               blurRadius: 10,
               offset: const Offset(0, 2),
               spreadRadius: 0,
@@ -466,7 +400,7 @@ class _ChatListPageState extends State<ChatListPage> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                              color: theme.colorScheme.primary.withAlpha(AppTheme.alphaMediumDark),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -558,34 +492,19 @@ class _ChatListPageState extends State<ChatListPage> {
                             ),
                             if (hasUnread) ...[
                               const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      theme.colorScheme.primary,
-                                      theme.colorScheme.secondary,
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary.withValues(alpha: 0.4),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
+                              Badge(
+                                label: Text(
                                   unreadCount > 99 ? '99+' : unreadCount.toString(),
                                   style: const TextStyle(
-                                    color: Colors.white,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),
+                                ),
+                                backgroundColor: theme.colorScheme.primary,
+                                textColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
                                 ),
                               ),
                             ],

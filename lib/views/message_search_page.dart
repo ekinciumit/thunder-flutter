@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/chat_service.dart';
 import '../models/message_model.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'private_chat_page.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/modern_components.dart';
+import '../core/theme/app_theme.dart';
 
 class MessageSearchPage extends StatefulWidget {
   final String? chatId; // null ise tüm sohbetlerde ara
@@ -22,7 +25,6 @@ class MessageSearchPage extends StatefulWidget {
 
 class _MessageSearchPageState extends State<MessageSearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  final ChatService _chatService = ChatService();
   
   List<MessageModel> _searchResults = [];
   bool _isSearching = false;
@@ -54,14 +56,15 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
       
       if (currentUser == null) return;
 
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
       List<MessageModel> results;
       
       if (widget.chatId != null) {
         // Belirli bir sohbet içinde ara
-        results = await _chatService.searchMessages(widget.chatId!, query);
+        results = await chatViewModel.searchMessages(widget.chatId!, query);
       } else {
         // Tüm sohbetlerde ara
-        results = await _chatService.searchAllMessages(currentUser.uid, query);
+        results = await chatViewModel.searchAllMessages(currentUser.uid, query);
       }
 
       setState(() {
@@ -73,8 +76,9 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
         _isSearching = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Arama hatası: $e')),
+        ModernSnackbar.showError(
+          context,
+          'Arama hatası: $e',
         );
       }
     }
@@ -183,6 +187,7 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
   @override
   Widget build(BuildContext context) {
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -216,14 +221,11 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                   width: 1,
                 ),
               ),
-              child: TextField(
+              child: ModernInputField(
                 controller: _searchController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: widget.chatId != null 
+                hint: widget.chatId != null 
                       ? 'Bu sohbette ara...'
                       : 'Tüm mesajlarda ara...',
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                   prefixIcon: Icon(
                     Icons.search,
                     color: Colors.white.withValues(alpha: 0.6),
@@ -240,12 +242,6 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                           },
                         )
                       : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 15,
-                  ),
-                ),
                 onChanged: (value) {
                   setState(() {});
                   // Debounce için timer kullanılabilir
@@ -265,8 +261,12 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(color: Colors.white),
-                          SizedBox(height: 16),
+                          ModernLoadingWidget(
+                            size: 32,
+                            color: Colors.white,
+                            showMessage: false,
+                          ),
+                          const SizedBox(height: 16),
                           Text(
                             'Aranıyor...',
                             style: TextStyle(color: Colors.white70),

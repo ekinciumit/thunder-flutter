@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../l10n/app_localizations.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../l10n/app_localizations.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../core/validators/form_validators.dart';
+import '../core/widgets/responsive_widgets.dart';
+import '../core/utils/responsive_helper.dart';
+import '../core/theme/app_theme.dart';
+import '../core/widgets/modern_components.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 
@@ -13,6 +18,7 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLogin = true;
@@ -41,36 +47,42 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Center(
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: AppCard(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-              padding: const EdgeInsets.all(32),
-              borderRadius: 32,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+              margin: EdgeInsets.symmetric(
+                horizontal: ResponsiveHelper.getWidth(context, 4),
+                vertical: ResponsiveHelper.getHeight(context, 4),
+              ),
+              padding: ResponsiveHelper.getPadding(context),
+              borderRadius: ResponsiveHelper.getBorderRadius(context, 32),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: ResponsiveHelper.getPadding(context),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          theme.colorScheme.primary.withAlpha(30),
-                          theme.colorScheme.secondary.withAlpha(20),
+                          theme.colorScheme.primary.withAlpha(AppTheme.alphaMediumDark),
+                          theme.colorScheme.secondary.withAlpha(AppTheme.alphaMediumLight),
                         ],
                       ),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isLogin ? Icons.login : Icons.person_add,
-                      size: 48,
+                      size: ResponsiveHelper.getIconSize(context, 48),
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  ResponsiveSizedBox.spacing(),
                   Text(
                     isLogin ? l10n.login : l10n.signUp,
                     style: theme.textTheme.headlineSmall?.copyWith(
@@ -78,108 +90,150 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  TextField(
+                  const SizedBox(height: AppTheme.spacingXxl),
+                  ModernInputField(
                     controller: emailController,
-                    decoration: InputDecoration(
-                      labelText: l10n.email,
-                      labelStyle: TextStyle(color: theme.colorScheme.primary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: theme.colorScheme.primary.withAlpha(10),
-                      prefixIcon: Icon(Icons.email, color: theme.colorScheme.primary),
+                    label: l10n.email,
+                    hint: 'ornek@email.com',
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    validator: FormValidators.email,
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
+                  const SizedBox(height: AppTheme.spacingLg),
+                  ModernInputField(
                     controller: passwordController,
-                    decoration: InputDecoration(
-                      labelText: l10n.password,
-                      labelStyle: TextStyle(color: theme.colorScheme.secondary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: theme.colorScheme.secondary.withAlpha(10),
-                      prefixIcon: Icon(Icons.lock, color: theme.colorScheme.secondary),
-                    ),
+                    label: l10n.password,
+                    hint: '••••••••',
+                    keyboardType: TextInputType.visiblePassword,
+                    textInputAction: isLogin ? TextInputAction.done : TextInputAction.next,
                     obscureText: true,
-                  ),
-                  const SizedBox(height: 16),
-                  if (authViewModel.error != null)
-                    AppCard(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      padding: const EdgeInsets.all(12),
-                      borderRadius: 12,
-                      gradientColors: [theme.colorScheme.error.withAlpha(20), theme.colorScheme.error.withAlpha(10)],
+                    validator: isLogin 
+                        ? (value) => FormValidators.required(value, fieldName: 'Şifre')
+                        : FormValidators.password,
+                    onFieldSubmitted: (_) {
+                      if (_formKey.currentState!.validate()) {
+                        _handleSubmit(authViewModel);
+                      }
+                    },
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: theme.colorScheme.primary,
+                    ),
+                        ),
+                  if (authViewModel.error != null) ...[
+                    const SizedBox(height: AppTheme.spacingLg),
+                    Container(
+                      padding: const EdgeInsets.all(AppTheme.spacingLg),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border: Border.all(
+                          color: theme.colorScheme.error.withAlpha(AppTheme.alphaMedium),
+                          width: 1,
+                        ),
+                      ),
                       child: Row(
                         children: [
-                          Icon(Icons.error, color: theme.colorScheme.error, size: 20),
-                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.error_outline,
+                            color: theme.colorScheme.error,
+                            size: 20,
+                          ),
+                          const SizedBox(width: AppTheme.spacingMd),
                           Expanded(
                             child: Text(
                               authViewModel.error!,
-                              style: TextStyle(color: theme.colorScheme.error, fontWeight: FontWeight.w600),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onErrorContainer,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  const SizedBox(height: 16),
+                  ],
+                  const SizedBox(height: AppTheme.spacingXxl),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final email = emailController.text.trim();
-                        final password = passwordController.text.trim();
-                        if (isLogin) {
-                          await authViewModel.signIn(email, password);
-                        } else {
-                          await authViewModel.signUp(email, password);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: Text(
+                    child: FilledButton(
+                      onPressed: authViewModel.isLoading 
+                          ? null 
+                          : () => _handleSubmit(authViewModel),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppTheme.spacingLg,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                          ),
+                        ),
+                      child: authViewModel.isLoading
+                          ? SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.colorScheme.onPrimary,
+                                ),
+                              ),
+                            )
+                          : Text(
                         isLogin ? l10n.login : l10n.signUp,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                      ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.spacingLg),
                   TextButton(
                     onPressed: () {
+                      _formKey.currentState?.reset();
                       setState(() {
                         isLogin = !isLogin;
+                        authViewModel.error = null;
                       });
                     },
-                    style: TextButton.styleFrom(
-                      backgroundColor: theme.colorScheme.surface.withAlpha(0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
                     child: Text(
                       isLogin ? l10n.noAccount : l10n.hasAccount,
                       style: TextStyle(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// Form submit handler
+  /// 
+  /// Form validasyonunu kontrol eder ve geçerliyse auth işlemini başlatır
+  Future<void> _handleSubmit(AuthViewModel authViewModel) async {
+    if (!_formKey.currentState!.validate()) {
+      return; // Form geçersizse işlem yapma
+    }
+
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+    
+    if (isLogin) {
+      await authViewModel.signIn(email, password);
+    } else {
+      await authViewModel.signUp(email, password);
+    }
   }
 } 
