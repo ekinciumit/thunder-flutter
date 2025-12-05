@@ -9,6 +9,7 @@ import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
+import '../l10n/app_localizations.dart';
 import '../services/user_service.dart';
 
 class UserProfilePage extends StatefulWidget {
@@ -127,8 +128,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.user.displayName ?? 'Kullanıcı Profili')),
+      appBar: AppBar(title: Text(widget.user.displayName ?? l10n.profile)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -140,7 +142,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   : const CircleAvatar(radius: 48, child: Icon(Icons.person, size: 48)),
             ),
             const SizedBox(height: 16),
-            Text(widget.user.displayName ?? 'İsimsiz', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+            Text(widget.user.displayName ?? l10n.user, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
             if (widget.user.bio != null && widget.user.bio!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -170,7 +172,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           color: AppColorConfig.primaryColor,
                         ),
                       ),
-                    const Text('Takipçi'),
+                    Text(l10n.followers),
                   ],
                   ),
                 ),
@@ -195,7 +197,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           color: AppColorConfig.primaryColor,
                         ),
                       ),
-                    const Text('Takip'),
+                    Text(l10n.following),
                   ],
                   ),
                 ),
@@ -221,16 +223,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ),
                 child: Text(
                   isMutualFollow 
-                      ? 'Takibi Bırak' 
+                      ? l10n.unfollow 
                       : hasSentRequest 
-                          ? 'İstek Gönderildi' 
-                          : 'Takip Et',
+                          ? l10n.requestSent 
+                          : l10n.follow,
                 ),
               ),
             if (widget.user.uid != widget.currentUserId && isMutualFollow)
               FilledButton.icon(
                 icon: const Icon(Icons.chat),
-                label: const Text('Sohbet Başlat'),
+                label: Text(l10n.startChat),
                 style: FilledButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -253,18 +255,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
             const SizedBox(height: 32),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text('Etkinlikler', style: theme.textTheme.titleMedium),
+              child: Text(l10n.events, style: theme.textTheme.titleMedium),
             ),
             const SizedBox(height: 12),
             StreamBuilder<List<EventModel>>(
               stream: _userEventsStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: ModernLoadingWidget(message: 'Yükleniyor...'));
+                  return Center(child: ModernLoadingWidget(message: l10n.loading));
                 }
                 final events = snapshot.data ?? [];
                 if (events.isEmpty) {
-                  return const Text('Bu kullanıcıya ait etkinlik bulunamadı.');
+                  return Text(l10n.noData);
                 }
                 return ListView.separated(
                   shrinkWrap: true,

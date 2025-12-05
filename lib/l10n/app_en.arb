@@ -265,6 +265,423 @@
   "retry": "Retry",
   "@retry": {
     "description": "Retry button"
-  }
+  },
+  
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings title"
+  },
+  "account": "Account",
+  "@account": {
+    "description": "Account section"
+  },
+  "editProfile": "Edit Profile",
+  "@editProfile": {
+    "description": "Edit profile button"
+  },
+  "editProfileSubtitle": "Name, bio, photo",
+  "@editProfileSubtitle": {
+    "description": "Edit profile subtitle"
+  },
+  "changePassword": "Change Password",
+  "@changePassword": {
+    "description": "Change password button"
+  },
+  "accountSecurity": "Account security",
+  "@accountSecurity": {
+    "description": "Account security subtitle"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications section"
+  },
+  "notificationSettings": "Notification Settings",
+  "@notificationSettings": {
+    "description": "Notification settings button"
+  },
+  "notificationSettingsSubtitle": "Push notifications, email",
+  "@notificationSettingsSubtitle": {
+    "description": "Notification settings subtitle"
+  },
+  "appearance": "Appearance",
+  "@appearance": {
+    "description": "Appearance section"
+  },
+  "darkMode": "Dark Mode",
+  "@darkMode": {
+    "description": "Dark mode button"
+  },
+  "on": "On",
+  "@on": {
+    "description": "On status"
+  },
+  "off": "Off",
+  "@off": {
+    "description": "Off status"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language button"
+  },
+  "selectLanguage": "Select Language",
+  "@selectLanguage": {
+    "description": "Select language title"
+  },
+  "privacySecurity": "Privacy & Security",
+  "@privacySecurity": {
+    "description": "Privacy and security section"
+  },
+  "privacySettings": "Privacy Settings",
+  "@privacySettings": {
+    "description": "Privacy settings button"
+  },
+  "accountPrivacy": "Account privacy",
+  "@accountPrivacy": {
+    "description": "Account privacy subtitle"
+  },
+  "blockedUsers": "Blocked Users",
+  "@blockedUsers": {
+    "description": "Blocked users button"
+  },
+  "manageBlockList": "Manage block list",
+  "@manageBlockList": {
+    "description": "Block list subtitle"
+  },
+  "helpSupport": "Help & Support",
+  "@helpSupport": {
+    "description": "Help and support section"
+  },
+  "helpCenter": "Help Center",
+  "@helpCenter": {
+    "description": "Help center button"
+  },
+  "faq": "Frequently asked questions",
+  "@faq": {
+    "description": "FAQ subtitle"
+  },
+  "reportProblem": "Report Problem",
+  "@reportProblem": {
+    "description": "Report problem button"
+  },
+  "reportProblemSubtitle": "Send bug report or suggestion",
+  "@reportProblemSubtitle": {
+    "description": "Report problem subtitle"
+  },
+  "legal": "Legal",
+  "@legal": {
+    "description": "Legal section"
+  },
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {
+    "description": "Privacy policy button"
+  },
+  "termsOfService": "Terms of Service",
+  "@termsOfService": {
+    "description": "Terms of service button"
+  },
+  "about": "About",
+  "@about": {
+    "description": "About button"
+  },
+  "version": "Version",
+  "@version": {
+    "description": "Version label"
+  },
+  "logoutConfirm": "Are you sure you want to log out?",
+  "@logoutConfirm": {
+    "description": "Logout confirmation message"
+  },
+  "pushNotifications": "Push Notifications",
+  "@pushNotifications": {
+    "description": "Push notifications"
+  },
+  "appNotifications": "App notifications",
+  "@appNotifications": {
+    "description": "App notifications subtitle"
+  },
+  "emailNotifications": "Email Notifications",
+  "@emailNotifications": {
+    "description": "Email notifications"
+  },
+  "importantUpdates": "Important updates",
+  "@importantUpdates": {
+    "description": "Important updates subtitle"
+  },
+  "eventReminders": "Event Reminders",
+  "@eventReminders": {
+    "description": "Event reminders"
+  },
+  "newFollowers": "New Followers",
+  "@newFollowers": {
+    "description": "New followers"
+  },
+  "messages": "Messages",
+  "@messages": {
+    "description": "Messages"
+  },
+  "privateAccount": "Private Account",
+  "@privateAccount": {
+    "description": "Private account"
+  },
+  "privateAccountSubtitle": "Only followers can see your profile",
+  "@privateAccountSubtitle": {
+    "description": "Private account subtitle"
+  },
+  "showLocation": "Show Location",
+  "@showLocation": {
+    "description": "Show location"
+  },
+  "showLocationSubtitle": "Share your location in events",
+  "@showLocationSubtitle": {
+    "description": "Show location subtitle"
+  },
+  "onlineStatus": "Online Status",
+  "@onlineStatus": {
+    "description": "Online status"
+  },
+  "onlineStatusSubtitle": "Let others see when you're active",
+  "@onlineStatusSubtitle": {
+    "description": "Online status subtitle"
+  },
+  "feedbackType": "Feedback type:",
+  "@feedbackType": {
+    "description": "Feedback type"
+  },
+  "bugReport": "Bug",
+  "@bugReport": {
+    "description": "Bug type"
+  },
+  "suggestion": "Suggestion",
+  "@suggestion": {
+    "description": "Suggestion type"
+  },
+  "description": "Description:",
+  "@description": {
+    "description": "Description label"
+  },
+  "feedbackHint": "Describe your issue or suggestion...",
+  "@feedbackHint": {
+    "description": "Feedback hint"
+  },
+  "send": "Send",
+  "@send": {
+    "description": "Send button"
+  },
+  "sending": "Sending...",
+  "@sending": {
+    "description": "Sending message"
+  },
+  "thankYouFeedback": "Thank you for your feedback!",
+  "@thankYouFeedback": {
+    "description": "Thank you message"
+  },
+  "sendError": "An error occurred while sending",
+  "@sendError": {
+    "description": "Send error"
+  },
+  "passwordResetSent": "Password reset link sent to your email",
+  "@passwordResetSent": {
+    "description": "Password reset message"
+  },
+  "emailNotFound": "Email address not found",
+  "@emailNotFound": {
+    "description": "Email not found error"
+  },
+  "comingSoon": "Page coming soon",
+  "@comingSoon": {
+    "description": "Coming soon message"
+  },
+  "settingUpdated": "Setting updated",
+  "@settingUpdated": {
+    "description": "Setting updated message"
+  },
+  "settingUpdateFailed": "Failed to update setting",
+  "@settingUpdateFailed": {
+    "description": "Setting update error"
+  },
+  "accountMadePrivate": "Your account is now private",
+  "@accountMadePrivate": {
+    "description": "Account private message"
+  },
+  "accountMadePublic": "Your account is now public",
+  "@accountMadePublic": {
+    "description": "Account public message"
+  },
+  "locationShown": "Your location will be shown",
+  "@locationShown": {
+    "description": "Location shown message"
+  },
+  "locationHidden": "Your location will be hidden",
+  "@locationHidden": {
+    "description": "Location hidden message"
+  },
+  "onlineStatusShown": "Your online status will be shown",
+  "@onlineStatusShown": {
+    "description": "Online status shown message"
+  },
+  "onlineStatusHidden": "Your online status will be hidden",
+  "@onlineStatusHidden": {
+    "description": "Online status hidden message"
+  },
+  "userInfoNotFound": "User information not found",
+  "@userInfoNotFound": {
+    "description": "User info error"
+  },
+  "pleaseEnterDescription": "Please enter a description",
+  "@pleaseEnterDescription": {
+    "description": "Description warning"
+  },
+  "noBlockedUsers": "No blocked users",
+  "@noBlockedUsers": {
+    "description": "No blocked users message"
+  },
+  "unblock": "Unblock",
+  "@unblock": {
+    "description": "Unblock button"
+  },
+  "unblocked": "User unblocked",
+  "@unblocked": {
+    "description": "Unblocked message"
+  },
+  
+  "selectPhoto": "Select Photo",
+  "cropPhoto": "Crop Photo",
+  "uploading": "Uploading...",
+  "editEvent": "Edit Event",
+  "user": "User",
+  "createRoute": "Get Directions",
+  "requestSent": "Request Sent (Cancel)",
+  "sendJoinRequest": "Send Join Request",
+  "joinRequestSent": "Join request sent. You will be notified when approved.",
+  "joinRequestCancelled": "Join request cancelled",
+  "leftEvent": "You left the event",
+  "participantsLabel": "Participants:",
+  "joinRequests": "Join Requests",
+  "accept": "Accept",
+  "reject": "Reject",
+  "commentsChat": "Comments / Chat",
+  "mustJoinToChat": "You must join the event to see and participate in the chat.",
+  "noComments": "No comments yet. Be the first to comment!",
+  "writeComment": "Write a comment...",
+  "hoursAgo": "hours ago",
+  "minutesAgo": "minutes ago",
+  "daysAgo": "days ago",
+  "justNow": "Just now",
+  "calculatingDistance": "Calculating distance...",
+  "distanceToEvent": "Distance to event:",
+  "noParticipants": "No participants.",
+  "selectCategory": "Select Category",
+  "addCoverPhoto": "Add Cover Photo",
+  "selectFromGalleryOrCamera": "Select from gallery or camera",
+  "uploadingPhoto": "Uploading photo...",
+  "change": "Change",
+  "selectDateTime": "Select date/time",
+  "selectLocationAndCategory": "Select Location and Category",
+  "select": "Select",
+  "fillAllFields": "Please fill in all required fields",
+  "selectEventDateTime": "Please select event date and time",
+  "selectEventLocation": "Please select event location on the map",
+  "markAllAsRead": "Mark all as read",
+  "allNotificationsRead": "All notifications marked as read",
+  "loadingNotifications": "Loading notifications...",
+  "notificationsLoadError": "Error loading notifications",
+  "noNotifications": "No notifications yet",
+  "notificationsWillAppear": "New notifications will appear here",
+  "yesterday": "Yesterday",
+  "nearbyEvents": "Nearby Events",
+  "noEventsFound": "No events found",
+  "createYourFirstEvent": "Create your first event!",
+  "searchEvents": "Search events...",
+  "allCategories": "All Categories",
+  "searchUserPlaceholder": "Search by name or email...",
+  "noUsersFound": "No users found",
+  "tryDifferentKeywords": "Try different keywords",
+  "profileUpdated": "Profile updated successfully!",
+  "photoUpdated": "Photo updated successfully!",
+  "uploadNewPhoto": "Upload New Photo",
+  "noEventsCreated": "You haven't created any events yet",
+  "suggestedUsers": "Suggested Users",
+  "block": "Block",
+  "blocked": "User blocked",
+  "report": "Report",
+  "privateProfile": "This profile is private",
+  "followToSee": "Follow this user to see their events",
+  "chats": "Chats",
+  "noChats": "No chats yet",
+  "startNewChat": "Start a new chat!",
+  "searchInMessages": "Search in messages",
+  "messageDeleted": "Message deleted",
+  "messageEdited": "Message edited",
+  "copyMessage": "Copy",
+  "editMessage": "Edit",
+  "deleteMessage": "Delete Message",
+  "forwardMessage": "Forward",
+  "replyMessage": "Reply",
+  "online": "Online",
+  "offline": "Offline",
+  "typing": "Typing...",
+  "lastSeen": "Last seen",
+  "voiceMessage": "Voice message",
+  "photo": "Photo",
+  "video": "Video",
+  "file": "File",
+  "location": "Location",
+  "searchMessagesTitle": "Search Messages",
+  "forwardTo": "Forward to",
+  "forward": "Forward",
+  "locationServiceDisabled": "Location service is disabled. Please enable it.",
+  "locationPermissionDenied": "Location permission denied.",
+  "locationPermissionDeniedForever": "Location permission permanently denied. Please enable from settings.",
+  "locationFailed": "Failed to get location. Please try again.",
+  "searchEventHint": "Search events (title, description, address)",
+  "filters": "Filters",
+  "category": "Category",
+  "startDateLabel": "Start",
+  "endDateLabel": "End",
+  "enableDistanceFilter": "Enable distance filter",
+  "distanceLabel": "Distance",
+  "locationObtained": "Location obtained! Showing nearest events.",
+  "locationSettingsTitle": "Location Permission/Settings",
+  "locationSettingsBtn": "Location Settings",
+  "appSettingsBtn": "App Settings",
+  "close": "Close",
+  "findNearbyEvents": "Find events near me",
+  "apply": "Apply",
+  "clear": "Clear",
+  "loadingEvents": "Loading events...",
+  "noEventsFoundTitle": "No events found",
+  "noEventsFoundSearch": "No events match your search criteria.",
+  "noEventsFoundEmpty": "No events yet.",
+  "clearFilters": "Clear Filters",
+  "loadMore": "Load more",
+  "thatsAll": "That's all",
+  "distanceDisplay": "Distance",
+  "noMessagesYet": "No messages yet",
+  "sendFirstMessage": "Send the first message!",
+  "chatStartFailed": "Failed to start chat. Please try again.",
+  "messageSendFailed": "Failed to send message",
+  "fileNotFound": "File not found",
+  "fileTooLarge": "File size too large (Max: 50MB)",
+  "mediaUploading": "uploading...",
+  "mediaUploaded": "uploaded",
+  "mediaSendError": "send error",
+  "react": "React",
+  "copy": "Copy",
+  "messageCopied": "Message copied",
+  "editMessageTitle": "Edit Message",
+  "editMessageHint": "Edit your message...",
+  "deleteMessageTitle": "Delete Message",
+  "deleteMessageConfirm": "Are you sure you want to delete this message?",
+  "reactionError": "Reaction error",
+  "voiceMessageUploading": "Uploading voice message...",
+  "voiceMessageSent": "Voice message sent",
+  "voiceMessageError": "Voice message send error",
+  "fileUploading": "uploading...",
+  "fileSent": "sent",
+  "fileSendError": "File send error",
+  "gallery": "Gallery",
+  "camera": "Camera",
+  "unknownFile": "Unknown file",
+  "fileOpenSoon": "File opening feature coming soon"
 }
 

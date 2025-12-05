@@ -11,6 +11,8 @@ import 'widgets/modern_loading_widget.dart';
 import 'package:flutter/foundation.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
+import '../l10n/app_localizations.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -96,6 +98,7 @@ class _MapViewState extends State<MapView> {
     _loadCategoryIcons();
   }
 
+
   Future<void> _getUserLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -121,6 +124,8 @@ class _MapViewState extends State<MapView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
     // Web platformunda etkinlik listesi göster
     if (kIsWeb) {
       final eventViewModel = Provider.of<EventViewModel>(context);
@@ -128,15 +133,15 @@ class _MapViewState extends State<MapView> {
       
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Etkinlikler'),
+          title: Text(l10n.events),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
         ),
         body: events.isEmpty
             ? EmptyStateWidget(
                 icon: Icons.map_outlined,
-                title: 'Henüz etkinlik bulunmuyor',
-                message: 'Haritada görüntülenecek etkinlik yok',
+                title: l10n.noData,
+                message: l10n.noData,
               )
             : ListView.builder(
                 padding: const EdgeInsets.all(16),
@@ -182,7 +187,7 @@ class _MapViewState extends State<MapView> {
           markerId: const MarkerId('user'),
           position: LatLng(userPosition!.latitude, userPosition!.longitude),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          infoWindow: const InfoWindow(title: 'Benim Konumum'),
+          infoWindow: InfoWindow(title: l10n.eventLocation),
         ),
       );
     }
@@ -195,8 +200,9 @@ class _MapViewState extends State<MapView> {
       gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        extendBody: true,
         body: !iconsLoaded
-            ? Center(child: ModernLoadingWidget(message: 'Harita yükleniyor...'))
+            ? Center(child: ModernLoadingWidget(message: l10n.loading))
             : Stack(
                 children: [
                   GoogleMap(
@@ -212,33 +218,40 @@ class _MapViewState extends State<MapView> {
                     },
                     padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
                   ),
+                  // Konum Butonu - Nav bar'ın hemen üstünde
                   Positioned(
-                    left: AppTheme.spacingMd,
-                    bottom: AppTheme.spacingMd,
-                    child: FloatingActionButton(
-                      heroTag: 'my_location_btn',
-                      onPressed: () async {
-                        if (userPosition == null) {
-                          await _getUserLocation();
-                        }
-                        if (userPosition != null && mapController != null) {
-                          mapController!.animateCamera(
-                            CameraUpdate.newCameraPosition(
-                              CameraPosition(
-                                target: LatLng(userPosition!.latitude, userPosition!.longitude),
-                                zoom: 15,
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
+                    bottom: 140,
+                    right: AppTheme.spacingLg,
+                    child: Material(
                       elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                      borderRadius: BorderRadius.circular(28),
+                      color: AppColorConfig.secondaryColor,
+                      child: InkWell(
+                        onTap: () async {
+                          if (userPosition == null) {
+                            await _getUserLocation();
+                          }
+                          if (userPosition != null && mapController != null) {
+                            mapController!.animateCamera(
+                              CameraUpdate.newCameraPosition(
+                                CameraPosition(
+                                  target: LatLng(userPosition!.latitude, userPosition!.longitude),
+                                  zoom: 15,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(28),
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          child: const Icon(Icons.my_location, size: 24, color: Colors.white),
+                        ),
                       ),
-                      child: const Icon(Icons.my_location),
                     ),
                   ),
                 ],

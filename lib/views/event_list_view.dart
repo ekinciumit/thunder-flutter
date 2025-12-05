@@ -14,6 +14,7 @@ import 'widgets/modern_loading_widget.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
+import '../l10n/app_localizations.dart';
 
 class EventListView extends StatefulWidget {
   const EventListView({super.key});
@@ -81,7 +82,7 @@ class _EventListViewState extends State<EventListView> {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (!mounted) return;
-        setState(() { locationHint = 'Konum servisi kapalı. Lütfen açın.'; });
+        setState(() { locationHint = 'locationServiceDisabled'; });
         return;
       }
       LocationPermission permission = await Geolocator.checkPermission();
@@ -89,13 +90,13 @@ class _EventListViewState extends State<EventListView> {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           if (!mounted) return;
-          setState(() { locationHint = 'Konum izni reddedildi.'; });
+          setState(() { locationHint = 'locationPermissionDenied'; });
           return;
         }
       }
       if (permission == LocationPermission.deniedForever) {
         if (!mounted) return;
-        setState(() { locationHint = 'Konum izni kalıcı reddedildi. Ayarlardan izin verin.'; });
+        setState(() { locationHint = 'locationPermissionDeniedForever'; });
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
@@ -105,7 +106,7 @@ class _EventListViewState extends State<EventListView> {
       setState(() { userPosition = pos; locationHint = null; });
     } catch (_) {
       if (!mounted) return;
-      setState(() { locationHint = 'Konum alınamadı. Tekrar deneyin.'; });
+      setState(() { locationHint = 'locationFailed'; });
     }
   }
 
@@ -141,6 +142,7 @@ class _EventListViewState extends State<EventListView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final eventViewModel = Provider.of<EventViewModel>(context);
     final authViewModel = Provider.of<AuthViewModel>(context);
     final currentUser = authViewModel.user;
@@ -224,7 +226,7 @@ class _EventListViewState extends State<EventListView> {
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Etkinlik ara (başlık, açıklama, adres)',
+                          hintText: l10n.searchEventHint,
                           hintStyle: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -302,7 +304,7 @@ class _EventListViewState extends State<EventListView> {
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Filtreler', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                                    Text(l10n.filters, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                                     const SizedBox(height: 20),
                                     DropdownButtonFormField<String>(
                                       initialValue: tempSelectedCategory,
@@ -313,7 +315,7 @@ class _EventListViewState extends State<EventListView> {
                                       onChanged: (val) {
                                         if (val != null) setModalState(() => tempSelectedCategory = val);
                                       },
-                                      decoration: const InputDecoration(labelText: 'Kategori'),
+                                      decoration: InputDecoration(labelText: l10n.category),
                                     ),
                                     const SizedBox(height: 16),
                                     Row(
@@ -321,7 +323,7 @@ class _EventListViewState extends State<EventListView> {
                                         Expanded(
                                           child: OutlinedButton.icon(
                                             icon: const Icon(Icons.date_range),
-                                            label: Text(tempStartDate == null ? 'Başlangıç' : '${tempStartDate!.day}.${tempStartDate!.month}.${tempStartDate!.year}'),
+                                            label: Text(tempStartDate == null ? l10n.startDateLabel : '${tempStartDate!.day}.${tempStartDate!.month}.${tempStartDate!.year}'),
                                             onPressed: () async {
                                               final now = DateTime.now();
                                               final pickedStart = await showDatePicker(
@@ -351,7 +353,7 @@ class _EventListViewState extends State<EventListView> {
                                         Expanded(
                                           child: OutlinedButton.icon(
                                             icon: const Icon(Icons.date_range),
-                                            label: Text(tempEndDate == null ? 'Bitiş' : '${tempEndDate!.day}.${tempEndDate!.month}.${tempEndDate!.year}'),
+                                            label: Text(tempEndDate == null ? l10n.endDateLabel : '${tempEndDate!.day}.${tempEndDate!.month}.${tempEndDate!.year}'),
                                             onPressed: () async {
                                               final now = DateTime.now();
                                               final pickedEnd = await showDatePicker(
@@ -395,7 +397,7 @@ class _EventListViewState extends State<EventListView> {
                                         ),
                                         Expanded(
                                           child: Text(
-                                            'Mesafe filtresini aktif et (${tempSelectedDistance.round()} km)',
+                                            '${l10n.enableDistanceFilter} (${tempSelectedDistance.round()} km)',
                                             style: theme.textTheme.bodyMedium,
                                           ),
                                         ),
@@ -403,7 +405,7 @@ class _EventListViewState extends State<EventListView> {
                                     ),
                                     if (tempIsDistanceFilterEnabled && userPosition != null) ...[
                                       const SizedBox(height: 8),
-                                      Text('Mesafe: ${tempSelectedDistance.round()} km', style: theme.textTheme.bodySmall),
+                                      Text('${l10n.distanceLabel}: ${tempSelectedDistance.round()} km', style: theme.textTheme.bodySmall),
                                       Slider(
                                         value: tempSelectedDistance,
                                         min: 1,
@@ -450,7 +452,7 @@ class _EventListViewState extends State<EventListView> {
                                             if (context.mounted) {
                                               ModernSnackbar.showSuccess(
                                                 context,
-                                                'Konum alındı! En yakın etkinlikler gösteriliyor.',
+                                                l10n.locationObtained,
                                               );
                                             }
                                           } else {
@@ -461,25 +463,25 @@ class _EventListViewState extends State<EventListView> {
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius: BorderRadius.circular(AppTheme.radiusXl),
                                                 ),
-                                                title: const Text(
-                                                  'Konum İzni/Ayarı',
-                                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                                title: Text(
+                                                  l10n.locationSettingsTitle,
+                                                  style: const TextStyle(fontWeight: FontWeight.w600),
                                                 ),
                                                 content: Text(
-                                                  locationHint ?? 'Konum alınamadı. Lütfen ayarları kontrol edin.',
+                                                  _getLocationHintText(l10n),
                                                 ),
                                                 actions: [
                                                   TextButton(
                                                     onPressed: () => Navigator.pop(context, 'loc'),
-                                                    child: const Text('Konum Ayarları'),
+                                                    child: Text(l10n.locationSettingsBtn),
                                                   ),
                                                   TextButton(
                                                     onPressed: () => Navigator.pop(context, 'app'),
-                                                    child: const Text('Uygulama Ayarları'),
+                                                    child: Text(l10n.appSettingsBtn),
                                                   ),
                                                   TextButton(
                                                     onPressed: () => Navigator.pop(context, 'cancel'),
-                                                    child: const Text('Kapat'),
+                                                    child: Text(l10n.close),
                                                   ),
                                                 ],
                                               ),
@@ -498,8 +500,8 @@ class _EventListViewState extends State<EventListView> {
                                         ),
                                         label: Text(
                                           userPosition != null
-                                              ? 'Konumum alındı ✓'
-                                              : 'Konumuma en yakın etkinlikleri bul',
+                                              ? '${l10n.locationObtained} ✓'
+                                              : l10n.findNearbyEvents,
                                           style: TextStyle(
                                             color: userPosition != null ? Colors.green.shade700 : Colors.deepPurple.shade700,
                                             fontWeight: FontWeight.w600,
@@ -538,7 +540,7 @@ class _EventListViewState extends State<EventListView> {
                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
                                               padding: const EdgeInsets.symmetric(vertical: 14),
                                             ),
-                                            child: const Text('Uygula'),
+                                            child: Text(l10n.apply),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -559,7 +561,7 @@ class _EventListViewState extends State<EventListView> {
                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
                                               padding: const EdgeInsets.symmetric(vertical: 14),
                                             ),
-                                            child: const Text('Temizle'),
+                                            child: Text(l10n.clear),
                                           ),
                                         ),
                                       ],
@@ -620,16 +622,16 @@ class _EventListViewState extends State<EventListView> {
             Expanded(
               child: eventViewModel.isLoading
                   ? Center(
-                      child: ModernLoadingWidget(message: 'Etkinlikler yükleniyor...'),
+                      child: ModernLoadingWidget(message: l10n.loadingEvents),
                     )
                   : filteredEvents.isEmpty
                       ? EmptyStateWidget(
                           icon: Icons.event_busy,
-                          title: 'Etkinlik bulunamadı',
+                          title: l10n.noEventsFoundTitle,
                           message: _searchQuery.isNotEmpty
-                              ? 'Arama kriterlerinize uygun etkinlik bulunamadı.'
-                              : 'Henüz etkinlik bulunmuyor.',
-                          actionText: _searchQuery.isNotEmpty ? 'Filtreleri Temizle' : null,
+                              ? l10n.noEventsFoundSearch
+                              : l10n.noEventsFoundEmpty,
+                          actionText: _searchQuery.isNotEmpty ? l10n.clearFilters : null,
                           onAction: _searchQuery.isNotEmpty
                               ? () {
                                   setState(() {
@@ -668,11 +670,11 @@ class _EventListViewState extends State<EventListView> {
                                                 )
                                               : const Icon(Icons.expand_more),
                                           label: Text(
-                                            eventViewModel.isLoadingMore ? 'Yükleniyor...' : 'Daha fazla yükle',
+                                            eventViewModel.isLoadingMore ? l10n.loading : l10n.loadMore,
                                           ),
                                         )
                                       : Text(
-                                          'Hepsi bu kadar',
+                                          l10n.thatsAll,
                                           style: theme.textTheme.bodySmall?.copyWith(
                                             color: theme.colorScheme.onSurfaceVariant,
                                           ),
@@ -840,7 +842,7 @@ class _EventListViewState extends State<EventListView> {
                                               Padding(
                                                 padding: const EdgeInsets.only(left: 8.0),
                                                 child: Text(
-                                                  'Mesafe: ${distanceKm.toStringAsFixed(1)} km',
+                                                  '${l10n.distanceDisplay}: ${distanceKm.toStringAsFixed(1)} km',
                                                   style: theme.textTheme.bodySmall?.copyWith(
                                                     color: Colors.white, // Metin rengini beyaz yap
                                                     fontWeight: FontWeight.w600,
@@ -863,6 +865,22 @@ class _EventListViewState extends State<EventListView> {
         ),
       ),
     );
+  }
+
+  String _getLocationHintText(AppLocalizations l10n) {
+    if (locationHint == null) return l10n.locationFailed;
+    switch (locationHint) {
+      case 'locationServiceDisabled':
+        return l10n.locationServiceDisabled;
+      case 'locationPermissionDenied':
+        return l10n.locationPermissionDenied;
+      case 'locationPermissionDeniedForever':
+        return l10n.locationPermissionDeniedForever;
+      case 'locationFailed':
+        return l10n.locationFailed;
+      default:
+        return l10n.locationFailed;
+    }
   }
 
   // Helper method to get color scheme based on category with better contrast

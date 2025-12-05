@@ -265,6 +265,423 @@
   "retry": "Tekrar Dene",
   "@retry": {
     "description": "Tekrar dene butonu"
-  }
+  },
+  
+  "settings": "Ayarlar",
+  "@settings": {
+    "description": "Ayarlar başlığı"
+  },
+  "account": "Hesap",
+  "@account": {
+    "description": "Hesap bölümü"
+  },
+  "editProfile": "Profil Düzenle",
+  "@editProfile": {
+    "description": "Profil düzenle butonu"
+  },
+  "editProfileSubtitle": "İsim, biyografi, fotoğraf",
+  "@editProfileSubtitle": {
+    "description": "Profil düzenle alt başlığı"
+  },
+  "changePassword": "Şifre Değiştir",
+  "@changePassword": {
+    "description": "Şifre değiştir butonu"
+  },
+  "accountSecurity": "Hesap güvenliği",
+  "@accountSecurity": {
+    "description": "Hesap güvenliği alt başlığı"
+  },
+  "notifications": "Bildirimler",
+  "@notifications": {
+    "description": "Bildirimler bölümü"
+  },
+  "notificationSettings": "Bildirim Ayarları",
+  "@notificationSettings": {
+    "description": "Bildirim ayarları butonu"
+  },
+  "notificationSettingsSubtitle": "Push bildirimleri, e-posta",
+  "@notificationSettingsSubtitle": {
+    "description": "Bildirim ayarları alt başlığı"
+  },
+  "appearance": "Görünüm",
+  "@appearance": {
+    "description": "Görünüm bölümü"
+  },
+  "darkMode": "Gece Modu",
+  "@darkMode": {
+    "description": "Gece modu butonu"
+  },
+  "on": "Açık",
+  "@on": {
+    "description": "Açık durumu"
+  },
+  "off": "Kapalı",
+  "@off": {
+    "description": "Kapalı durumu"
+  },
+  "language": "Dil",
+  "@language": {
+    "description": "Dil butonu"
+  },
+  "selectLanguage": "Dil Seçin",
+  "@selectLanguage": {
+    "description": "Dil seçin başlığı"
+  },
+  "privacySecurity": "Gizlilik ve Güvenlik",
+  "@privacySecurity": {
+    "description": "Gizlilik ve güvenlik bölümü"
+  },
+  "privacySettings": "Gizlilik Ayarları",
+  "@privacySettings": {
+    "description": "Gizlilik ayarları butonu"
+  },
+  "accountPrivacy": "Hesap gizliliği",
+  "@accountPrivacy": {
+    "description": "Hesap gizliliği alt başlığı"
+  },
+  "blockedUsers": "Engellenen Kullanıcılar",
+  "@blockedUsers": {
+    "description": "Engellenen kullanıcılar butonu"
+  },
+  "manageBlockList": "Engel listesini yönet",
+  "@manageBlockList": {
+    "description": "Engel listesi alt başlığı"
+  },
+  "helpSupport": "Yardım ve Destek",
+  "@helpSupport": {
+    "description": "Yardım ve destek bölümü"
+  },
+  "helpCenter": "Yardım Merkezi",
+  "@helpCenter": {
+    "description": "Yardım merkezi butonu"
+  },
+  "faq": "Sıkça sorulan sorular",
+  "@faq": {
+    "description": "SSS alt başlığı"
+  },
+  "reportProblem": "Sorun Bildir",
+  "@reportProblem": {
+    "description": "Sorun bildir butonu"
+  },
+  "reportProblemSubtitle": "Hata veya öneri gönder",
+  "@reportProblemSubtitle": {
+    "description": "Sorun bildir alt başlığı"
+  },
+  "legal": "Yasal",
+  "@legal": {
+    "description": "Yasal bölümü"
+  },
+  "privacyPolicy": "Gizlilik Politikası",
+  "@privacyPolicy": {
+    "description": "Gizlilik politikası butonu"
+  },
+  "termsOfService": "Kullanım Şartları",
+  "@termsOfService": {
+    "description": "Kullanım şartları butonu"
+  },
+  "about": "Hakkında",
+  "@about": {
+    "description": "Hakkında butonu"
+  },
+  "version": "Versiyon",
+  "@version": {
+    "description": "Versiyon etiketi"
+  },
+  "logoutConfirm": "Hesabınızdan çıkış yapmak istediğinize emin misiniz?",
+  "@logoutConfirm": {
+    "description": "Çıkış onay mesajı"
+  },
+  "pushNotifications": "Push Bildirimleri",
+  "@pushNotifications": {
+    "description": "Push bildirimleri"
+  },
+  "appNotifications": "Uygulama bildirimleri",
+  "@appNotifications": {
+    "description": "Uygulama bildirimleri alt başlığı"
+  },
+  "emailNotifications": "E-posta Bildirimleri",
+  "@emailNotifications": {
+    "description": "E-posta bildirimleri"
+  },
+  "importantUpdates": "Önemli güncellemeler",
+  "@importantUpdates": {
+    "description": "Önemli güncellemeler alt başlığı"
+  },
+  "eventReminders": "Etkinlik Hatırlatıcıları",
+  "@eventReminders": {
+    "description": "Etkinlik hatırlatıcıları"
+  },
+  "newFollowers": "Yeni Takipçiler",
+  "@newFollowers": {
+    "description": "Yeni takipçiler"
+  },
+  "messages": "Mesajlar",
+  "@messages": {
+    "description": "Mesajlar"
+  },
+  "privateAccount": "Gizli Hesap",
+  "@privateAccount": {
+    "description": "Gizli hesap"
+  },
+  "privateAccountSubtitle": "Sadece takipçileriniz profilinizi görebilir",
+  "@privateAccountSubtitle": {
+    "description": "Gizli hesap alt başlığı"
+  },
+  "showLocation": "Konumu Göster",
+  "@showLocation": {
+    "description": "Konumu göster"
+  },
+  "showLocationSubtitle": "Etkinliklerde konumunuzu paylaşın",
+  "@showLocationSubtitle": {
+    "description": "Konumu göster alt başlığı"
+  },
+  "onlineStatus": "Çevrimiçi Durumu",
+  "@onlineStatus": {
+    "description": "Çevrimiçi durumu"
+  },
+  "onlineStatusSubtitle": "Aktif olduğunuzda diğerleri görsün",
+  "@onlineStatusSubtitle": {
+    "description": "Çevrimiçi durumu alt başlığı"
+  },
+  "feedbackType": "Geri bildirim türü:",
+  "@feedbackType": {
+    "description": "Geri bildirim türü"
+  },
+  "bugReport": "Hata",
+  "@bugReport": {
+    "description": "Hata türü"
+  },
+  "suggestion": "Öneri",
+  "@suggestion": {
+    "description": "Öneri türü"
+  },
+  "description": "Açıklama:",
+  "@description": {
+    "description": "Açıklama etiketi"
+  },
+  "feedbackHint": "Yaşadığınız sorunu veya önerinizi yazın...",
+  "@feedbackHint": {
+    "description": "Geri bildirim ipucu"
+  },
+  "send": "Gönder",
+  "@send": {
+    "description": "Gönder butonu"
+  },
+  "sending": "Gönderiliyor...",
+  "@sending": {
+    "description": "Gönderiliyor mesajı"
+  },
+  "thankYouFeedback": "Geri bildiriminiz için teşekkürler!",
+  "@thankYouFeedback": {
+    "description": "Teşekkür mesajı"
+  },
+  "sendError": "Gönderilirken bir hata oluştu",
+  "@sendError": {
+    "description": "Gönderim hatası"
+  },
+  "passwordResetSent": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi",
+  "@passwordResetSent": {
+    "description": "Şifre sıfırlama mesajı"
+  },
+  "emailNotFound": "E-posta adresi bulunamadı",
+  "@emailNotFound": {
+    "description": "E-posta bulunamadı hatası"
+  },
+  "comingSoon": "Sayfa yakında eklenecek",
+  "@comingSoon": {
+    "description": "Yakında mesajı"
+  },
+  "settingUpdated": "Ayar güncellendi",
+  "@settingUpdated": {
+    "description": "Ayar güncellendi mesajı"
+  },
+  "settingUpdateFailed": "Ayar güncellenemedi",
+  "@settingUpdateFailed": {
+    "description": "Ayar güncelleme hatası"
+  },
+  "accountMadePrivate": "Hesabınız gizli yapıldı",
+  "@accountMadePrivate": {
+    "description": "Hesap gizli mesajı"
+  },
+  "accountMadePublic": "Hesabınız herkese açık yapıldı",
+  "@accountMadePublic": {
+    "description": "Hesap açık mesajı"
+  },
+  "locationShown": "Konumunuz gösterilecek",
+  "@locationShown": {
+    "description": "Konum gösteriliyor mesajı"
+  },
+  "locationHidden": "Konumunuz gizlenecek",
+  "@locationHidden": {
+    "description": "Konum gizleniyor mesajı"
+  },
+  "onlineStatusShown": "Çevrimiçi durumunuz gösterilecek",
+  "@onlineStatusShown": {
+    "description": "Çevrimiçi durumu gösteriliyor mesajı"
+  },
+  "onlineStatusHidden": "Çevrimiçi durumunuz gizlenecek",
+  "@onlineStatusHidden": {
+    "description": "Çevrimiçi durumu gizleniyor mesajı"
+  },
+  "userInfoNotFound": "Kullanıcı bilgisi alınamadı",
+  "@userInfoNotFound": {
+    "description": "Kullanıcı bilgisi hatası"
+  },
+  "pleaseEnterDescription": "Lütfen bir açıklama yazın",
+  "@pleaseEnterDescription": {
+    "description": "Açıklama uyarısı"
+  },
+  "noBlockedUsers": "Engellenen kullanıcı yok",
+  "@noBlockedUsers": {
+    "description": "Engellenen kullanıcı yok mesajı"
+  },
+  "unblock": "Kaldır",
+  "@unblock": {
+    "description": "Engeli kaldır butonu"
+  },
+  "unblocked": "Engel kaldırıldı",
+  "@unblocked": {
+    "description": "Engel kaldırıldı mesajı"
+  },
+  
+  "selectPhoto": "Fotoğraf Seç",
+  "cropPhoto": "Fotoğrafı Kırp",
+  "uploading": "Yükleniyor...",
+  "editEvent": "Etkinliği Düzenle",
+  "user": "Kullanıcı",
+  "createRoute": "Rota Oluştur",
+  "requestSent": "İstek Gönderildi (Geri Al)",
+  "sendJoinRequest": "Katılma İsteği Gönder",
+  "joinRequestSent": "Katılma isteği gönderildi. Onaylandığında bildirim alacaksınız.",
+  "joinRequestCancelled": "Katılma isteği geri alındı",
+  "leftEvent": "Etkinlikten ayrıldınız",
+  "participantsLabel": "Katılımcılar:",
+  "joinRequests": "Katılma İstekleri",
+  "accept": "Kabul Et",
+  "reject": "Reddet",
+  "commentsChat": "Yorumlar / Sohbet",
+  "mustJoinToChat": "Sohbeti görmek ve katılmak için etkinliğe katılmalısınız.",
+  "noComments": "Henüz yorum yok. İlk yorumu sen yaz!",
+  "writeComment": "Yorum yaz...",
+  "hoursAgo": "saat önce",
+  "minutesAgo": "dakika önce",
+  "daysAgo": "gün önce",
+  "justNow": "Az önce",
+  "calculatingDistance": "Mesafe hesaplanıyor...",
+  "distanceToEvent": "Etkinliğe uzaklık:",
+  "noParticipants": "Katılımcı yok.",
+  "selectCategory": "Kategori Seç",
+  "addCoverPhoto": "Kapak Fotoğrafı Ekle",
+  "selectFromGalleryOrCamera": "Galeri veya kameradan seç",
+  "uploadingPhoto": "Fotoğraf yükleniyor...",
+  "change": "Değiştir",
+  "selectDateTime": "Tarih/Saat seçiniz",
+  "selectLocationAndCategory": "Konum ve Kategori Seç",
+  "select": "Seç",
+  "fillAllFields": "Lütfen tüm zorunlu alanları doldurun",
+  "selectEventDateTime": "Lütfen etkinlik tarihi ve saatini seçin",
+  "selectEventLocation": "Lütfen etkinlik konumunu haritadan seçin",
+  "markAllAsRead": "Tümünü okundu işaretle",
+  "allNotificationsRead": "Tüm bildirimler okundu olarak işaretlendi",
+  "loadingNotifications": "Bildirimler yükleniyor...",
+  "notificationsLoadError": "Bildirimler yüklenirken bir hata oluştu",
+  "noNotifications": "Henüz bildirim yok",
+  "notificationsWillAppear": "Yeni bildirimler burada görünecek",
+  "yesterday": "Dün",
+  "nearbyEvents": "Yakındaki Etkinlikler",
+  "noEventsFound": "Etkinlik bulunamadı",
+  "createYourFirstEvent": "İlk etkinliğini oluştur!",
+  "searchEvents": "Etkinlik ara...",
+  "allCategories": "Tüm Kategoriler",
+  "searchUserPlaceholder": "İsim veya e-posta ile ara...",
+  "noUsersFound": "Kullanıcı bulunamadı",
+  "tryDifferentKeywords": "Farklı anahtar kelimeler deneyin",
+  "profileUpdated": "Profil başarıyla güncellendi!",
+  "photoUpdated": "Profil fotoğrafı başarıyla güncellendi!",
+  "uploadNewPhoto": "Yeni Fotoğraf Yükle",
+  "noEventsCreated": "Henüz etkinlik oluşturmadınız",
+  "suggestedUsers": "Önerilen Kullanıcılar",
+  "block": "Engelle",
+  "blocked": "Kullanıcı engellendi",
+  "report": "Şikayet Et",
+  "privateProfile": "Bu profil gizli",
+  "followToSee": "Etkinliklerini görmek için takip edin",
+  "chats": "Sohbetler",
+  "noChats": "Henüz sohbet yok",
+  "startNewChat": "Yeni bir sohbet başlat!",
+  "searchInMessages": "Mesajlarda ara",
+  "messageDeleted": "Mesaj silindi",
+  "messageEdited": "Mesaj düzenlendi",
+  "copyMessage": "Kopyala",
+  "editMessage": "Düzenle",
+  "deleteMessage": "Mesajı Sil",
+  "forwardMessage": "İlet",
+  "replyMessage": "Yanıtla",
+  "online": "Çevrimiçi",
+  "offline": "Çevrimdışı",
+  "typing": "Yazıyor...",
+  "lastSeen": "Son görülme",
+  "voiceMessage": "Sesli mesaj",
+  "photo": "Fotoğraf",
+  "video": "Video",
+  "file": "Dosya",
+  "location": "Konum",
+  "searchMessagesTitle": "Mesaj Ara",
+  "forwardTo": "İlet",
+  "forward": "İlet",
+  "locationServiceDisabled": "Konum servisi kapalı. Lütfen açın.",
+  "locationPermissionDenied": "Konum izni reddedildi.",
+  "locationPermissionDeniedForever": "Konum izni kalıcı reddedildi. Ayarlardan izin verin.",
+  "locationFailed": "Konum alınamadı. Tekrar deneyin.",
+  "searchEventHint": "Etkinlik ara (başlık, açıklama, adres)",
+  "filters": "Filtreler",
+  "category": "Kategori",
+  "startDateLabel": "Başlangıç",
+  "endDateLabel": "Bitiş",
+  "enableDistanceFilter": "Mesafe filtresini aktif et",
+  "distanceLabel": "Mesafe",
+  "locationObtained": "Konum alındı! En yakın etkinlikler gösteriliyor.",
+  "locationSettingsTitle": "Konum İzni/Ayarı",
+  "locationSettingsBtn": "Konum Ayarları",
+  "appSettingsBtn": "Uygulama Ayarları",
+  "close": "Kapat",
+  "findNearbyEvents": "Konumuma en yakın etkinlikleri bul",
+  "apply": "Uygula",
+  "clear": "Temizle",
+  "loadingEvents": "Etkinlikler yükleniyor...",
+  "noEventsFoundTitle": "Etkinlik bulunamadı",
+  "noEventsFoundSearch": "Arama kriterlerinize uygun etkinlik bulunamadı.",
+  "noEventsFoundEmpty": "Henüz etkinlik bulunmuyor.",
+  "clearFilters": "Filtreleri Temizle",
+  "loadMore": "Daha fazla yükle",
+  "thatsAll": "Hepsi bu kadar",
+  "distanceDisplay": "Mesafe",
+  "noMessagesYet": "Henüz mesaj yok",
+  "sendFirstMessage": "İlk mesajı siz gönderin!",
+  "chatStartFailed": "Sohbet başlatılamadı. Lütfen tekrar deneyin.",
+  "messageSendFailed": "Mesaj gönderilemedi",
+  "fileNotFound": "Dosya bulunamadı",
+  "fileTooLarge": "Dosya boyutu çok büyük (Max: 50MB)",
+  "mediaUploading": "yükleniyor...",
+  "mediaUploaded": "yüklendi",
+  "mediaSendError": "gönderme hatası",
+  "react": "Tepki Ver",
+  "copy": "Kopyala",
+  "messageCopied": "Mesaj kopyalandı",
+  "editMessageTitle": "Mesajı Düzenle",
+  "editMessageHint": "Mesajınızı düzenleyin...",
+  "deleteMessageTitle": "Mesajı Sil",
+  "deleteMessageConfirm": "Bu mesajı silmek istediğinizden emin misiniz?",
+  "reactionError": "Tepki hatası",
+  "voiceMessageUploading": "Sesli mesaj yükleniyor...",
+  "voiceMessageSent": "Sesli mesaj gönderildi",
+  "voiceMessageError": "Sesli mesaj gönderme hatası",
+  "fileUploading": "yükleniyor...",
+  "fileSent": "gönderildi",
+  "fileSendError": "Dosya gönderme hatası",
+  "gallery": "Galeri",
+  "camera": "Kamera",
+  "unknownFile": "Bilinmeyen dosya",
+  "fileOpenSoon": "Dosya açma özelliği yakında eklenecek"
 }
 

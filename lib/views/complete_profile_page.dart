@@ -9,6 +9,7 @@ import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/modern_components.dart';
+import '../l10n/app_localizations.dart';
 import 'widgets/modern_loading_widget.dart';
 
 class CompleteProfilePage extends StatefulWidget {
@@ -33,22 +34,23 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     try {
       final picker = ImagePicker();
       // Önce galeri veya kamera seçimi göster
+      final l10n = AppLocalizations.of(context)!;
       final source = await showDialog<ImageSource>(
         context: context,
         builder: (context) => AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusXl),
           ),
-          title: const Text(
-            'Fotoğraf Seç',
-            style: TextStyle(fontWeight: FontWeight.w600),
+          title: Text(
+            l10n.selectPhoto,
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
                 leading: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.primary),
-                title: const Text('Galeri'),
+                title: Text(l10n.photo),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
@@ -57,7 +59,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
               const SizedBox(height: AppTheme.spacingSm),
               ListTile(
                 leading: Icon(Icons.camera_alt, color: Theme.of(context).colorScheme.primary),
-                title: const Text('Kamera'),
+                title: Text(l10n.photo),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
@@ -81,14 +83,14 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1), // Kare profil fotoğrafı
           uiSettings: [
             AndroidUiSettings(
-              toolbarTitle: 'Fotoğrafı Kırp',
+              toolbarTitle: l10n.cropPhoto,
               toolbarColor: Theme.of(context).colorScheme.primary,
               toolbarWidgetColor: Colors.white,
               initAspectRatio: CropAspectRatioPreset.square,
               lockAspectRatio: true, // Profil fotoğrafı için kare zorunlu
             ),
             IOSUiSettings(
-              title: 'Fotoğrafı Kırp',
+              title: l10n.cropPhoto,
               aspectRatioPresets: [CropAspectRatioPreset.square],
             ),
           ],

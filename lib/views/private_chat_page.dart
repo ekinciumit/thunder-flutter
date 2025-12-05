@@ -25,6 +25,7 @@ import 'dart:io';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 
 class PrivateChatPage extends StatefulWidget {
   final String currentUserId;
@@ -62,8 +63,11 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   @override
   void initState() {
     super.initState();
-    _initializeChat();
     _setupScrollListener();
+    // Build tamamlandıktan sonra chat'i başlat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeChat();
+    });
   }
 
   void _setupScrollListener() {
@@ -158,7 +162,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         if (mounted) {
           ModernSnackbar.showError(
             context,
-            'Mesajlar yüklenirken hata: $error',
+            AppLocalizations.of(context)?.error ?? 'Error: $error',
           );
         }
       },
@@ -267,7 +271,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       if (mounted) {
         ModernSnackbar.showError(
           context,
-          'Sohbet başlatılamadı. Lütfen tekrar deneyin.',
+          AppLocalizations.of(context)?.chatStartFailed ?? 'Failed to start chat',
         );
       }
       return;
@@ -336,8 +340,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       if (!await file.exists()) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Dosya bulunamadı'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)?.fileNotFound ?? 'File not found'),
               backgroundColor: Colors.red,
             ),
           );
@@ -352,7 +356,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         if (mounted) {
           ModernSnackbar.showError(
             context,
-            'Dosya boyutu çok büyük (Max: 50MB)',
+            AppLocalizations.of(context)?.fileTooLarge ?? 'File too large (Max: 50MB)',
           );
         }
         return;
@@ -968,7 +972,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             ),
             ListTile(
               leading: const Icon(Icons.emoji_emotions, color: Colors.orange),
-              title: const Text('Tepki Ver'),
+              title: Text(AppLocalizations.of(context)?.react ?? 'React'),
               onTap: () {
                 Navigator.pop(context);
                 _showReactionPicker(message);
@@ -976,7 +980,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             ),
             ListTile(
               leading: const Icon(Icons.forward, color: Colors.deepPurple),
-              title: const Text('İlet'),
+              title: Text(AppLocalizations.of(context)?.forward ?? 'Forward'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -989,14 +993,14 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             ),
             ListTile(
               leading: const Icon(Icons.copy, color: Colors.blue),
-              title: const Text('Kopyala'),
+              title: Text(AppLocalizations.of(context)?.copy ?? 'Copy'),
               onTap: () {
                 Navigator.pop(context);
                 if (message.text != null) {
                   Clipboard.setData(ClipboardData(text: message.text!));
                   ModernSnackbar.showSuccess(
                     context,
-                    'Mesaj kopyalandı',
+                    AppLocalizations.of(context)?.messageCopied ?? 'Message copied',
                   );
                 }
               },
@@ -1004,7 +1008,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             if (message.senderId == widget.currentUserId) ...[
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.orange),
-                title: const Text('Düzenle'),
+                title: Text(AppLocalizations.of(context)?.edit ?? 'Edit'),
                 onTap: () {
                   Navigator.pop(context);
                   _editMessage(message);
@@ -1012,7 +1016,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Sil'),
+                title: Text(AppLocalizations.of(context)?.delete ?? 'Delete'),
                 onTap: () {
                   Navigator.pop(context);
                   _deleteMessage(message);
@@ -1032,13 +1036,13 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Mesajı Düzenle'),
+        title: Text(AppLocalizations.of(context)?.editMessageTitle ?? 'Edit Message'),
         content: TextField(
           controller: controller,
           maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Mesajınızı düzenleyin...',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)?.editMessageHint ?? 'Edit your message...',
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
@@ -1084,8 +1088,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Mesajı Sil'),
-        content: const Text('Bu mesajı silmek istediğinizden emin misiniz?'),
+        title: Text(AppLocalizations.of(context)?.deleteMessageTitle ?? 'Delete Message'),
+        content: Text(AppLocalizations.of(context)?.deleteMessageConfirm ?? 'Are you sure you want to delete this message?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1455,15 +1459,15 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         children: [
           Expanded(
             child: _allMessages.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text('Henüz mesaj yok'),
-                        SizedBox(height: 8),
-                        Text('İlk mesajı siz gönderin!'),
+                        const Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        Text(AppLocalizations.of(context)?.noMessagesYet ?? 'No messages yet'),
+                        const SizedBox(height: 8),
+                        Text(AppLocalizations.of(context)?.sendFirstMessage ?? 'Send the first message!'),
                       ],
                     ),
                   )
@@ -1607,10 +1611,10 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                     ),
                     child: TextField(
                       controller: _controller,
-                      decoration: const InputDecoration(
-                        hintText: 'Mesaj yaz...',
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context)?.typeMessage ?? 'Type a message...',
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
                       minLines: 1,
                       maxLines: 3,
@@ -1747,7 +1751,7 @@ class _VideoMessageWidgetState extends State<_VideoMessageWidget> {
                 ],
               ),
             )
-          : Center(child: ModernLoadingWidget(message: 'Yükleniyor...')),
+          : Center(child: ModernLoadingWidget(message: AppLocalizations.of(context)?.loading ?? 'Loading...')),
     );
   }
 } 

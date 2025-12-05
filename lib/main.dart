@@ -13,6 +13,8 @@ import 'features/event/data/repositories/event_repository_impl.dart';
 import 'features/chat/domain/repositories/chat_repository.dart';
 import 'features/chat/data/repositories/chat_repository_impl.dart';
 import 'services/language_service.dart';
+import 'services/theme_service.dart';
+import 'services/settings_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/app_providers.dart';
 import 'views/home_page.dart';
@@ -87,8 +89,8 @@ class MyApp extends StatelessWidget {
         ...AppProviders.getProxyProviders(),
         ...AppProviders.getProviders(),
       ],
-      child: Consumer<LanguageService>(
-        builder: (context, languageService, _) {
+      child: Consumer2<LanguageService, ThemeService>(
+        builder: (context, languageService, themeService, _) {
           return MaterialApp(
             title: 'Thunder',
             localizationsDelegates: [
@@ -104,7 +106,7 @@ class MyApp extends StatelessWidget {
             locale: languageService.currentLocale, // Dinamik dil
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.light, // Şimdilik sadece aydınlık mod
+            themeMode: themeService.themeMode, // Dinamik tema
             debugShowCheckedModeBanner: false,
             home: const RootPage(),
           );
@@ -128,10 +130,16 @@ class _RootPageState extends State<RootPage> {
   @override
   void initState() {
     super.initState();
-    // Uygulama başlatıldığında kaydedilen dili yükle
+    // Uygulama başlatıldığında kaydedilen ayarları yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final languageService = Provider.of<LanguageService>(context, listen: false);
       languageService.loadSavedLanguage();
+      
+      final themeService = Provider.of<ThemeService>(context, listen: false);
+      themeService.loadSavedTheme();
+      
+      final settingsService = Provider.of<SettingsService>(context, listen: false);
+      settingsService.loadSettings();
     });
   }
 

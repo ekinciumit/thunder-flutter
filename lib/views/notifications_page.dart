@@ -14,6 +14,7 @@ import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
+import '../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 
@@ -137,11 +138,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final authViewModel = Provider.of<AuthViewModel>(context);
     final currentUser = authViewModel.user;
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     if (currentUser == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Bildirimler')),
-        body: const Center(child: Text('Kullanıcı bilgisi bulunamadı')),
+        appBar: AppBar(title: Text(l10n.notifications)),
+        body: Center(child: Text(l10n.userInfoNotFound)),
       );
     }
 
@@ -153,7 +155,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: Text(
-            'Bildirimler',
+            l10n.notifications,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -172,7 +174,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 if (!hasUnread) return const SizedBox.shrink();
                 return IconButton(
                   icon: const Icon(Icons.done_all, color: Colors.white),
-                  tooltip: 'Tümünü okundu işaretle',
+                  tooltip: l10n.markAllAsRead,
                   onPressed: () async {
                     if (!mounted) return;
                     final currentContext = context;
@@ -181,7 +183,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     // ignore: use_build_context_synchronously
                     ModernSnackbar.showSuccess(
                       currentContext,
-                      'Tüm bildirimler okundu olarak işaretlendi',
+                      l10n.allNotificationsRead,
                     );
                   },
                 );
@@ -196,16 +198,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
             stream: _getNotificationsStream(currentUser.uid),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
+                return Center(
                   child: ModernLoadingWidget(
-                    message: 'Bildirimler yükleniyor...',
+                    message: l10n.loadingNotifications,
                   ),
                 );
               }
 
               if (snapshot.hasError) {
                 return ErrorStateWidget(
-                  message: 'Bildirimler yüklenirken bir hata oluştu',
+                  message: l10n.notificationsLoadError,
                   error: snapshot.error.toString(),
                   onRetry: () => setState(() {}),
                   backgroundColor: Colors.transparent,
@@ -218,8 +220,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
               if (notifications.isEmpty) {
                 return EmptyStateWidget(
                   icon: Icons.notifications_none,
-                  title: 'Henüz bildirim yok',
-                  message: 'Yeni bildirimler burada görünecek',
+                  title: l10n.noNotifications,
+                  message: l10n.notificationsWillAppear,
                   backgroundColor: Colors.transparent,
                   textColor: Colors.white,
                 );
@@ -328,11 +330,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           ),
                         ),
                         const SizedBox(height: AppTheme.spacingXs),
-                        Text(
-                          _formatDate(notification.createdAt),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant.withAlpha(AppTheme.alphaMedium),
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context)!;
+                            return Text(
+                              _formatDate(notification.createdAt, l10n),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant.withAlpha(AppTheme.alphaMedium),
+                              ),
+                            );
+                          }
                         ),
                       ],
                     ),
@@ -372,24 +379,24 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime date, AppLocalizations l10n) {
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
         if (difference.inMinutes == 0) {
-          return 'Az önce';
+          return l10n.justNow;
         }
-        return '${difference.inMinutes} dakika önce';
+        return '${difference.inMinutes} ${l10n.minutesAgo}';
       }
-      return '${difference.inHours} saat önce';
+      return '${difference.inHours} ${l10n.hoursAgo}';
     } else if (difference.inDays == 1) {
-      return 'Dün';
+      return l10n.yesterday;
     } else if (difference.inDays < 7) {
-      return '${difference.inDays} gün önce';
+      return '${difference.inDays} ${l10n.daysAgo}';
     } else {
-      return DateFormat('dd MMM yyyy', 'tr_TR').format(date);
+      return DateFormat('dd MMM yyyy').format(date);
     }
   }
 }
