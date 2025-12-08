@@ -23,6 +23,14 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Tüm Java derleme görevlerini Java 17'ye zorla
+subprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17.toString()
+        targetCompatibility = JavaVersion.VERSION_17.toString()
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

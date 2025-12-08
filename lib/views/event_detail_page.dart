@@ -77,10 +77,12 @@ class _EventDetailPageState extends State<EventDetailPage> {
       
       if (croppedFile != null) {
         setState(() { isUploading = true; });
-        newPhotoFile = File(croppedFile.path);
+        // Guard clause: Yerel değişken kullanarak null safety sağla
+        final file = File(croppedFile.path);
+        newPhotoFile = file;
         final fileName = 'event_${event.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final ref = FirebaseStorage.instance.ref().child('event_photos').child(fileName);
-        await ref.putFile(newPhotoFile!);
+        await ref.putFile(file);
         uploadedPhotoUrl = await ref.getDownloadURL();
         setState(() { isUploading = false; });
       }

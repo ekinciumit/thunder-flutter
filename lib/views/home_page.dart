@@ -11,6 +11,7 @@ import 'private_chat_page.dart';
 import 'notifications_page.dart';
 import '../services/notification_service.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import '../models/chat_model.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
@@ -77,16 +78,14 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _navigateToChat(String chatId) async {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
     final currentUser = authViewModel.user;
     if (currentUser == null) return;
 
     try {
-      // Chat dokümanını al
-      final chatDoc = await FirebaseFirestore.instance.collection('chats').doc(chatId).get();
-      if (!chatDoc.exists) return;
-
-      final chatData = chatDoc.data()!;
-      final chat = ChatModel.fromMap(chatData, chatId);
+      // Clean Architecture: ChatViewModel üzerinden chat'i al
+      final chat = await chatViewModel.getChatById(chatId);
+      if (chat == null) return;
 
       if (chat.type == ChatType.private) {
         // Diğer kullanıcıyı bul

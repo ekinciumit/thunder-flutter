@@ -4,9 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../models/event_model.dart';
-import 'dart:math';
 import '../views/event_detail_page.dart';
-import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
@@ -24,25 +22,14 @@ class EventListView extends StatefulWidget {
 }
 
 class _EventListViewState extends State<EventListView> {
-  String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  final Map<String, double> _distanceCache = {};
   String? locationHint;
+  Position? userPosition; // Konum alma için gerekli
 
-  // Kategori filtresi
+  // Kategori listesi (UI için)
   final List<String> categories = [
     'Tümü', 'Müzik', 'Spor', 'Yemek', 'Sanat', 'Parti', 'Teknoloji', 'Doğa', 'Eğitim', 'Oyun', 'Diğer'
   ];
-  String selectedCategory = 'Tümü';
-
-  // Tarih aralığı filtresi
-  DateTime? startDate;
-  DateTime? endDate;
-
-  // Mesafe filtresi (km)
-  double selectedDistance = 10; // Varsayılan 10 km
-  Position? userPosition;
-  bool isDistanceFilterEnabled = false;
 
   Map<String, String> iconFiles = {
     'Müzik': 'assets/icons/music.png',
@@ -62,22 +49,17 @@ class _EventListViewState extends State<EventListView> {
   @override
   void initState() {
     super.initState();
-    // Konum otomatik alınmıyor - kullanıcı "Konumuma en yakın etkinlikleri bul" butonuna tıkladığında alınacak
-    // Sayfa yenilendiğinde (widget yeniden oluşturulduğunda) konum filtresini sıfırla
-    _resetLocationFilter();
     _loadCategoryIcons();
+    // Widget oluşturulduğunda konum filtresini sıfırla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final eventViewModel = Provider.of<EventViewModel>(context, listen: false);
+      eventViewModel.resetLocationFilter();
+      userPosition = null;
+      locationHint = null;
+    });
   }
 
-  /// Konum filtresini sıfırla
-  /// Sayfa yenilendiğinde veya kullanıcı istediğinde çağrılır
-  void _resetLocationFilter() {
-    isDistanceFilterEnabled = false;
-    userPosition = null;
-    locationHint = null;
-    _distanceCache.clear(); // Mesafe cache'ini de temizle
-  }
-
-  Future<void> _getUserLocation() async {
+  Future<void> _getUserLocation(EventViewModel eventViewModel) async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -103,7 +85,12 @@ class _EventListViewState extends State<EventListView> {
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
       if (!mounted) return;
-      setState(() { userPosition = pos; locationHint = null; });
+      setState(() { 
+        userPosition = pos; 
+        locationHint = null; 
+      });
+      // ViewModel'e konumu bildir
+      eventViewModel.setUserLocation(pos.latitude, pos.longitude);
     } catch (_) {
       if (!mounted) return;
       setState(() { locationHint = 'locationFailed'; });
@@ -124,15 +111,6 @@ class _EventListViewState extends State<EventListView> {
     });
   }
 
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const R = 6371; // km
-    final dLat = (lat2 - lat1) * pi / 180;
-    final dLon = (lon2 - lon1) * pi / 180;
-    final a =
-        0.5 - cos(dLat)/2 + cos(lat1 * pi / 180) * cos(lat2 * pi / 180) * (1 - cos(dLon)) / 2;
-    return R * 2 * asin(sqrt(a));
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -146,53 +124,18 @@ class _EventListViewState extends State<EventListView> {
     final eventViewModel = Provider.of<EventViewModel>(context);
     final authViewModel = Provider.of<AuthViewModel>(context);
     final currentUser = authViewModel.user;
-    final events = eventViewModel.events;
+    
+    // Following ID'lerini ViewModel'e set et (değişiklik varsa)
     final followingIds = currentUser?.following ?? [];
-
-    // Filtreleme
-    final filteredEvents = events.where((event) {
-      final query = _searchQuery.toLowerCase();
-      final matchesSearch = event.title.toLowerCase().contains(query) ||
-          event.description.toLowerCase().contains(query) ||
-          event.address.toLowerCase().contains(query);
-      final matchesCategory = selectedCategory == 'Tümü' || event.category == selectedCategory;
-      final matchesDate = (startDate == null || event.datetime.isAfter(startDate!.subtract(const Duration(days: 1)))) &&
-          (endDate == null || event.datetime.isBefore(endDate!.add(const Duration(days: 1))));
-      bool matchesDistance = true;
-      if (isDistanceFilterEnabled &&
-          userPosition != null &&
-          event.location.latitude != 0 &&
-          event.location.longitude != 0) {
-        final distance = _calculateDistance(
-          userPosition!.latitude,
-          userPosition!.longitude,
-          event.location.latitude,
-          event.location.longitude,
-        );
-        matchesDistance = distance <= selectedDistance;
-      }
-      return matchesSearch && matchesCategory && matchesDate && matchesDistance;
-    }).toList();
-
-    // Takip edilenlerin etkinliklerini öne çıkar
-    filteredEvents.sort((a, b) {
-      final aIsFollowing = followingIds.contains(a.createdBy);
-      final bIsFollowing = followingIds.contains(b.createdBy);
-      
-      // Takip edilenlerin etkinlikleri önce gelsin
-      if (aIsFollowing && !bIsFollowing) return -1;
-      if (!aIsFollowing && bIsFollowing) return 1;
-
-    // Mesafeye göre sıralama (sadece konum alındıysa ve mesafe filtresi aktifse)
-    if (userPosition != null && isDistanceFilterEnabled) {
-        final da = _calculateDistance(userPosition!.latitude, userPosition!.longitude, a.location.latitude, a.location.longitude);
-        final db = _calculateDistance(userPosition!.latitude, userPosition!.longitude, b.location.latitude, b.location.longitude);
-        return da.compareTo(db);
+    if (followingIds.isNotEmpty) {
+      // Sadece değişiklik varsa güncelle (sonsuz döngüyü önle)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        eventViewModel.setFollowingIds(followingIds);
+      });
     }
-      
-      // Tarihe göre sıralama (yakın tarihli etkinlikler önce)
-      return a.datetime.compareTo(b.datetime);
-    });
+
+    // Filtrelenmiş etkinlikleri ViewModel'den al (memoized)
+    final filteredEvents = eventViewModel.getFilteredEvents();
 
     return AppGradientContainer(
       gradientColors: AppTheme.gradientPrimary,
@@ -235,7 +178,7 @@ class _EventListViewState extends State<EventListView> {
                             color: theme.colorScheme.primary,
                             size: 20,
                           ),
-                          suffixIcon: _searchQuery.isNotEmpty
+                          suffixIcon: eventViewModel.searchQuery.isNotEmpty
                               ? IconButton(
                                   icon: Icon(
                                     Icons.clear_rounded,
@@ -243,10 +186,8 @@ class _EventListViewState extends State<EventListView> {
                                     size: 20,
                                   ),
                                   onPressed: () {
-                                    setState(() {
-                                      _searchQuery = '';
-                                      _searchController.clear();
-                                    });
+                                    _searchController.clear();
+                                    eventViewModel.setSearchQuery('');
                                   },
                                 )
                               : null,
@@ -260,9 +201,7 @@ class _EventListViewState extends State<EventListView> {
                           fontWeight: FontWeight.w500,
                         ),
                         onChanged: (value) {
-                          setState(() {
-                            _searchQuery = value;
-                          });
+                          eventViewModel.setSearchQuery(value);
                         },
                       ),
                     ),
@@ -280,11 +219,11 @@ class _EventListViewState extends State<EventListView> {
                             ),
                           ),
                           builder: (context) {
-                            String tempSelectedCategory = selectedCategory;
-                            DateTime? tempStartDate = startDate;
-                            DateTime? tempEndDate = endDate;
-                            double tempSelectedDistance = selectedDistance;
-                            bool tempIsDistanceFilterEnabled = isDistanceFilterEnabled;
+                            String tempSelectedCategory = eventViewModel.selectedCategory;
+                            DateTime? tempStartDate = eventViewModel.startDate;
+                            DateTime? tempEndDate = eventViewModel.endDate;
+                            double tempSelectedDistance = eventViewModel.selectedDistance;
+                            bool tempIsDistanceFilterEnabled = eventViewModel.isDistanceFilterEnabled;
                             return Container(
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.surface,
@@ -434,17 +373,16 @@ class _EventListViewState extends State<EventListView> {
                                       child: ElevatedButton.icon(
                                         onPressed: () async {
                                           // Konum al ve mesafe filtresini aktif et - otomatik uygula
-                                          await _getUserLocation();
+                                          await _getUserLocation(eventViewModel);
                                           if (!context.mounted) return;
                                           if (userPosition != null) {
-                                            // Filtreleri otomatik uygula ve modal'ı kapat
-                                            setState(() {
-                                              isDistanceFilterEnabled = true;
-                                              selectedCategory = tempSelectedCategory;
-                                              startDate = tempStartDate;
-                                              endDate = tempEndDate;
-                                              selectedDistance = tempSelectedDistance;
-                                            });
+                                            // Filtreleri ViewModel'e uygula
+                                            eventViewModel.setCategory(tempSelectedCategory);
+                                            eventViewModel.setDateRange(start: tempStartDate, end: tempEndDate);
+                                            eventViewModel.setDistanceFilter(
+                                              enabled: true,
+                                              distance: tempSelectedDistance,
+                                            );
                                             // Modal'ı güvenli şekilde kapat
                                             if (Navigator.canPop(context)) {
                                               Navigator.of(context).pop();
@@ -523,13 +461,13 @@ class _EventListViewState extends State<EventListView> {
                                         Expanded(
                                           child: ElevatedButton(
                                             onPressed: () {
-                                              setState(() {
-                                                selectedCategory = tempSelectedCategory;
-                                                startDate = tempStartDate;
-                                                endDate = tempEndDate;
-                                                selectedDistance = tempSelectedDistance;
-                                                isDistanceFilterEnabled = tempIsDistanceFilterEnabled;
-                                              });
+                                              // Filtreleri ViewModel'e uygula
+                                              eventViewModel.setCategory(tempSelectedCategory);
+                                              eventViewModel.setDateRange(start: tempStartDate, end: tempEndDate);
+                                              eventViewModel.setDistanceFilter(
+                                                enabled: tempIsDistanceFilterEnabled,
+                                                distance: tempSelectedDistance,
+                                              );
                                               if (Navigator.canPop(context)) {
                                                 Navigator.of(context).pop();
                                               }
@@ -628,20 +566,14 @@ class _EventListViewState extends State<EventListView> {
                       ? EmptyStateWidget(
                           icon: Icons.event_busy,
                           title: l10n.noEventsFoundTitle,
-                          message: _searchQuery.isNotEmpty
+                          message: eventViewModel.searchQuery.isNotEmpty
                               ? l10n.noEventsFoundSearch
                               : l10n.noEventsFoundEmpty,
-                          actionText: _searchQuery.isNotEmpty ? l10n.clearFilters : null,
-                          onAction: _searchQuery.isNotEmpty
+                          actionText: eventViewModel.searchQuery.isNotEmpty ? l10n.clearFilters : null,
+                          onAction: eventViewModel.searchQuery.isNotEmpty
                               ? () {
-                                  setState(() {
-                                    _searchQuery = '';
-                                    _searchController.clear();
-                                    selectedCategory = 'Tümü';
-                                    startDate = null;
-                                    endDate = null;
-                                    isDistanceFilterEnabled = false;
-                                  });
+                                  _searchController.clear();
+                                  eventViewModel.resetFilters();
                                 }
                               : null,
                         )
@@ -683,57 +615,63 @@ class _EventListViewState extends State<EventListView> {
                               );
                             }
                             final event = filteredEvents[index];
-                            final colorScheme = _getCategoryColorScheme(event.category);
-                            double? distanceKm;
-                            if (userPosition != null && event.location.latitude != 0 && event.location.longitude != 0) {
-                              distanceKm = _distanceCache[event.id];
-                              if (distanceKm == null) {
-                              distanceKm = _calculateDistance(
-                                userPosition!.latitude,
-                                userPosition!.longitude,
-                                event.location.latitude,
-                                event.location.longitude,
-                              );
-                                _distanceCache[event.id] = distanceKm;
-                              }
-                            }
+                            // Mesafe hesaplama ViewModel'den
+                            final distanceKm = eventViewModel.getDistanceForEvent(event);
                             return AppCard(
-                              borderRadius: 24,
-                              gradientColors: [
-                                colorScheme['primary']!.withAlpha(25),
-                                colorScheme['secondary']!.withAlpha(20),
-                                colorScheme['accent']!.withAlpha(15),
-                                Colors.white.withAlpha(30),
-                              ],
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colorScheme['primary']!.withAlpha(40),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
+                              borderRadius: 20,
+                              enableGlassmorphism: true,
+                              blurStrength: 15,
+                              glassOpacity: 0.08,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty)
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: CachedNetworkImage(
-                                        imageUrl: event.coverPhotoUrl!,
-                                        height: 160,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) => Container(
-                                          height: 160,
-                                          width: double.infinity,
-                                          alignment: Alignment.center,
-                                          child: const CircularProgressIndicator(),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.25),
+                                          width: 1.5,
                                         ),
-                                        errorWidget: (context, url, error) => Container(
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.2),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(15),
+                                        child: CachedNetworkImage(
+                                          imageUrl: event.coverPhotoUrl!,
                                           height: 160,
                                           width: double.infinity,
-                                          color: colorScheme['primary']!.withAlpha(20),
-                                          child: Icon(Icons.broken_image, size: 48, color: colorScheme['primary']!.withAlpha(100)),
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) => Container(
+                                            height: 160,
+                                            width: double.infinity,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(alpha: 0.1),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white.withValues(alpha: 0.7),
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                          errorWidget: (context, url, error) => Container(
+                                            height: 160,
+                                            width: double.infinity,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(alpha: 0.1),
+                                            ),
+                                            child: Icon(
+                                              Icons.broken_image_rounded, 
+                                              size: 48, 
+                                              color: Colors.white.withValues(alpha: 0.5),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -744,8 +682,16 @@ class _EventListViewState extends State<EventListView> {
                                       children: [
                                         Row(
                                           children: [
-                                            CircleAvatar(
-                                              backgroundColor: colorScheme['primary']!.withAlpha(40),
+                                            Container(
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(alpha: 0.2),
+                                                borderRadius: BorderRadius.circular(14),
+                                                border: Border.all(
+                                                  color: Colors.white.withValues(alpha: 0.3),
+                                                  width: 1,
+                                                ),
+                                              ),
                                               child: _getCategoryIcon(event.category),
                                             ),
                                             const SizedBox(width: 12),
@@ -754,102 +700,139 @@ class _EventListViewState extends State<EventListView> {
                                                 event.title,
                                                 style: theme.textTheme.titleLarge?.copyWith(
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.white, // Metin rengini beyaz yap
+                                                  color: Colors.white,
                                                   shadows: [
-                                                    const Shadow(
-                                                      blurRadius: 2.0,
-                                                      color: Colors.black54,
-                                                      offset: Offset(1.0, 1.0),
+                                                    Shadow(
+                                                      blurRadius: 8.0,
+                                                      color: Colors.black.withValues(alpha: 0.5),
+                                                      offset: const Offset(0, 2),
                                                     ),
                                                   ],
                                                 ),
                                               ),
                                             ),
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                               decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  colors: [colorScheme['primary']!, colorScheme['secondary']!],
-                                                ),
+                                                color: Colors.white.withValues(alpha: 0.25),
                                                 borderRadius: BorderRadius.circular(20),
+                                                border: Border.all(
+                                                  color: Colors.white.withValues(alpha: 0.4),
+                                                  width: 1,
+                                                ),
                                               ),
                                               child: Text(
                                                 event.category,
                                                 style: theme.textTheme.bodySmall?.copyWith(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.w600,
+                                                  letterSpacing: 0.5,
                                                 ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 10),
                                         Text(
                                           event.description,
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.bodyMedium?.copyWith(
-                                            color: Colors.white.withValues(alpha: 0.9), // Metin rengini hafif şeffaf beyaz yap
+                                            color: Colors.white.withValues(alpha: 0.95),
+                                            height: 1.4,
                                             shadows: [
-                                              const Shadow(
-                                                blurRadius: 2.0,
-                                                color: Colors.black45,
-                                                offset: Offset(1.0, 1.0),
+                                              Shadow(
+                                                blurRadius: 6.0,
+                                                color: Colors.black.withValues(alpha: 0.4),
+                                                offset: const Offset(0, 1),
                                               ),
                                             ],
                                           ),
                                         ),
-                                        const SizedBox(height: 12),
-                                        Row(
-                                          children: [
-                                            Icon(Icons.calendar_today, size: 18, color: Colors.white), // İkon rengini beyaz yap
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              '${event.datetime.day}.${event.datetime.month}.${event.datetime.year} - ${event.datetime.hour.toString().padLeft(2, '0')}:${event.datetime.minute.toString().padLeft(2, '0')}',
-                                              style: theme.textTheme.bodySmall?.copyWith(
-                                                color: Colors.white, // Metin rengini beyaz yap
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                        const SizedBox(height: 14),
+                                        // Info row with glass-style pills
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Colors.white.withValues(alpha: 0.2),
+                                              width: 1,
                                             ),
-                                            const Spacer(),
-                                            Icon(Icons.people, size: 18, color: Colors.white), // İkon rengini beyaz yap
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              '${event.participants.length}/${event.quota}',
-                                              style: theme.textTheme.bodySmall?.copyWith(
-                                                color: Colors.white, // Metin rengini beyaz yap
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            Icon(Icons.location_on, size: 18, color: Colors.white), // İkon rengini beyaz yap
-                                            const SizedBox(width: 6),
-                                            Expanded(
-                                              child: Text(
-                                                event.address,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.calendar_today_rounded, size: 16, color: Colors.white.withValues(alpha: 0.9)),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '${event.datetime.day}.${event.datetime.month}.${event.datetime.year} - ${event.datetime.hour.toString().padLeft(2, '0')}:${event.datetime.minute.toString().padLeft(2, '0')}',
                                                 style: theme.textTheme.bodySmall?.copyWith(
-                                                  color: Colors.white, // Metin rengini beyaz yap
+                                                  color: Colors.white,
                                                   fontWeight: FontWeight.w600,
                                                 ),
-                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                            ),
-                                            if (distanceKm != null)
-                                              Padding(
-                                                padding: const EdgeInsets.only(left: 8.0),
-                                                child: Text(
-                                                  '${l10n.distanceDisplay}: ${distanceKm.toStringAsFixed(1)} km',
-                                                  style: theme.textTheme.bodySmall?.copyWith(
-                                                    color: Colors.white, // Metin rengini beyaz yap
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
+                                              const Spacer(),
+                                              Icon(Icons.people_rounded, size: 16, color: Colors.white.withValues(alpha: 0.9)),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '${event.participants.length}/${event.quota}',
+                                                style: theme.textTheme.bodySmall?.copyWith(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
-                                          ],
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Colors.white.withValues(alpha: 0.2),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.location_on_rounded, size: 16, color: Colors.white.withValues(alpha: 0.9)),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  event.address,
+                                                  style: theme.textTheme.bodySmall?.copyWith(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (distanceKm != null)
+                                                Container(
+                                                  margin: const EdgeInsets.only(left: 8),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withValues(alpha: 0.25),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(
+                                                      color: Colors.white.withValues(alpha: 0.3),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    '${distanceKm.toStringAsFixed(1)} km',
+                                                    style: theme.textTheme.bodySmall?.copyWith(
+                                                      color: Colors.white,
+                                                      fontWeight: FontWeight.w700,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -883,90 +866,16 @@ class _EventListViewState extends State<EventListView> {
     }
   }
 
-  // Helper method to get color scheme based on category with better contrast
-  Map<String, Color> _getCategoryColorScheme(String category) {
-    switch (category) {
-      case 'Müzik':
-        return {
-          'primary': const Color(0xFF7C3AED), // Deep purple with better contrast
-          'secondary': const Color(0xFFA855F7), // Lighter purple
-          'accent': const Color(0xFF8B5CF6), // Purple accent
-          'text': const Color(0xFF1C1B1F), // High contrast text
-        };
-      case 'Spor':
-        return {
-          'primary': const Color(0xFF2563EB), // Blue with better contrast
-          'secondary': const Color(0xFF3B82F6), // Lighter blue
-          'accent': const Color(0xFF60A5FA), // Blue accent
-          'text': const Color(0xFF1C1B1F),
-        };
-      case 'Yemek':
-        return {
-          'primary': const Color(0xFFEA580C), // Orange with better contrast
-          'secondary': const Color(0xFFFB923C), // Lighter orange
-          'accent': const Color(0xFFF97316), // Orange accent
-          'text': const Color(0xFF1C1B1F),
-        };
-      case 'Sanat':
-        return {
-          'primary': const Color(0xFFDC2626), // Red with better contrast
-          'secondary': const Color(0xFFEF4444), // Lighter red
-          'accent': const Color(0xFFF87171), // Red accent
-          'text': const Color(0xFF1C1B1F),
-        };
-      case 'Parti':
-        return {
-          'primary': const Color(0xFF059669), // Teal with better contrast
-          'secondary': const Color(0xFF10B981), // Lighter teal
-          'accent': const Color(0xFF34D399), // Teal accent
-          'text': const Color(0xFF1C1B1F),
-        };
-      case 'Teknoloji':
-        return {
-          'primary': const Color(0xFF4F46E5), // Indigo with better contrast
-          'secondary': const Color(0xFF6366F1), // Lighter indigo
-          'accent': const Color(0xFF818CF8), // Indigo accent
-          'text': const Color(0xFF1C1B1F),
-        };
-      case 'Doğa':
-        return {
-          'primary': const Color(0xFF16A34A), // Green with better contrast
-          'secondary': const Color(0xFF22C55E), // Lighter green
-          'accent': const Color(0xFF4ADE80), // Green accent
-          'text': const Color(0xFF1C1B1F),
-        };
-      case 'Eğitim':
-        return {
-          'primary': const Color(0xFF92400E), // Brown with better contrast
-          'secondary': const Color(0xFFB45309), // Lighter brown
-          'accent': const Color(0xFFD97706), // Brown accent
-          'text': const Color(0xFF1C1B1F),
-        };
-      case 'Oyun':
-        return {
-          'primary': const Color(0xFF7C2D12), // Dark purple with better contrast
-          'secondary': const Color(0xFF991B1B), // Lighter purple
-          'accent': const Color(0xFFB91C1C), // Purple accent
-          'text': const Color(0xFF1C1B1F),
-        };
-      default:
-        return {
-          'primary': const Color(0xFF6B7280), // Gray with better contrast
-          'secondary': Colors.grey,
-          'accent': Colors.grey,
-        };
-    }
-  }
-
   Widget _getCategoryIcon(String category) {
     if (categoryIconImages.containsKey(category)) {
       return Image(
         image: categoryIconImages[category]!,
         width: 24,
         height: 24,
+        color: Colors.white,
       );
     }
-    return Icon(Icons.category, size: 24, color: _getCategoryColorScheme(category)['primary']);
+    return const Icon(Icons.category, size: 24, color: Colors.white);
   }
 
   void _goToEventDetail(EventModel event) {

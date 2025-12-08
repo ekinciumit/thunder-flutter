@@ -8,10 +8,6 @@ import 'l10n/app_localizations.dart';
 import 'firebase_options.dart';
 import 'features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'features/event/presentation/viewmodels/event_viewmodel.dart';
-import 'features/event/domain/repositories/event_repository.dart';
-import 'features/event/data/repositories/event_repository_impl.dart';
-import 'features/chat/domain/repositories/chat_repository.dart';
-import 'features/chat/data/repositories/chat_repository_impl.dart';
 import 'services/language_service.dart';
 import 'services/theme_service.dart';
 import 'services/settings_service.dart';
@@ -22,9 +18,6 @@ import 'views/auth_page.dart';
 import 'views/complete_profile_page.dart';
 import 'services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'core/di/service_locator.dart';
-import 'features/auth/data/repositories/auth_repository_impl.dart';
-import 'features/auth/domain/repositories/auth_repository.dart';
 
 // Arka plan bildirimleri için handler (üst düzey bir fonksiyon olmalı)
 @pragma('vm:entry-point')
@@ -40,40 +33,7 @@ void main() async {
   );
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   
-  // Service Locator'ı başlat ve servisleri kaydet (async, uygulama başlamasını engellemez)
-  unawaited(_setupServiceLocator());
-  
   runApp(const MyApp());
-}
-
-/// Service Locator'ı başlatır ve tüm servisleri kaydeder
-/// 
-/// Clean Architecture: Repository'ler ve servisler Service Locator'a kaydediliyor
-Future<void> _setupServiceLocator() async {
-  final sl = ServiceLocator();
-  
-  // Language servisini kaydet
-  sl.registerSingleton<LanguageService>(LanguageService());
-  
-  // Clean Architecture: Repository'leri kaydet
-  try {
-    final authRepository = await createAuthRepository();
-    sl.registerSingleton<AuthRepository>(authRepository);
-    
-    final eventRepository = await createEventRepository();
-    sl.registerSingleton<EventRepository>(eventRepository);
-    
-    final chatRepository = await createChatRepository();
-    sl.registerSingleton<ChatRepository>(chatRepository);
-    
-    if (kDebugMode) {
-      debugPrint('✅ Service Locator: Tüm repository\'ler kaydedildi');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('⚠️ Service Locator: Repository kayıt hatası: $e');
-    }
-  }
 }
 
 

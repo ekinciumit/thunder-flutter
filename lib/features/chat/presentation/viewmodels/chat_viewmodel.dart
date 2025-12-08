@@ -19,6 +19,7 @@ import '../../domain/usecases/send_file_message_usecase.dart';
 import '../../domain/usecases/forward_message_usecase.dart';
 import '../../domain/usecases/search_messages_usecase.dart';
 import '../../domain/usecases/search_all_messages_usecase.dart';
+import '../../domain/usecases/get_chat_by_id_usecase.dart';
 
 /// ChatViewModel - Clean Architecture Implementation
 /// 
@@ -48,6 +49,7 @@ class ChatViewModel extends ChangeNotifier {
   late final ForwardMessageUseCase _forwardMessageUseCase;
   late final SearchMessagesUseCase _searchMessagesUseCase;
   late final SearchAllMessagesUseCase _searchAllMessagesUseCase;
+  late final GetChatByIdUseCase _getChatByIdUseCase;
 
   ChatViewModel({
     required ChatRepository chatRepository,
@@ -74,6 +76,7 @@ class ChatViewModel extends ChangeNotifier {
     _forwardMessageUseCase = ForwardMessageUseCase(_chatRepository);
     _searchMessagesUseCase = SearchMessagesUseCase(_chatRepository);
     _searchAllMessagesUseCase = SearchAllMessagesUseCase(_chatRepository);
+    _getChatByIdUseCase = GetChatByIdUseCase(_chatRepository);
   }
 
   /// İki kullanıcı için benzersiz chatId üretir
@@ -508,6 +511,29 @@ class ChatViewModel extends ChangeNotifier {
       error = e.toString();
       notifyListeners();
       return [];
+    }
+  }
+
+  /// Chat ID'ye göre chat getir
+  /// 
+  /// Clean Architecture: UseCase kullanır
+  Future<ChatModel?> getChatById(String chatId) async {
+    try {
+      final result = await _getChatByIdUseCase(chatId);
+      return result.fold(
+        (failure) {
+          error = failure.message;
+          notifyListeners();
+          return null;
+        },
+        (chat) {
+          return chat;
+        },
+      );
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+      return null;
     }
   }
 }

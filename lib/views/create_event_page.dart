@@ -211,11 +211,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
   }
 
   Future<void> _uploadCoverPhoto() async {
-    if (coverPhotoFile == null) return;
+    // Guard clause: Null safety için yerel değişkene ata
+    final file = coverPhotoFile;
+    if (file == null) return;
+    
     setState(() { isUploading = true; });
     final fileName = 'event_cover_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final ref = FirebaseStorage.instance.ref().child('event_covers').child(fileName);
-    await ref.putFile(coverPhotoFile!);
+    await ref.putFile(file);
     final url = await ref.getDownloadURL();
     setState(() {
       uploadedPhotoUrl = url;
@@ -741,10 +744,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         OutlinedButton.icon(
                           onPressed: _pickDateTime,
                           icon: const Icon(Icons.calendar_today),
-                          label: Text(
-                            selectedDateTime == null
-                                ? l10n.selectDateTime
-                                : '${selectedDateTime!.day}.${selectedDateTime!.month}.${selectedDateTime!.year} - ${selectedDateTime!.hour.toString().padLeft(2, '0')}:${selectedDateTime!.minute.toString().padLeft(2, '0')}',
+                          label: Builder(
+                            builder: (context) {
+                              final dt = selectedDateTime;
+                              if (dt == null) return Text(l10n.selectDateTime);
+                              return Text('${dt.day}.${dt.month}.${dt.year} - ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}');
+                            },
                           ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
@@ -766,9 +771,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 FilledButton.icon(
                   onPressed: isLocating ? null : _selectLocationOnMap,
                   icon: const Icon(Icons.location_on),
-                  label: Text(selectedLatLng == null
-                      ? l10n.selectLocation
-                      : '${l10n.locationSelected}: (${selectedLatLng!.latitude.toStringAsFixed(4)}, ${selectedLatLng!.longitude.toStringAsFixed(4)})'),
+                  label: Builder(
+                    builder: (context) {
+                      final loc = selectedLatLng;
+                      if (loc == null) return Text(l10n.selectLocation);
+                      return Text('${l10n.locationSelected}: (${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)})');
+                    },
+                  ),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColorConfig.primaryColor,
                     foregroundColor: Colors.white,
@@ -797,16 +806,18 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             );
                             return;
                           }
-                          // Tarih kontrolü
-                          if (selectedDateTime == null) {
+                          // Guard clause: Tarih kontrolü (yerel değişkene ata)
+                          final dateTime = selectedDateTime;
+                          if (dateTime == null) {
                             ModernSnackbar.showError(
                               context,
                               l10n.selectEventDateTime,
                             );
                             return;
                           }
-                          // Konum kontrolü
-                          if (selectedLatLng == null) {
+                          // Guard clause: Konum kontrolü (yerel değişkene ata)
+                          final latLng = selectedLatLng;
+                          if (latLng == null) {
                             ModernSnackbar.showError(
                               context,
                               l10n.selectEventLocation,
@@ -817,9 +828,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             id: '',
                             title: titleController.text.trim(),
                             description: descController.text.trim(),
-                            location: GeoPoint(selectedLatLng!.latitude, selectedLatLng!.longitude),
+                            location: GeoPoint(latLng.latitude, latLng.longitude),
                             address: addressController.text.trim(),
-                            datetime: selectedDateTime!,
+                            datetime: dateTime,
                             quota: int.tryParse(quotaController.text.trim()) ?? 0,
                             createdBy: authViewModel.user?.uid ?? '',
                             participants: [authViewModel.user?.uid ?? ''],

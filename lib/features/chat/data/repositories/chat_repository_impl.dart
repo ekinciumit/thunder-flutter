@@ -23,6 +23,18 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<Either<Failure, ChatModel?>> getChatById(String chatId) async {
+    try {
+      final chat = await _remoteDataSource.getChatById(chatId);
+      return Either.right(chat);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Chat getirilirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
   Future<Either<Failure, ChatModel>> getOrCreatePrivateChat(String userA, String userB) async {
     try {
       final chat = await _remoteDataSource.getOrCreatePrivateChat(userA, userB);
