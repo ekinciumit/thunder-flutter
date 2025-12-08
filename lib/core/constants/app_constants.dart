@@ -1,10 +1,10 @@
-/// Uygulama genelinde kullanılan sabitler
-/// 
-/// Bu sınıf SOLID prensiplerinden Single Responsibility Principle'a uyar:
-/// - Sadece uygulama sabitlerini içerir
-/// - Değişmeyen değerleri merkezi bir yerde toplar
-/// 
-/// ŞU AN: Bu sabitler sadece ekleniyor, mevcut kod çalışmaya devam ediyor
+// Uygulama genelinde kullanılan sabitler
+// 
+// Bu sınıf SOLID prensiplerinden Single Responsibility Principle'a uyar:
+// - Sadece uygulama sabitlerini içerir
+// - Değişmeyen değerleri merkezi bir yerde toplar
+// 
+// ŞU AN: Bu sabitler sadece ekleniyor, mevcut kod çalışmaya devam ediyor
 /// İleride bu sabitleri kullanacağız.
 
 class AppConstants {

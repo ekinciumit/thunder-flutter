@@ -1,10 +1,10 @@
-/// Form ve input doğrulama fonksiyonları
-/// 
-/// Bu sınıf SOLID prensiplerinden Single Responsibility Principle'a uyar:
-/// - Sadece doğrulama (validation) işlemlerinden sorumlu
-/// - Her fonksiyon tek bir şeyi doğrular
-/// 
-/// ŞU AN: Bu fonksiyonlar sadece ekleniyor, mevcut kod çalışmaya devam ediyor
+// Form ve input doğrulama fonksiyonları
+// 
+// Bu sınıf SOLID prensiplerinden Single Responsibility Principle'a uyar:
+// - Sadece doğrulama (validation) işlemlerinden sorumlu
+// - Her fonksiyon tek bir şeyi doğrular
+// 
+// ŞU AN: Bu fonksiyonlar sadece ekleniyor, mevcut kod çalışmaya devam ediyor
 /// İleride bu validators'ları kullanacağız.
 
 import '../constants/app_constants.dart';
