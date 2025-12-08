@@ -9,6 +9,7 @@ import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/modern_components.dart';
+import '../l10n/app_localizations.dart';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -43,13 +44,13 @@ class _ChatListPageState extends State<ChatListPage> {
     }
   }
 
-  String _getChatDisplayName(ChatModel chat, String currentUserId) {
+  String _getChatDisplayName(ChatModel chat, String currentUserId, AppLocalizations l10n) {
     if (chat.type == ChatType.private) {
       final otherParticipant = chat.participants.firstWhere(
         (id) => id != currentUserId,
         orElse: () => '',
       );
-      return chat.participantDetails[otherParticipant]?.name ?? 'Bilinmeyen Kullanıcı';
+      return chat.participantDetails[otherParticipant]?.name ?? l10n.noData;
     }
     return chat.name;
   }
@@ -65,17 +66,19 @@ class _ChatListPageState extends State<ChatListPage> {
     return chat.photoUrl;
   }
 
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final authViewModel = Provider.of<AuthViewModel>(context);
     final currentUser = authViewModel.user;
+    final l10n = AppLocalizations.of(context)!;
     
     if (currentUser == null) {
       return Scaffold(
         body: Center(
           child: Text(
-            'Kullanıcı bilgisi bulunamadı',
+            l10n.noData,
             style: theme.textTheme.bodyLarge,
           ),
         ),
@@ -86,9 +89,10 @@ class _ChatListPageState extends State<ChatListPage> {
       gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        extendBody: true,
         appBar: AppBar(
           title: Text(
-            'Sohbetler',
+            l10n.chat,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 28,
@@ -136,7 +140,9 @@ class _ChatListPageState extends State<ChatListPage> {
             ),
           ],
         ),
-        body: StreamBuilder<List<ChatModel>>(
+        body: Stack(
+          children: [
+            StreamBuilder<List<ChatModel>>(
           stream: Provider.of<ChatViewModel>(context, listen: false).getUserChats(currentUser.uid),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -287,7 +293,7 @@ class _ChatListPageState extends State<ChatListPage> {
                   );
                 }
                 
-                final displayName = _getChatDisplayName(chat, currentUser.uid);
+                final displayName = _getChatDisplayName(chat, currentUser.uid, l10n);
                 final photoUrl = _getChatPhotoUrl(chat, currentUser.uid);
                 
                 return _buildChatItem(
@@ -300,22 +306,8 @@ class _ChatListPageState extends State<ChatListPage> {
               },
             );
           },
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-            onPressed: () {
-            ModernSnackbar.showInfo(
-              context,
-              'Yeni sohbet özelliği yakında eklenecek',
-            );
-          },
-          icon: const Icon(Icons.chat_bubble_rounded),
-          label: const Text('Yeni Sohbet'),
-          backgroundColor: theme.colorScheme.primary,
-          foregroundColor: Colors.white,
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-          ),
+            ),
+          ],
         ),
       ),
     );

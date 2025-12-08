@@ -17,6 +17,7 @@ import '../models/user_model.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 
 class EventDetailPage extends StatefulWidget {
   final EventModel event;
@@ -41,10 +42,11 @@ class _EventDetailPageState extends State<EventDetailPage> {
   }
 
   Future<void> _pickPhoto() async {
+    final l10n = AppLocalizations.of(context)!;
     // Önce galeri veya kamera seçimi göster
     final source = await ModernDialog.showImageSource(
       context: context,
-      title: 'Fotoğraf Seç',
+      title: l10n.selectPhoto,
     );
     
     if (source == null) return;
@@ -60,14 +62,14 @@ class _EventDetailPageState extends State<EventDetailPage> {
         aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
         uiSettings: [
           AndroidUiSettings(
-            toolbarTitle: 'Fotoğrafı Kırp',
+            toolbarTitle: l10n.cropPhoto,
             toolbarColor: theme.colorScheme.primary,
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.ratio16x9,
             lockAspectRatio: false, // Serbest kırpma
           ),
           IOSUiSettings(
-            title: 'Fotoğrafı Kırp',
+            title: l10n.cropPhoto,
             aspectRatioPresets: [CropAspectRatioPreset.ratio16x9],
           ),
         ],
@@ -75,10 +77,12 @@ class _EventDetailPageState extends State<EventDetailPage> {
       
       if (croppedFile != null) {
         setState(() { isUploading = true; });
-        newPhotoFile = File(croppedFile.path);
+        // Guard clause: Yerel değişken kullanarak null safety sağla
+        final file = File(croppedFile.path);
+        newPhotoFile = file;
         final fileName = 'event_${event.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final ref = FirebaseStorage.instance.ref().child('event_photos').child(fileName);
-        await ref.putFile(newPhotoFile!);
+        await ref.putFile(file);
         uploadedPhotoUrl = await ref.getDownloadURL();
         setState(() { isUploading = false; });
       }
@@ -86,6 +90,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
   }
 
   void _showEditDialog(BuildContext context, EventViewModel eventViewModel, EventModel currentEvent) {
+    final l10n = AppLocalizations.of(context)!;
     final titleController = TextEditingController(text: currentEvent.title);
     final descController = TextEditingController(text: currentEvent.description);
     final addressController = TextEditingController(text: currentEvent.address);
@@ -96,7 +101,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Etkinliği Düzenle'),
+          title: Text(l10n.editEvent),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -115,7 +120,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       color: Colors.deepPurple.withAlpha(10),
                     ),
                     child: isUploading
-                        ? Center(child: ModernLoadingWidget(size: 32, message: 'Yükleniyor...', showMessage: false))
+                        ? Center(child: ModernLoadingWidget(size: 32, message: l10n.uploading, showMessage: false))
                         : (uploadedPhotoUrl != null && uploadedPhotoUrl!.isNotEmpty)
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
@@ -133,23 +138,23 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 const SizedBox(height: 16),
                 ModernInputField(
                   controller: titleController,
-                  label: 'Başlık',
+                  label: l10n.eventTitle,
                 ),
                 const SizedBox(height: 8),
                 ModernInputField(
                   controller: descController,
-                  label: 'Açıklama',
+                  label: l10n.eventDescription,
                   maxLines: 2,
                 ),
                 const SizedBox(height: 8),
                 ModernInputField(
                   controller: addressController,
-                  label: 'Adres',
+                  label: l10n.eventAddress,
                 ),
                 const SizedBox(height: 8),
                 ModernInputField(
                   controller: quotaController,
-                  label: 'Kota',
+                  label: l10n.eventQuota,
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 8),
@@ -183,7 +188,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('İptal'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: isUploading ? null : () async {
@@ -200,7 +205,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 if (!mounted) return;
                 navigator.pop();
               },
-              child: const Text('Kaydet'),
+              child: Text(l10n.save),
             ),
           ],
         ),
@@ -213,7 +218,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
     final eventViewModel = Provider.of<EventViewModel>(context);
     final authViewModel = Provider.of<AuthViewModel>(context);
     final userId = authViewModel.user?.uid ?? '';
-    final userName = authViewModel.user?.displayName ?? 'Kullanıcı';
+    final l10n = AppLocalizations.of(context)!;
+    final userName = authViewModel.user?.displayName ?? l10n.user;
     final theme = Theme.of(context);
 
     // Event'i real-time dinle
@@ -225,7 +231,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
             gradientColors: AppTheme.gradientPrimary,
             child: Scaffold(
               appBar: AppBar(title: Text(event.title)),
-              body: Center(child: ModernLoadingWidget(message: 'Yükleniyor...')),
+              body: Center(child: ModernLoadingWidget(message: l10n.loading)),
             ),
           );
         }
@@ -423,7 +429,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                               color: Colors.red.withAlpha((0.15 * 255).toInt()),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Text('Kota Dolu', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+                            child: Text(l10n.quotaFull, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
                           ),
                         const Spacer(),
                         _DistanceToEventWidget(eventLat: currentEvent.location.latitude, eventLng: currentEvent.location.longitude),
@@ -438,7 +444,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                         }
                       },
                       icon: const Icon(Icons.directions),
-                      label: const Text('Rota Oluştur'),
+                      label: Text(l10n.createRoute),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
                         foregroundColor: Colors.white,
@@ -456,10 +462,10 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             color: Colors.grey[300],
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              'Kota Dolu',
-                              style: TextStyle(
+                              l10n.quotaFull,
+                              style: const TextStyle(
                                 color: Colors.grey,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
@@ -474,12 +480,12 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           if (!context.mounted) return;
                             ModernSnackbar.showSuccess(
                               context,
-                              'Katılma isteği geri alındı',
+                              l10n.joinRequestCancelled,
                             );
                         },
                           icon: Icon(Icons.hourglass_empty, color: Colors.orange[700]),
                           label: Text(
-                            'İstek Gönderildi (Geri Al)',
+                            l10n.requestSent,
                             style: TextStyle(
                               color: Colors.orange[700],
                               fontWeight: FontWeight.w600,
@@ -503,11 +509,11 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           if (!context.mounted) return;
                             ModernSnackbar.showSuccess(
                               context,
-                              'Etkinlikten ayrıldınız',
+                              l10n.leftEvent,
                             );
                         },
                         icon: const Icon(Icons.exit_to_app),
-                        label: const Text('Ayrıl'),
+                        label: Text(l10n.leave),
                         style: FilledButton.styleFrom(
                           backgroundColor: Colors.grey,
                           foregroundColor: Colors.white,
@@ -524,11 +530,11 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             if (!context.mounted) return;
                             ModernSnackbar.showSuccess(
                               context,
-                              'Katılma isteği gönderildi. Etkinlik sahibi onayladığında bildirim alacaksınız.',
+                              l10n.joinRequestSent,
                             );
                           },
                           icon: const Icon(Icons.person_add),
-                          label: const Text('Katılma İsteği Gönder'),
+                          label: Text(l10n.sendJoinRequest),
                           style: FilledButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -547,7 +553,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Katılımcılar:', style: theme.textTheme.titleMedium),
+                      Text(l10n.participantsLabel, style: theme.textTheme.titleMedium),
                       const SizedBox(height: 8),
                       _ParticipantChips(
                         participantUids: {
@@ -571,7 +577,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                               Icon(Icons.person_add, color: Colors.orange[700], size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                'Katılma İstekleri (${currentEvent.pendingRequests.length})',
+                                '${l10n.joinRequests} (${currentEvent.pendingRequests.length})',
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   color: Colors.orange[700],
                                   fontWeight: FontWeight.bold,
@@ -604,7 +610,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                     children: [
                                       IconButton(
                                         icon: const Icon(Icons.check, color: Colors.green),
-                                        tooltip: 'Kabul Et',
+                                        tooltip: l10n.accept,
                                         onPressed: () async {
                                           await eventViewModel.approveJoinRequest(currentEvent, uid);
                                           if (!context.mounted) return;
@@ -612,7 +618,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                       ),
                                       IconButton(
                                         icon: const Icon(Icons.close, color: Colors.red),
-                                        tooltip: 'Reddet',
+                                        tooltip: l10n.reject,
                                         onPressed: () async {
                                           await eventViewModel.rejectJoinRequest(currentEvent, uid);
                                           if (!context.mounted) return;
@@ -638,7 +644,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Yorumlar / Sohbet', style: theme.textTheme.titleMedium),
+                      Text(l10n.commentsChat, style: theme.textTheme.titleMedium),
                       const SizedBox(height: 12),
                       if (isOwner || isApproved || isParticipant)
                         _CommentsSection(eventId: currentEvent.id, userId: userId, userName: userName)
@@ -649,9 +655,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
                             color: Colors.grey.withAlpha((0.08 * 255).toInt()),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Sohbeti görmek ve katılmak için etkinliğe katılmalısınız.',
-                            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+                          child: Text(
+                            l10n.mustJoinToChat,
+                            style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -744,8 +750,9 @@ class _CommentsSectionState extends State<_CommentsSection> {
                 return const Center(child: CircularProgressIndicator());
               }
               final docs = snapshot.data?.docs ?? [];
+              final l10n = AppLocalizations.of(context)!;
               if (docs.isEmpty) {
-                return const Center(child: Text('Henüz yorum yok. İlk yorumu sen yaz!'));
+                return Center(child: Text(l10n.noComments));
               }
               // Mesajları timestamp'e göre sırala (zaten orderBy ile geliyor ama emin olmak için)
               final sortedDocs = List.from(docs);
@@ -885,13 +892,18 @@ class _CommentsSectionState extends State<_CommentsSection> {
         Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: _commentController,
-                decoration: InputDecoration(
-                  hintText: 'Yorum yaz...'
-                ),
-                minLines: 1,
-                maxLines: 3,
+              child: Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context)!;
+                  return TextField(
+                    controller: _commentController,
+                    decoration: InputDecoration(
+                      hintText: l10n.writeComment
+                    ),
+                    minLines: 1,
+                    maxLines: 3,
+                  );
+                }
               ),
             ),
             const SizedBox(width: 8),
@@ -938,10 +950,11 @@ class _DistanceToEventWidgetState extends State<_DistanceToEventWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (distanceKm == null) {
-      return const Text('Mesafe hesaplanıyor...', style: TextStyle(color: Colors.blueGrey));
+      return Text(l10n.calculatingDistance, style: const TextStyle(color: Colors.blueGrey));
     }
-    return Text('Etkinliğe uzaklık: ${distanceKm!.toStringAsFixed(2)} km', style: const TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.w600));
+    return Text('${l10n.distanceToEvent} ${distanceKm!.toStringAsFixed(2)} ${l10n.km}', style: const TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.w600));
   }
 }
 
@@ -951,9 +964,10 @@ class _ParticipantChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final currentUserId = Provider.of<AuthViewModel>(context, listen: false).user?.uid ?? '';
     if (participantUids.isEmpty) {
-      return const Text('Katılımcı yok.');
+      return Text(l10n.noParticipants);
     }
     return Wrap(
       spacing: 8,
@@ -967,13 +981,13 @@ class _ParticipantChips extends StatelessWidget {
             );
           }
           if (snapshot.hasError) {
-            return Chip(label: Text('Hata'));
+            return Chip(label: Text(l10n.error));
           }
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return Chip(label: Text(uid.substring(0, 6)));
           }
           final data = snapshot.data!.data() as Map<String, dynamic>;
-          final displayName = data['displayName'] ?? 'Kullanıcı';
+          final displayName = data['displayName'] ?? l10n.user;
           final photoUrl = data['photoUrl'] ?? '';
           return GestureDetector(
             onTap: () {

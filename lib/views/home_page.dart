@@ -11,10 +11,14 @@ import 'private_chat_page.dart';
 import 'notifications_page.dart';
 import '../services/notification_service.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import '../models/chat_model.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
+import '../core/utils/fab_position_helper.dart';
+import '../l10n/app_localizations.dart';
+import 'widgets/app_gradient_container.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -74,16 +78,14 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _navigateToChat(String chatId) async {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
     final currentUser = authViewModel.user;
     if (currentUser == null) return;
 
     try {
-      // Chat dokümanını al
-      final chatDoc = await FirebaseFirestore.instance.collection('chats').doc(chatId).get();
-      if (!chatDoc.exists) return;
-
-      final chatData = chatDoc.data()!;
-      final chat = ChatModel.fromMap(chatData, chatId);
+      // Clean Architecture: ChatViewModel üzerinden chat'i al
+      final chat = await chatViewModel.getChatById(chatId);
+      if (chat == null) return;
 
       if (chat.type == ChatType.private) {
         // Diğer kullanıcıyı bul
@@ -98,7 +100,7 @@ class _HomePageState extends State<HomePage> {
         final otherUser = await authViewModel.fetchUserProfile(otherParticipant);
         final otherUserName = otherUser?.displayName ?? 
                              chat.participantDetails[otherParticipant]?.name ?? 
-                             'Bilinmeyen';
+                             'Unknown';
 
         // Sohbet sayfasına git
         if (mounted) {
@@ -113,7 +115,7 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(
               builder: (context) => PrivateChatPage(
                 currentUserId: currentUser.uid,
-                currentUserName: currentUser.displayName ?? 'Kullanıcı',
+                currentUserName: currentUser.displayName ?? 'User',
                 otherUserId: otherParticipant,
                 otherUserName: otherUserName,
               ),
@@ -123,7 +125,8 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       if (mounted) {
-        ModernSnackbar.showError(context, 'Sohbet açılamadı: $e');
+        final l10n = AppLocalizations.of(context);
+        ModernSnackbar.showError(context, '${l10n?.error ?? "Error"}: $e');
       }
     }
   }
@@ -177,154 +180,205 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          SafeArea(
-            top: false,
-            bottom: false,
-            child: _pages[_selectedIndex],
-          ),
-          // Bildirimler Butonu (Sadece ana sayfada)
-          if (_selectedIndex == 0)
-            Positioned(
-              bottom: 90,
-              right: 16,
-              child: FloatingActionButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                  );
-                },
-                backgroundColor: AppColorConfig.secondaryColor,
-                foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                elevation: 4,
-                child: Badge(
-                  label: _unreadNotificationCount > 0
-                      ? Text(
-                          _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
-                          style: const TextStyle(fontSize: 10),
-                        )
-                      : null,
-                  isLabelVisible: _unreadNotificationCount > 0,
-                  backgroundColor: AppColorConfig.errorColor,
-                  child: const Icon(Icons.notifications_rounded, size: 24),
-                ),
-              ),
+    final l10n = AppLocalizations.of(context)!;
+    
+    return AppGradientContainer(
+      gradientColors: AppTheme.gradientPrimary,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          children: [
+            SafeArea(
+              top: false,
+              bottom: false,
+              child: _pages[_selectedIndex],
             ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).padding.bottom,
-        ),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withAlpha(AppTheme.alphaLight),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-              spreadRadius: 0,
-            ),
-            BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withAlpha(AppTheme.alphaVeryLight),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingXxl,
-            vertical: AppTheme.spacingMd,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavBarIcon(
-                icon: Icons.home_rounded,
-                label: 'Ana Sayfa',
-                selected: _selectedIndex == 0,
-                onTap: () => _onItemTapped(0),
-              ),
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  _NavBarIcon(
-                    icon: Icons.chat_rounded,
-                    label: 'Sohbetler',
-                    selected: _selectedIndex == 1,
-                    onTap: () => _onItemTapped(1),
-                  ),
-                  if (_totalUnreadCount > 0)
-                    Positioned(
-                      right: -2,
-                      top: -2,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColorConfig.errorColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.surface,
-                            width: 2,
-                          ),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        child: Text(
-                          _totalUnreadCount > 99 ? '99+' : _totalUnreadCount.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+            // Bildirimler Butonu (Sadece ana sayfada)
+            if (_selectedIndex == 0)
+              Positioned(
+                bottom: FABPositionHelper.getFABBottomPosition(context, isTopButton: false),
+                right: AppTheme.spacingLg,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(28),
+                  color: AppColorConfig.secondaryColor,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(28),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      child: Badge(
+                        label: _unreadNotificationCount > 0
+                            ? Text(
+                                _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
+                                style: const TextStyle(fontSize: 10),
+                              )
+                            : null,
+                        isLabelVisible: _unreadNotificationCount > 0,
+                        backgroundColor: AppColorConfig.errorColor,
+                        child: const Icon(Icons.notifications_rounded, size: 24, color: Colors.white),
                       ),
                     ),
-                ],
+                  ),
+                ),
               ),
-              _NavBarIcon(
-                icon: Icons.map_rounded,
-                label: 'Harita',
-                selected: _selectedIndex == 2,
-                onTap: () => _onItemTapped(2),
+            // Etkinlik Oluştur Butonu (Sadece ana sayfada)
+            if (_selectedIndex == 0)
+              Positioned(
+                bottom: FABPositionHelper.getFABBottomPosition(context, isTopButton: true),
+                right: AppTheme.spacingLg,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(28),
+                  color: AppColorConfig.primaryColor,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const CreateEventPage()),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(28),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      child: const Icon(Icons.add_rounded, size: 24, color: Colors.white),
+                    ),
+                  ),
+                ),
               ),
-              _NavBarIcon(
-                icon: Icons.person_rounded,
-                label: 'Profil',
-                selected: _selectedIndex == 3,
-                onTap: () => _onItemTapped(3),
+          ],
+        ),
+        bottomNavigationBar: Container(
+          margin: EdgeInsets.fromLTRB(
+            AppTheme.spacingMd, // Sol
+            AppTheme.spacingSm, // Üst
+            AppTheme.spacingMd, // Sağ
+            MediaQuery.of(context).padding.bottom + AppTheme.spacingXs, // Alt (4px)
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColorConfig.primaryColor.withValues(alpha: 0.95),
+                AppColorConfig.secondaryColor.withValues(alpha: 0.95),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+            boxShadow: [
+              BoxShadow(
+                color: AppColorConfig.primaryColor.withValues(alpha: 0.4),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+                spreadRadius: 0,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+                spreadRadius: 0,
+              ),
+              BoxShadow(
+                color: AppColorConfig.primaryColor.withValues(alpha: 0.1),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+                spreadRadius: 0,
               ),
             ],
           ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingXxl,
+                vertical: AppTheme.spacingMd,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _NavBarIcon(
+                    icon: Icons.home_rounded,
+                    label: l10n.home,
+                    selected: _selectedIndex == 0,
+                    onTap: () => _onItemTapped(0),
+                  ),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      _NavBarIcon(
+                        icon: Icons.chat_rounded,
+                        label: l10n.chat,
+                        selected: _selectedIndex == 1,
+                        onTap: () => _onItemTapped(1),
+                      ),
+                      if (_totalUnreadCount > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColorConfig.errorColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.surface,
+                                width: 2,
+                              ),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Text(
+                              _totalUnreadCount > 99 ? '99+' : _totalUnreadCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  _NavBarIcon(
+                    icon: Icons.map_rounded,
+                    label: l10n.map,
+                    selected: _selectedIndex == 2,
+                    onTap: () => _onItemTapped(2),
+                  ),
+                  _NavBarIcon(
+                    icon: Icons.person_rounded,
+                    label: l10n.profile,
+                    selected: _selectedIndex == 3,
+                    onTap: () => _onItemTapped(3),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CreateEventPage()),
-                );
-              },
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              elevation: 4,
-              child: const Icon(Icons.add_rounded, size: 24),
-            )
-          : null,
     );
   }
 }
@@ -382,8 +436,6 @@ class _NavBarIconState extends State<_NavBarIcon> with SingleTickerProviderState
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
     return GestureDetector(
       onTap: widget.onTap,
       child: AnimatedBuilder(
@@ -392,27 +444,28 @@ class _NavBarIconState extends State<_NavBarIcon> with SingleTickerProviderState
           return Transform.scale(
             scale: _scaleAnimation.value,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              width: 64,
+              height: 56,
               decoration: BoxDecoration(
                 color: widget.selected 
-                  ? colorScheme.primary.withValues(alpha: 0.1)
+                  ? Colors.white.withValues(alpha: 0.2)
                   : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
                 border: widget.selected
                   ? Border.all(
-                      color: colorScheme.primary.withValues(alpha: 0.2),
-                      width: 1,
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1.5,
                     )
                   : null,
               ),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     widget.icon,
                     color: widget.selected 
-                      ? colorScheme.primary 
-                      : colorScheme.onSurface.withValues(alpha: 0.6),
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.7),
                     size: 24,
                   ),
                   const SizedBox(height: 4),
@@ -422,9 +475,10 @@ class _NavBarIconState extends State<_NavBarIcon> with SingleTickerProviderState
                       fontSize: 10,
                       fontWeight: widget.selected ? FontWeight.w600 : FontWeight.normal,
                       color: widget.selected 
-                        ? colorScheme.primary 
-                        : colorScheme.onSurface.withValues(alpha: 0.6),
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.7),
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

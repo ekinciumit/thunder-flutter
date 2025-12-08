@@ -13,6 +13,7 @@ import '../core/utils/responsive_helper.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
+import '../l10n/app_localizations.dart';
 import 'widgets/modern_loading_widget.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -169,10 +170,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
   }
 
   Future<void> _pickCoverPhoto() async {
+    final l10n = AppLocalizations.of(context)!;
     // Önce galeri veya kamera seçimi göster
     final source = await ModernDialog.showImageSource(
       context: context,
-      title: 'Fotoğraf Seç',
+      title: l10n.selectPhoto,
     );
     
     if (source == null) return;
@@ -188,14 +190,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
         aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
         uiSettings: [
           AndroidUiSettings(
-            toolbarTitle: 'Fotoğrafı Kırp',
+            toolbarTitle: l10n.cropPhoto,
             toolbarColor: theme.colorScheme.primary,
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.ratio16x9,
             lockAspectRatio: false, // Serbest kırpma
           ),
           IOSUiSettings(
-            title: 'Fotoğrafı Kırp',
+            title: l10n.cropPhoto,
             aspectRatioPresets: [CropAspectRatioPreset.ratio16x9],
           ),
         ],
@@ -209,11 +211,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
   }
 
   Future<void> _uploadCoverPhoto() async {
-    if (coverPhotoFile == null) return;
+    // Guard clause: Null safety için yerel değişkene ata
+    final file = coverPhotoFile;
+    if (file == null) return;
+    
     setState(() { isUploading = true; });
     final fileName = 'event_cover_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final ref = FirebaseStorage.instance.ref().child('event_covers').child(fileName);
-    await ref.putFile(coverPhotoFile!);
+    await ref.putFile(file);
     final url = await ref.getDownloadURL();
     setState(() {
       uploadedPhotoUrl = url;
@@ -263,11 +268,16 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   padding: const EdgeInsets.all(AppTheme.spacingXl),
                   child: Row(
                     children: [
-                      Text(
-                        'Kategori Seç',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Builder(
+                        builder: (ctx) {
+                          final l10n = AppLocalizations.of(ctx)!;
+                          return Text(
+                            l10n.selectCategory,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }
                       ),
                       const Spacer(),
                       IconButton(
@@ -388,10 +398,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
       await showDialog<void>(
         context: context,
         builder: (context) {
-        return StatefulBuilder(
+          return StatefulBuilder(
           builder: (context, setModalState) {
+            final l10n = AppLocalizations.of(context)!;
             return AlertDialog(
-              title: const Text('Konum ve Kategori Seç'),
+              title: Text(l10n.selectLocationAndCategory),
               content: SizedBox(
                 width: 320,
                 height: 420,
@@ -399,7 +410,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   children: [
                     Expanded(
                       child: !iconsLoaded
-                          ? Center(child: ModernLoadingWidget(message: 'Harita yükleniyor...'))
+                          ? Center(child: ModernLoadingWidget(message: l10n.loading))
                           : GoogleMap(
                               initialCameraPosition: CameraPosition(target: tempLatLng, zoom: 14),
                               markers: {
@@ -438,7 +449,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   onPressed: () {
                     if (mounted) Navigator.of(context).pop();
                   },
-                  child: const Text('İptal'),
+                  child: Text(l10n.cancel),
                 ),
                 FilledButton(
                   onPressed: () {
@@ -448,7 +459,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     });
                     if (mounted) Navigator.of(context).pop();
                   },
-                  child: const Text('Seç'),
+                  child: Text(l10n.select),
                 ),
               ],
             );
@@ -464,6 +475,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
     final eventViewModel = Provider.of<EventViewModel>(context);
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: SafeArea(
         child: Container(
@@ -557,7 +569,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                                         ),
                                         const SizedBox(height: AppTheme.spacingMd),
                                         Text(
-                                          'Kapak Fotoğrafı Ekle',
+                                          l10n.addCoverPhoto,
                                           style: theme.textTheme.titleMedium?.copyWith(
                                             color: AppColorConfig.primaryColor,
                                             fontWeight: FontWeight.w600,
@@ -565,7 +577,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                                         ),
                                         const SizedBox(height: AppTheme.spacingXs),
                                         Text(
-                                          'Galeri veya kameradan seç',
+                                          l10n.selectFromGalleryOrCamera,
                                           style: theme.textTheme.bodySmall?.copyWith(
                                             color: theme.colorScheme.onSurface.withAlpha(AppTheme.alphaMedium),
                                           ),
@@ -591,7 +603,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                                   ),
                                   const SizedBox(height: AppTheme.spacingMd),
                                   Text(
-                                    'Fotoğraf yükleniyor...',
+                                    l10n.uploadingPhoto,
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w500,
@@ -609,7 +621,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             child: FilledButton.icon(
                               onPressed: _pickCoverPhoto,
                               icon: const Icon(Icons.edit, size: 18),
-                              label: const Text('Değiştir'),
+                              label: Text(l10n.change),
                               style: FilledButton.styleFrom(
                                 backgroundColor: Colors.white.withAlpha(AppTheme.alphaAlmostOpaque),
                                 foregroundColor: AppColorConfig.primaryColor,
@@ -644,7 +656,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       children: [
                         ModernInputField(
                           controller: titleController,
-                          label: 'Başlık',
+                          label: l10n.eventTitle,
                           textInputAction: TextInputAction.next,
                           validator: FormValidators.title,
                           prefixIcon: Icon(Icons.title, color: AppColorConfig.primaryColor),
@@ -652,7 +664,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         const SizedBox(height: AppTheme.spacingMd),
                         ModernInputField(
                           controller: descController,
-                          label: 'Açıklama',
+                          label: l10n.eventDescription,
                           textInputAction: TextInputAction.next,
                           maxLines: 3,
                           validator: FormValidators.description,
@@ -661,7 +673,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         const SizedBox(height: AppTheme.spacingMd),
                         ModernInputField(
                           controller: addressController,
-                          label: 'Adres',
+                          label: l10n.eventAddress,
                           textInputAction: TextInputAction.next,
                           validator: FormValidators.address,
                           prefixIcon: Icon(Icons.location_on, color: AppColorConfig.tertiaryColor),
@@ -669,7 +681,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         const SizedBox(height: AppTheme.spacingMd),
                         ModernInputField(
                           controller: quotaController,
-                          label: 'Kota',
+                          label: l10n.eventQuota,
                           textInputAction: TextInputAction.next,
                           keyboardType: TextInputType.number,
                           validator: FormValidators.quota,
@@ -732,10 +744,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         OutlinedButton.icon(
                           onPressed: _pickDateTime,
                           icon: const Icon(Icons.calendar_today),
-                          label: Text(
-                            selectedDateTime == null
-                                ? 'Tarih/Saat seçiniz'
-                                : '${selectedDateTime!.day}.${selectedDateTime!.month}.${selectedDateTime!.year} - ${selectedDateTime!.hour.toString().padLeft(2, '0')}:${selectedDateTime!.minute.toString().padLeft(2, '0')}',
+                          label: Builder(
+                            builder: (context) {
+                              final dt = selectedDateTime;
+                              if (dt == null) return Text(l10n.selectDateTime);
+                              return Text('${dt.day}.${dt.month}.${dt.year} - ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}');
+                            },
                           ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
@@ -757,9 +771,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 FilledButton.icon(
                   onPressed: isLocating ? null : _selectLocationOnMap,
                   icon: const Icon(Icons.location_on),
-                  label: Text(selectedLatLng == null
-                      ? 'Haritadan Konum Seç'
-                      : 'Konum Seçildi: (${selectedLatLng!.latitude.toStringAsFixed(4)}, ${selectedLatLng!.longitude.toStringAsFixed(4)})'),
+                  label: Builder(
+                    builder: (context) {
+                      final loc = selectedLatLng;
+                      if (loc == null) return Text(l10n.selectLocation);
+                      return Text('${l10n.locationSelected}: (${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)})');
+                    },
+                  ),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColorConfig.primaryColor,
                     foregroundColor: Colors.white,
@@ -784,23 +802,25 @@ class _CreateEventPageState extends State<CreateEventPage> {
                           if (_formKey.currentState?.validate() != true) {
                             ModernSnackbar.showError(
                               context,
-                              'Lütfen tüm zorunlu alanları doldurun',
+                              l10n.fillAllFields,
                             );
                             return;
                           }
-                          // Tarih kontrolü
-                          if (selectedDateTime == null) {
+                          // Guard clause: Tarih kontrolü (yerel değişkene ata)
+                          final dateTime = selectedDateTime;
+                          if (dateTime == null) {
                             ModernSnackbar.showError(
                               context,
-                              'Lütfen etkinlik tarihi ve saatini seçin',
+                              l10n.selectEventDateTime,
                             );
                             return;
                           }
-                          // Konum kontrolü
-                          if (selectedLatLng == null) {
+                          // Guard clause: Konum kontrolü (yerel değişkene ata)
+                          final latLng = selectedLatLng;
+                          if (latLng == null) {
                             ModernSnackbar.showError(
                               context,
-                              'Lütfen etkinlik konumunu haritadan seçin',
+                              l10n.selectEventLocation,
                             );
                             return;
                           }
@@ -808,9 +828,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             id: '',
                             title: titleController.text.trim(),
                             description: descController.text.trim(),
-                            location: GeoPoint(selectedLatLng!.latitude, selectedLatLng!.longitude),
+                            location: GeoPoint(latLng.latitude, latLng.longitude),
                             address: addressController.text.trim(),
-                            datetime: selectedDateTime!,
+                            datetime: dateTime,
                             quota: int.tryParse(quotaController.text.trim()) ?? 0,
                             createdBy: authViewModel.user?.uid ?? '',
                             participants: [authViewModel.user?.uid ?? ''],
@@ -822,7 +842,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                           navigator.pop();
                         },
                   icon: const Icon(Icons.add),
-                  label: const Text('Etkinlik Oluştur'),
+                  label: Text(l10n.createEvent),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColorConfig.tertiaryColor,
                     foregroundColor: Colors.white,

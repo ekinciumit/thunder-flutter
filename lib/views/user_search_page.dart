@@ -9,6 +9,7 @@ import 'widgets/app_gradient_container.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
+import '../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class UserSearchPage extends StatefulWidget {
@@ -38,6 +39,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
   Widget build(BuildContext context) {
     final currentUserId = Provider.of<AuthViewModel>(context, listen: false).user?.uid ?? '';
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     
     return AppGradientContainer(
       gradientColors: AppTheme.gradientPrimary,
@@ -72,7 +74,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
                     const SizedBox(width: AppTheme.spacingMd),
                     Expanded(
                       child: Text(
-                        'Kullanıcı Ara',
+                        l10n.searchUsers,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -92,7 +94,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
                   ),
                   child: ModernInputField(
                     controller: _searchController,
-                    hint: 'Kullanıcı ara (isim, e-posta)',
+                    hint: l10n.searchUserPlaceholder,
                     prefixIcon: Icon(
                       Icons.search_rounded,
                       color: AppColorConfig.primaryColor,
@@ -126,16 +128,16 @@ class _UserSearchPageState extends State<UserSearchPage> {
               stream: _userStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
+                      return Center(
                         child: ModernLoadingWidget(
-                          message: 'Kullanıcılar yükleniyor...',
+                          message: l10n.loading,
                         ),
                       );
                     }
 
                     if (snapshot.hasError) {
                       return ErrorStateWidget(
-                        message: 'Kullanıcılar yüklenirken bir hata oluştu',
+                        message: l10n.error,
                         error: snapshot.error.toString(),
                         onRetry: () => setState(() {}),
                         backgroundColor: Colors.transparent,
@@ -156,8 +158,8 @@ class _UserSearchPageState extends State<UserSearchPage> {
                     if (_searchQuery.isEmpty) {
                       return EmptyStateWidget(
                         icon: Icons.search_rounded,
-                        title: 'Kullanıcı ara',
-                        message: 'Aramak istediğiniz kullanıcının ismini veya e-postasını yazın',
+                        title: l10n.searchUsers,
+                        message: l10n.searchUserPlaceholder,
                         backgroundColor: Colors.transparent,
                         textColor: Colors.white,
                       );
@@ -166,8 +168,8 @@ class _UserSearchPageState extends State<UserSearchPage> {
                 if (filtered.isEmpty) {
                       return EmptyStateWidget(
                         icon: Icons.person_search_rounded,
-                        title: 'Kullanıcı bulunamadı',
-                        message: 'Farklı arama terimleri deneyin',
+                        title: l10n.noUsersFound,
+                        message: l10n.tryDifferentKeywords,
                         backgroundColor: Colors.transparent,
                         textColor: Colors.white,
                   );

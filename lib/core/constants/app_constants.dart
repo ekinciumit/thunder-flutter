@@ -1,12 +1,11 @@
-/// Uygulama genelinde kullanılan sabitler
-/// 
-/// Bu sınıf SOLID prensiplerinden Single Responsibility Principle'a uyar:
-/// - Sadece uygulama sabitlerini içerir
-/// - Değişmeyen değerleri merkezi bir yerde toplar
-library;
-/// 
-/// ŞU AN: Bu sabitler sadece ekleniyor, mevcut kod çalışmaya devam ediyor
-/// İleride bu sabitleri kullanacağız.
+// Uygulama genelinde kullanılan sabitler
+// 
+// Bu sınıf SOLID prensiplerinden Single Responsibility Principle'a uyar:
+// - Sadece uygulama sabitlerini içerir
+// - Değişmeyen değerleri merkezi bir yerde toplar
+// 
+// ŞU AN: Bu sabitler sadece ekleniyor, mevcut kod çalışmaya devam ediyor
+// İleride bu sabitleri kullanacağız.
 
 class AppConstants {
   // Private constructor - Bu sınıf sadece sabitler içerir, instance oluşturulamaz

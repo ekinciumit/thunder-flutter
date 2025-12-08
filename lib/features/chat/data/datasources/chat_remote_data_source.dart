@@ -11,6 +11,7 @@ import '../../../../services/cache_service.dart';
 /// Firebase işlemleri için abstract interface.
 abstract class ChatRemoteDataSource {
   String getChatId(String userA, String userB);
+  Future<ChatModel?> getChatById(String chatId);
   Future<ChatModel> getOrCreatePrivateChat(String userA, String userB);
   Future<ChatModel> createGroupChat({
     required String name,
@@ -94,6 +95,17 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   String getChatId(String userA, String userB) {
     final sorted = [userA, userB]..sort();
     return '${sorted[0]}_${sorted[1]}';
+  }
+
+  @override
+  Future<ChatModel?> getChatById(String chatId) async {
+    try {
+      final chatDoc = await _chatsRef.doc(chatId).get();
+      if (!chatDoc.exists) return null;
+      return ChatModel.fromMap(chatDoc.data()!, chatId);
+    } catch (e) {
+      throw ServerException('Chat getirilirken hata oluştu: ${e.toString()}');
+    }
   }
 
   @override

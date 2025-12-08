@@ -10,6 +10,9 @@ abstract class ChatRepository {
   /// İki kullanıcı için benzersiz chatId üretir
   String getChatId(String userA, String userB);
   
+  /// Chat'i ID'ye göre getir
+  Future<Either<Failure, ChatModel?>> getChatById(String chatId);
+  
   /// Özel sohbet oluştur veya getir
   Future<Either<Failure, ChatModel>> getOrCreatePrivateChat(String userA, String userB);
   

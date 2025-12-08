@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'user_search_page.dart';
 import 'followers_following_page.dart';
+import 'settings_page.dart';
 import 'widgets/user_suggestions_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
@@ -18,6 +19,7 @@ import 'widgets/modern_loading_widget.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
 // Removed seed data service as test data seeding is no longer needed.
@@ -326,12 +328,13 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     final authViewModel = Provider.of<AuthViewModel>(context);
     final user = authViewModel.user;
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     if (authViewModel.isLoading) {
-      return Center(child: ModernLoadingWidget(message: 'Yükleniyor...'));
+      return Center(child: ModernLoadingWidget(message: l10n.loading));
     }
     if (user == null) {
-      return Center(child: ModernLoadingWidget(message: 'Kullanıcı bilgisi yükleniyor...'));
+      return Center(child: ModernLoadingWidget(message: l10n.loading));
     }
 
     return AppGradientContainer(
@@ -452,13 +455,13 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                                 children: [
                                   _buildStatColumn(
-                                    'Etkinlik',
+                                    l10n.events,
                                     eventsCount,
                                     theme,
                                     null,
                                   ),
                                   _buildStatColumn(
-                                    'Takipçi',
+                                    l10n.followers,
                                     user.followers.length,
                                     theme,
                                     () {
@@ -473,7 +476,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                     },
                                   ),
                                   _buildStatColumn(
-                                    'Takip',
+                                    l10n.following,
                                     user.following.length,
                                     theme,
                                     () {
@@ -503,23 +506,23 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                     if (isEditing)
-                      _buildEditableTextField(nameController, 'İsim')
+                      _buildEditableTextField(nameController, l10n.name)
                     else
                       Text(
-                        user.displayName ?? 'İsim belirtilmemiş',
+                        user.displayName ?? l10n.name,
                             style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
+                              color: AppColorConfig.cardColor,
                         ),
                       ),
                         const SizedBox(height: AppTheme.spacingXs),
                     if (isEditing)
-                      _buildEditableTextField(bioController, 'Biyografi', maxLines: 3)
+                      _buildEditableTextField(bioController, l10n.bio, maxLines: 3)
                         else if (user.bio != null && user.bio!.isNotEmpty)
                       Text(
                             user.bio!,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: AppColorConfig.cardColor.withValues(alpha: 0.78),
                         ),
                       ),
                       ],
@@ -552,12 +555,14 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                             setState(() => isEditing = !isEditing);
                           },
                             style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColorConfig.cardColor,
+                              side: const BorderSide(color: AppColorConfig.cardColor, width: 1.5),
                               padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                               ),
                             ),
-                            child: Text(isEditing ? 'Kaydet' : 'Düzenle'),
+                            child: Text(isEditing ? l10n.save : l10n.edit),
                           ),
                         ),
                         const SizedBox(width: AppTheme.spacingXs),
@@ -569,24 +574,33 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                               );
                             },
                             style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColorConfig.cardColor,
+                              side: const BorderSide(color: AppColorConfig.cardColor, width: 1.5),
                               padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                               ),
                             ),
-                            child: const Text('Kullanıcı Ara'),
+                            child: Text(l10n.searchUsers),
                           ),
                         ),
                         const SizedBox(width: AppTheme.spacingXs),
                         OutlinedButton(
-                          onPressed: () async => await authViewModel.signOut(),
+                          onPressed: () {
+                            // TODO: Ayarlar sayfasına yönlendir
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const SettingsPage()),
+                            );
+                          },
                           style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColorConfig.cardColor,
+                            side: const BorderSide(color: AppColorConfig.cardColor, width: 1.5),
                             padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                             ),
                           ),
-                          child: const Icon(Icons.logout, size: 20),
+                          child: const Icon(Icons.settings, size: 20),
                         ),
                       ],
                     ),
@@ -619,7 +633,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                               ),
                               const SizedBox(height: AppTheme.spacingMd),
                               Text(
-                                'Henüz etkinlik oluşturmadınız',
+                                l10n.noData,
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
@@ -753,14 +767,14 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
           '$count',
             style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold, 
-              color: AppColorConfig.primaryColor,
+              color: AppColorConfig.cardColor,
             ),
           ),
           const SizedBox(height: AppTheme.spacingXs),
         Text(
           label,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+            color: AppColorConfig.cardColor.withValues(alpha: 0.78),
           ),
         ),
       ],

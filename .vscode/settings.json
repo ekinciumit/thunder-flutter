@@ -1,3 +1,28 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "dart.analysisExcludedFolders": [],
+  "dart.showTodos": false,
+  "problems.showCurrentInStatus": false,
+  "problems.decorations.enabled": true,
+  "problems.showCurrentStatus": false,
+  
+  "terminal.integrated.shellIntegration.enabled": true,
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.profiles.windows": {
+    "PowerShell": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell",
+      "args": ["-NoLogo"]
+    },
+    "Command Prompt": {
+      "path": "cmd.exe",
+      "icon": "terminal-cmd"
+    },
+    "Git Bash": {
+      "source": "Git Bash"
+    }
+  },
+  "terminal.integrated.inheritEnv": true,
+  "terminal.integrated.persistentSessionScrollback": 1000,
+  "terminal.integrated.scrollback": 10000
 }

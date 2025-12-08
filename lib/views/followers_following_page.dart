@@ -10,6 +10,7 @@ import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
+import '../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class FollowersFollowingPage extends StatefulWidget {
@@ -97,11 +98,12 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
     final authViewModel = Provider.of<AuthViewModel>(context);
     final currentUser = authViewModel.user;
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     if (currentUser == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(widget.showFollowers ? 'Takipçiler' : 'Takip Edilenler')),
-        body: const Center(child: Text('Kullanıcı bilgisi bulunamadı')),
+        appBar: AppBar(title: Text(widget.showFollowers ? l10n.followers : l10n.following)),
+        body: Center(child: Text(l10n.userInfoNotFound)),
       );
     }
 
@@ -113,7 +115,7 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: Text(
-            widget.showFollowers ? 'Takipçiler' : 'Takip Edilenler',
+            widget.showFollowers ? l10n.followers : l10n.following,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -131,16 +133,16 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
             stream: _getUsersStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
+                return Center(
                   child: ModernLoadingWidget(
-                    message: 'Yükleniyor...',
+                    message: l10n.loading,
                   ),
                 );
               }
 
               if (snapshot.hasError) {
                 return ErrorStateWidget(
-                  message: 'Bir hata oluştu',
+                  message: l10n.error,
                   error: snapshot.error.toString(),
                   onRetry: () => setState(() {}),
                   backgroundColor: Colors.transparent,
@@ -155,12 +157,8 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
                   icon: widget.showFollowers 
                       ? Icons.people_outline 
                       : Icons.person_outline,
-                  title: widget.showFollowers 
-                      ? 'Henüz takipçi yok' 
-                      : 'Henüz kimseyi takip etmiyorsunuz',
-                  message: widget.showFollowers
-                      ? 'Profilinizi paylaşarak takipçi kazanabilirsiniz'
-                      : 'İlginç kullanıcıları keşfedin ve takip edin',
+                  title: l10n.noData,
+                  message: l10n.noData,
                   backgroundColor: Colors.transparent,
                   textColor: Colors.white,
                 );

@@ -251,5 +251,24 @@ class AuthViewModel extends ChangeNotifier {
       }
     }
   }
+
+  /// Gizlilik ayarlarını yerel olarak güncelle
+  /// 
+  /// Bu metod settings sayfasından çağrılır.
+  /// Firebase güncellemesi UserService tarafından yapılır, bu sadece yerel state'i günceller.
+  void updateUserPrivacy({
+    bool? isPrivate,
+    bool? showLocation,
+    bool? showOnlineStatus,
+  }) {
+    if (user == null) return;
+    
+    user = user!.copyWith(
+      isPrivate: isPrivate ?? user!.isPrivate,
+      showLocation: showLocation ?? user!.showLocation,
+      showOnlineStatus: showOnlineStatus ?? user!.showOnlineStatus,
+    );
+    notifyListeners();
+  }
 }
 

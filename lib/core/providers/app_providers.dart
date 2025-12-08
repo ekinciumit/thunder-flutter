@@ -15,6 +15,8 @@ import '../../features/chat/domain/repositories/chat_repository.dart';
 import '../../features/chat/data/repositories/chat_repository_impl.dart';
 import '../../features/chat/data/datasources/chat_remote_data_source.dart';
 import '../../services/language_service.dart';
+import '../../services/theme_service.dart';
+import '../../services/settings_service.dart';
 import '../../models/user_model.dart';
 
 /// App Providers Configuration
@@ -24,9 +26,13 @@ class AppProviders {
   /// Tüm Provider'ları döndürür
   static List<SingleChildWidget> getProviders() {
     final languageService = LanguageService();
+    final themeService = ThemeService();
+    final settingsService = SettingsService();
     
     return [
       ChangeNotifierProvider(create: (_) => languageService),
+      ChangeNotifierProvider(create: (_) => themeService),
+      ChangeNotifierProvider(create: (_) => settingsService),
     ];
   }
 

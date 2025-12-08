@@ -57,6 +57,14 @@ class MockChatRemoteDataSource extends _i1.Mock
           as String);
 
   @override
+  _i6.Future<_i2.ChatModel?> getChatById(String? chatId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getChatById, [chatId]),
+            returnValue: _i6.Future<_i2.ChatModel?>.value(),
+          )
+          as _i6.Future<_i2.ChatModel?>);
+
+  @override
   _i6.Future<_i2.ChatModel> getOrCreatePrivateChat(
     String? userA,
     String? userB,

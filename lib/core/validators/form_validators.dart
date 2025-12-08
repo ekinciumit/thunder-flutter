@@ -1,8 +1,7 @@
-/// Form Validators
-/// 
-/// Merkezi form validasyon servisi
-/// Tüm form alanları için validator fonksiyonları
-library;
+// Form Validators
+// 
+// Merkezi form validasyon servisi
+// Tüm form alanları için validator fonksiyonları
 
 class FormValidators {
   /// Email format kontrolü için regex pattern

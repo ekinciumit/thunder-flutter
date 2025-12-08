@@ -1,9 +1,8 @@
-/// Uygulama seviyesinde failure (hata) sınıfları
-/// 
-/// Failure'lar, exception'ların domain katmanında kullanılan versiyonudur.
-/// Clean Architecture'da domain katmanı exception'lara bağımlı olmamalı,
-/// bu yüzden failure kullanırız.
-library;
+// Uygulama seviyesinde failure (hata) sınıfları
+// 
+// Failure'lar, exception'ların domain katmanında kullanılan versiyonudur.
+// Clean Architecture'da domain katmanı exception'lara bağımlı olmamalı,
+// bu yüzden failure kullanırız.
 
 /// Either type için basit bir wrapper
 /// 

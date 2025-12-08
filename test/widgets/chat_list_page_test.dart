@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:thunder/l10n/app_localizations.dart';
 import 'package:thunder/views/chat_list_page.dart';
 import 'package:thunder/features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
@@ -43,7 +44,8 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('tr'),
-          localizationsDelegates: const [
+          localizationsDelegates: [
+            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -62,7 +64,7 @@ void main() {
 
       // Assert
       expect(find.byType(ChatListPage), findsOneWidget);
-      expect(find.text('Kullanıcı bilgisi bulunamadı'), findsOneWidget);
+      expect(find.text('Veri bulunamadı'), findsOneWidget);
     });
 
     testWidgets('ChatListPage - Kullanıcı varsa widget render ediliyor', (WidgetTester tester) async {
@@ -80,7 +82,8 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('tr'),
-          localizationsDelegates: const [
+          localizationsDelegates: [
+            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -117,7 +120,8 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('tr'),
-          localizationsDelegates: const [
+          localizationsDelegates: [
+            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,

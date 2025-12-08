@@ -155,6 +155,22 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
           as String);
 
   @override
+  _i4.Future<_i2.Either<_i2.Failure, _i8.ChatModel?>> getChatById(
+    String? chatId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getChatById, [chatId]),
+            returnValue:
+                _i4.Future<_i2.Either<_i2.Failure, _i8.ChatModel?>>.value(
+                  _FakeEither_0<_i2.Failure, _i8.ChatModel?>(
+                    this,
+                    Invocation.method(#getChatById, [chatId]),
+                  ),
+                ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, _i8.ChatModel?>>);
+
+  @override
   _i4.Future<_i2.Either<_i2.Failure, _i8.ChatModel>> getOrCreatePrivateChat(
     String? userA,
     String? userB,
