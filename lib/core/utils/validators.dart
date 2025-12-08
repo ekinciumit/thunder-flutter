@@ -5,7 +5,7 @@
 // - Her fonksiyon tek bir şeyi doğrular
 // 
 // ŞU AN: Bu fonksiyonlar sadece ekleniyor, mevcut kod çalışmaya devam ediyor
-/// İleride bu validators'ları kullanacağız.
+// İleride bu validators'ları kullanacağız.
 
 import '../constants/app_constants.dart';
 
