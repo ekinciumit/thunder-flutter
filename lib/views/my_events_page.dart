@@ -35,7 +35,6 @@ class _MyEventsPageState extends State<MyEventsPage> {
     }
 
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBodyBehindAppBar: true,

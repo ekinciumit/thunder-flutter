@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
@@ -6,9 +7,9 @@ import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../models/event_model.dart';
 import '../views/event_detail_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'widgets/app_card.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/glass_container.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
@@ -138,7 +139,8 @@ class _EventListViewState extends State<EventListView> {
     final filteredEvents = eventViewModel.getFilteredEvents();
 
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
+      backgroundImagePath: 'assets/backgrounds/background_2.png',
+      backgroundOpacity: 0.7,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: null,
@@ -154,18 +156,11 @@ class _EventListViewState extends State<EventListView> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withAlpha(AppTheme.alphaLight),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
+                    child: GlassContainer(
+                      borderRadius: AppTheme.radiusFull,
+                      padding: EdgeInsets.zero,
+                      glassAlpha: AppTheme.glassAlphaVeryLight,
+                      borderAlpha: AppTheme.glassAlphaMedium,
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
@@ -617,230 +612,7 @@ class _EventListViewState extends State<EventListView> {
                             final event = filteredEvents[index];
                             // Mesafe hesaplama ViewModel'den
                             final distanceKm = eventViewModel.getDistanceForEvent(event);
-                            return AppCard(
-                              borderRadius: 20,
-                              enableGlassmorphism: true,
-                              blurStrength: 15,
-                              glassOpacity: 0.08,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty)
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.25),
-                                          width: 1.5,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.2),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(15),
-                                        child: CachedNetworkImage(
-                                          imageUrl: event.coverPhotoUrl!,
-                                          height: 160,
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                          placeholder: (context, url) => Container(
-                                            height: 160,
-                                            width: double.infinity,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withValues(alpha: 0.1),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.white.withValues(alpha: 0.7),
-                                              strokeWidth: 2,
-                                            ),
-                                          ),
-                                          errorWidget: (context, url, error) => Container(
-                                            height: 160,
-                                            width: double.infinity,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withValues(alpha: 0.1),
-                                            ),
-                                            child: Icon(
-                                              Icons.broken_image_rounded, 
-                                              size: 48, 
-                                              color: Colors.white.withValues(alpha: 0.5),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(10),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: 0.2),
-                                                borderRadius: BorderRadius.circular(14),
-                                                border: Border.all(
-                                                  color: Colors.white.withValues(alpha: 0.3),
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              child: _getCategoryIcon(event.category),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                event.title,
-                                                style: theme.textTheme.titleLarge?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                  shadows: [
-                                                    Shadow(
-                                                      blurRadius: 8.0,
-                                                      color: Colors.black.withValues(alpha: 0.5),
-                                                      offset: const Offset(0, 2),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: 0.25),
-                                                borderRadius: BorderRadius.circular(20),
-                                                border: Border.all(
-                                                  color: Colors.white.withValues(alpha: 0.4),
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              child: Text(
-                                                event.category,
-                                                style: theme.textTheme.bodySmall?.copyWith(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Text(
-                                          event.description,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: theme.textTheme.bodyMedium?.copyWith(
-                                            color: Colors.white.withValues(alpha: 0.95),
-                                            height: 1.4,
-                                            shadows: [
-                                              Shadow(
-                                                blurRadius: 6.0,
-                                                color: Colors.black.withValues(alpha: 0.4),
-                                                offset: const Offset(0, 1),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 14),
-                                        // Info row with glass-style pills
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: Colors.white.withValues(alpha: 0.2),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.calendar_today_rounded, size: 16, color: Colors.white.withValues(alpha: 0.9)),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                '${event.datetime.day}.${event.datetime.month}.${event.datetime.year} - ${event.datetime.hour.toString().padLeft(2, '0')}:${event.datetime.minute.toString().padLeft(2, '0')}',
-                                                style: theme.textTheme.bodySmall?.copyWith(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              Icon(Icons.people_rounded, size: 16, color: Colors.white.withValues(alpha: 0.9)),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                '${event.participants.length}/${event.quota}',
-                                                style: theme.textTheme.bodySmall?.copyWith(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: Colors.white.withValues(alpha: 0.2),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.location_on_rounded, size: 16, color: Colors.white.withValues(alpha: 0.9)),
-                                              const SizedBox(width: 6),
-                                              Expanded(
-                                                child: Text(
-                                                  event.address,
-                                                  style: theme.textTheme.bodySmall?.copyWith(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              if (distanceKm != null)
-                                                Container(
-                                                  margin: const EdgeInsets.only(left: 8),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white.withValues(alpha: 0.25),
-                                                    borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(
-                                                      color: Colors.white.withValues(alpha: 0.3),
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    '${distanceKm.toStringAsFixed(1)} km',
-                                                    style: theme.textTheme.bodySmall?.copyWith(
-                                                      color: Colors.white,
-                                                      fontWeight: FontWeight.w700,
-                                                      fontSize: 11,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              onTap: () => _goToEventDetail(event),
-                            );
+                            return _buildModernEventCard(event, distanceKm, theme);
                           },
                         ),
             ),
@@ -866,16 +638,260 @@ class _EventListViewState extends State<EventListView> {
     }
   }
 
-  Widget _getCategoryIcon(String category) {
-    if (categoryIconImages.containsKey(category)) {
-      return Image(
-        image: categoryIconImages[category]!,
-        width: 24,
-        height: 24,
-        color: Colors.white,
-      );
-    }
-    return const Icon(Icons.category, size: 24, color: Colors.white);
+  Widget _buildModernEventCard(EventModel event, double? distanceKm, ThemeData theme) {
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: BackdropFilter(
+          // iOS 16 tarzı güçlü blur efekti
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              // iOS 16 glassmorphism - çok şeffaf, gerçekten camsı
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05) // Çok şeffaf beyaz (dark mode)
+                  : Colors.white.withValues(alpha: 0.15), // Light mode için biraz daha opak
+              borderRadius: BorderRadius.circular(22),
+              // İnce, şeffaf border - iOS 16 tarzı
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.15) // Çok şeffaf border
+                    : Colors.white.withValues(alpha: 0.25),
+                width: 1.0, // Daha ince border
+              ),
+              // Subtle shadow - sadece derinlik için
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _goToEventDetail(event),
+                borderRadius: BorderRadius.circular(22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(22),
+                          topRight: Radius.circular(22),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: event.coverPhotoUrl!,
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            height: 180,
+                            color: isDark
+                                ? theme.colorScheme.surface.withValues(alpha: 0.2)
+                                : Colors.white.withValues(alpha: 0.1),
+                            alignment: Alignment.center,
+                            child: CircularProgressIndicator(
+                              color: isDark
+                                  ? theme.colorScheme.onSurface.withValues(alpha: 0.7)
+                                  : Colors.white.withValues(alpha: 0.7),
+                              strokeWidth: 2.5,
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            height: 180,
+                            color: isDark
+                                ? theme.colorScheme.surface.withValues(alpha: 0.2)
+                                : Colors.white.withValues(alpha: 0.1),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 48,
+                              color: isDark
+                                  ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
+                                  : Colors.white.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.all(18.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  event.title,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? theme.colorScheme.onSurface
+                                        : Colors.white.withValues(alpha: 0.95),
+                                    height: 1.3,
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColorConfig.primaryColor.withValues(alpha: 0.25),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: AppColorConfig.primaryColor.withValues(alpha: 0.4),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  event.category,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? theme.colorScheme.onSurface
+                                        : Colors.white.withValues(alpha: 0.9),
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            event.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.normal,
+                              color: isDark
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : Colors.white.withValues(alpha: 0.82),
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                size: 18,
+                                color: isDark
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : Colors.white.withValues(alpha: 0.85),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${event.datetime.day}.${event.datetime.month}.${event.datetime.year} - ${event.datetime.hour.toString().padLeft(2, '0')}:${event.datetime.minute.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark
+                                        ? theme.colorScheme.onSurfaceVariant
+                                        : Colors.white.withValues(alpha: 0.85),
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Icon(
+                                Icons.people_rounded,
+                                size: 18,
+                                color: isDark
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : Colors.white.withValues(alpha: 0.85),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${event.participants.length}/${event.quota}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark
+                                      ? theme.colorScheme.onSurfaceVariant
+                                      : Colors.white.withValues(alpha: 0.85),
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_rounded,
+                                size: 18,
+                                color: isDark
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : Colors.white.withValues(alpha: 0.85),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  event.address,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark
+                                        ? theme.colorScheme.onSurfaceVariant
+                                        : Colors.white.withValues(alpha: 0.85),
+                                    height: 1.4,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (distanceKm != null) ...[
+                                const SizedBox(width: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: AppColorConfig.primaryColor.withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AppColorConfig.primaryColor.withValues(alpha: 0.5),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${distanceKm.toStringAsFixed(1)} km',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? theme.colorScheme.onSurface
+                                          : Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _goToEventDetail(EventModel event) {

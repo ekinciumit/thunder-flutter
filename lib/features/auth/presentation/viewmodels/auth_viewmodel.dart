@@ -210,6 +210,34 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Kullanıcı profilini yeniden yükle (state senkronizasyonu için)
+  /// 
+  /// Bu metod takip işlemleri, profil güncellemeleri vb. sonrası
+  /// local state'i Firebase ile senkronize etmek için kullanılır.
+  /// Loading göstergesi olmadan sessizce günceller.
+  Future<void> refreshUserProfile() async {
+    if (user == null) return;
+    
+    try {
+      final result = await _fetchUserProfileUseCase(user!.uid);
+      
+      final profile = result.fold(
+        (failure) => null,
+        (user) => user,
+      );
+      
+      if (profile != null) {
+        user = profile;
+        notifyListeners();
+      }
+    } catch (e) {
+      // Sessizce devam et - kritik değil
+      if (kDebugMode) {
+        debugPrint('⚠️ Profil yenileme hatası: $e');
+      }
+    }
+  }
+
   /// Başka bir kullanıcının profilini getir
   /// 
   /// Bu metod view'lerde başka kullanıcıların profilini görmek için kullanılır.

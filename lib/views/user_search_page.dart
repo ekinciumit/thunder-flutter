@@ -7,6 +7,7 @@ import 'user_profile_page.dart';
 import 'widgets/modern_loading_widget.dart';
 import 'widgets/app_gradient_container.dart';
 import '../core/widgets/modern_components.dart';
+import '../core/widgets/glass_container.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../l10n/app_localizations.dart';
@@ -42,7 +43,6 @@ class _UserSearchPageState extends State<UserSearchPage> {
     final l10n = AppLocalizations.of(context)!;
     
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
@@ -181,11 +181,11 @@ class _UserSearchPageState extends State<UserSearchPage> {
                       separatorBuilder: (context, index) => const SizedBox(height: AppTheme.spacingXs),
                   itemBuilder: (context, index) {
                     final user = filtered[index];
-                        return Card(
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                          ),
+                        return GlassContainer(
+                          borderRadius: AppTheme.radiusLg,
+                          padding: EdgeInsets.zero,
+                          glassAlpha: AppTheme.glassAlphaVeryLight,
+                          borderAlpha: AppTheme.glassAlphaMedium,
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: AppTheme.spacingMd,

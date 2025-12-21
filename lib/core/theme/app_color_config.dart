@@ -78,25 +78,93 @@ class AppColorConfig {
   static Color get infoColor => tertiaryColor;
 
   // ============================================================================
-  // 🔘 GRİ TONLAR - SABİT (Değiştirmeyin)
+  // ☀️ GRİ TONLAR - LIGHT MODE (Material Design 3 uyumlu)
+  // ============================================================================
+
+  /// Surface (Yüzey) Renkleri - Light Mode
+  /// Material Design 3: #FFFFFF base, ama daha yumuşak tonlar
+  static const Color surfaceColorLight = Color(0xFFFFFBFE); // Material Design 3 base light (hafif sıcak beyaz)
+  static const Color surfaceContainerHighestLight = Color(0xFFF5F5F5); // Daha yumuşak gri (elevation için)
+  static const Color cardColorLight = Color(0xFFFFFFFF); // Saf beyaz (card'lar için)
+
+  /// Text (Metin) Renkleri - Light Mode
+  /// WCAG AAA kontrast için optimize edilmiş
+  static const Color textPrimaryLight = Color(0xFF1A1A1A); // Daha koyu siyah (WCAG AAA - %87 kontrast)
+  static const Color textSecondaryLight = Color(0xFF5A5A5A); // Daha belirgin ikincil metin (%60 kontrast)
+
+  /// Border (Kenarlık) Renkleri - Light Mode
+  /// Daha belirgin ve görünür border'lar
+  static const Color borderColorLightMode = Color(0xFF8A8A8A); // Daha belirgin border
+  static const Color borderColorLightLightMode = Color(0xFFD0D0D0); // Hafif border (daha belirgin)
+  static const Color borderColorInputLightMode = Color(0xFFE0E0E0); // Input kenarlığı (daha belirgin)
+
+  // ============================================================================
+  // 🌙 GRİ TONLAR - DARK MODE (Material Design 3 uyumlu)
+  // ============================================================================
+
+  /// Surface (Yüzey) Renkleri - Dark Mode
+  /// Material Design 3: #121212 base, ama daha yumuşak tonlar
+  static const Color surfaceColorDark = Color(0xFF121212); // Material Design 3 base dark
+  static const Color surfaceContainerHighestDark = Color(0xFF1E1E1E); // Biraz daha açık (elevation için)
+  static const Color cardColorDark = Color(0xFF1D1D1D); // Card için hafif daha açık
+
+  /// Text (Metin) Renkleri - Dark Mode
+  /// Daha iyi kontrast için optimize edilmiş
+  static const Color textPrimaryDark = Color(0xFFE8E8E8); // Daha parlak beyaz (WCAG AAA)
+  static const Color textSecondaryDark = Color(0xFFB0B0B0); // Daha belirgin ikincil metin
+
+  /// Border (Kenarlık) Renkleri - Dark Mode
+  /// Daha belirgin ve görünür border'lar
+  static const Color borderColorDark = Color(0xFF5A5A5A); // Daha belirgin border
+  static const Color borderColorLightDark = Color(0xFF3A3A3A); // Hafif border
+  static const Color borderColorInputDark = Color(0xFF2A2A2A); // Input kenarlığı (daha belirgin)
+
+  // ============================================================================
+  // 🔘 GRİ TONLAR - BACKWARD COMPATIBILITY (Light mode için)
   // ============================================================================
 
   /// Surface (Yüzey) Renkleri
-  static const Color surfaceColor = Color(0xFFFFFBFE); // Neredeyse beyaz
-  static const Color surfaceContainerHighest = Color(0xFFF3F4F6); // Açık gri
-  static const Color cardColor = Colors.white; // Beyaz
+  static const Color surfaceColor = surfaceColorLight;
+  static const Color surfaceContainerHighest = surfaceContainerHighestLight;
+  static const Color cardColor = cardColorLight;
 
   /// Text (Metin) Renkleri
-  static const Color textPrimary = Color(0xFF1C1B1F); // Koyu gri (ana metin)
-  static const Color textSecondary = Color(0xFF49454F); // Orta gri (ikincil metin)
+  static const Color textPrimary = textPrimaryLight;
+  static const Color textSecondary = textSecondaryLight;
 
   /// Border (Kenarlık) Renkleri
-  static const Color borderColor = Color(0xFF79747E); // Orta gri
-  static const Color borderColorLight = Color(0xFFCAC4D0); // Açık gri
-  static const Color borderColorInput = Color(0xFFE5E7EB); // Input kenarlığı
+  static const Color borderColor = borderColorLightMode;
+  static const Color borderColorLight = borderColorLightLightMode;
+  static const Color borderColorInput = borderColorInputLightMode;
 
   /// Shadow (Gölge) Renkleri
-  static const Color shadowColor = Color(0xFF000000); // Siyah
+  static const Color shadowColor = Color(0xFF000000); // Siyah (light mode - hafif opacity ile kullanılır)
+  static const Color shadowColorDark = Color(0xFF000000); // Siyah (dark mode - daha opak)
+  
+  /// Brightness'a göre shadow rengi döndürür
+  static Color getShadowColor(Brightness brightness) {
+    return brightness == Brightness.dark ? shadowColorDark : shadowColor;
+  }
+  
+  /// Brightness'a göre success container döndürür
+  static Color getSuccessContainer(Brightness brightness) {
+    return brightness == Brightness.dark ? successContainerDark : successContainerLight;
+  }
+  
+  /// Brightness'a göre success container text döndürür
+  static Color getSuccessContainerText(Brightness brightness) {
+    return brightness == Brightness.dark ? successContainerTextDark : successContainerTextLight;
+  }
+  
+  /// Brightness'a göre warning container döndürür
+  static Color getWarningContainer(Brightness brightness) {
+    return brightness == Brightness.dark ? warningContainerDark : warningContainerLight;
+  }
+  
+  /// Brightness'a göre warning container text döndürür
+  static Color getWarningContainerText(Brightness brightness) {
+    return brightness == Brightness.dark ? warningContainerTextDark : warningContainerTextLight;
+  }
 
   // ============================================================================
   // 🎨 DERİVED COLORS (Türetilmiş Renkler)
@@ -128,8 +196,28 @@ class AppColorConfig {
 
   /// Error Container (Error Arka Plan)
   /// Error renginin açık versiyonu
-  static const Color errorContainer = Color(0xFFFEE2E2); // Light red
-  static const Color errorContainerText = Color(0xFF991B1B); // Dark red
+  static const Color errorContainer = Color(0xFFFEE2E2); // Light red (light mode)
+  static const Color errorContainerText = Color(0xFF991B1B); // Dark red (light mode)
+  
+  /// Success Container - Light Mode
+  static const Color successContainerLight = Color(0xFFD1FAE5); // Açık yeşil arka plan
+  static const Color successContainerTextLight = Color(0xFF065F46); // Koyu yeşil metin
+  
+  /// Warning Container - Light Mode
+  static const Color warningContainerLight = Color(0xFFFEF3C7); // Açık amber arka plan
+  static const Color warningContainerTextLight = Color(0xFF92400E); // Koyu amber metin
+  
+  /// Error Container - Dark Mode
+  static const Color errorContainerDark = Color(0xFF4A1F1F); // Koyu kırmızı arka plan
+  static const Color errorContainerTextDark = Color(0xFFFF6B6B); // Açık kırmızı metin
+  
+  /// Success Container - Dark Mode
+  static const Color successContainerDark = Color(0xFF1F4A2F); // Koyu yeşil arka plan
+  static const Color successContainerTextDark = Color(0xFF6BFF8B); // Açık yeşil metin
+  
+  /// Warning Container - Dark Mode
+  static const Color warningContainerDark = Color(0xFF4A3F1F); // Koyu amber arka plan
+  static const Color warningContainerTextDark = Color(0xFFFFD96B); // Açık amber metin
 
   // ============================================================================
   // 🔧 HELPER METHODS
@@ -154,5 +242,92 @@ class AppColorConfig {
 
   /// Gradient Error (Hata Gradient)
   static List<Color> get gradientError => [errorColor, errorColorLight];
+
+  // ============================================================================
+  // 🌓 DARK MODE HELPER METHODS
+  // ============================================================================
+
+  /// Brightness'a göre surface rengi döndürür
+  static Color getSurfaceColor(Brightness brightness) {
+    return brightness == Brightness.dark ? surfaceColorDark : surfaceColorLight;
+  }
+
+  /// Brightness'a göre surface container highest rengi döndürür
+  static Color getSurfaceContainerHighest(Brightness brightness) {
+    return brightness == Brightness.dark 
+        ? surfaceContainerHighestDark 
+        : surfaceContainerHighestLight;
+  }
+
+  /// Brightness'a göre card rengi döndürür
+  static Color getCardColor(Brightness brightness) {
+    return brightness == Brightness.dark ? cardColorDark : cardColorLight;
+  }
+
+  /// Brightness'a göre text primary rengi döndürür
+  static Color getTextPrimary(Brightness brightness) {
+    return brightness == Brightness.dark ? textPrimaryDark : textPrimaryLight;
+  }
+
+  /// Brightness'a göre text secondary rengi döndürür
+  static Color getTextSecondary(Brightness brightness) {
+    return brightness == Brightness.dark ? textSecondaryDark : textSecondaryLight;
+  }
+
+  /// Brightness'a göre border rengi döndürür
+  static Color getBorderColor(Brightness brightness) {
+    return brightness == Brightness.dark ? borderColorDark : borderColorLightMode;
+  }
+
+  /// Brightness'a göre border light rengi döndürür
+  static Color getBorderColorLight(Brightness brightness) {
+    return brightness == Brightness.dark ? borderColorLightDark : borderColorLightLightMode;
+  }
+
+  /// Brightness'a göre border input rengi döndürür
+  static Color getBorderColorInput(Brightness brightness) {
+    return brightness == Brightness.dark ? borderColorInputDark : borderColorInputLightMode;
+  }
+
+  /// Brightness'a göre primary gradient döndürür
+  static List<Color> getGradientPrimary(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      // Dark mode için yumuşak gradient - çok subtle geçişler
+      return [
+        const Color(0xFF121212), // Çok koyu başlangıç (surfaceColorDark ile aynı)
+        const Color(0xFF151515), // Çok hafif açık
+        const Color(0xFF181818), // Biraz daha açık
+        const Color(0xFF1A1A1A), // En açık ton
+      ];
+    }
+    return gradientPrimary;
+  }
+
+  /// Brightness'a göre primary light gradient döndürür
+  static List<Color> getGradientPrimaryLight(Brightness brightness) {
+    if (brightness == Brightness.dark) {
+      // Dark mode için düz siyah - gradient yok
+      return [
+        surfaceColorDark, // Düz, temiz siyah (#121212)
+        surfaceColorDark, // Aynı renk (gradient efekti yok)
+      ];
+    }
+    // Light mode için daha belirgin ve canlı gradient
+    return [
+      const Color(0xFF578FCA), // Lighter Blue - daha belirgin
+      const Color(0xFFA1E3F9), // Light Sky Blue - daha belirgin
+      const Color(0xFFD1F8EF), // Very Pale Mint Green - daha belirgin
+    ];
+  }
+  
+  /// Brightness'a göre error container döndürür
+  static Color getErrorContainer(Brightness brightness) {
+    return brightness == Brightness.dark ? errorContainerDark : errorContainer;
+  }
+  
+  /// Brightness'a göre error container text döndürür
+  static Color getErrorContainerText(Brightness brightness) {
+    return brightness == Brightness.dark ? errorContainerTextDark : errorContainerText;
+  }
 }
 

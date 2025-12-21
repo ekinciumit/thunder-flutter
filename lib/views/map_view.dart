@@ -26,6 +26,139 @@ class _MapViewState extends State<MapView> {
   GoogleMapController? mapController;
   bool iconsLoaded = false;
   double _currentZoom = 13;
+  
+  // Dark mode için Google Maps style JSON
+  static const String _darkMapStyle = '''
+  [
+    {
+      "elementType": "geometry",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#8ec3b9"}]
+    },
+    {
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1a3646"}]
+    },
+    {
+      "featureType": "administrative.country",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#4b6878"}]
+    },
+    {
+      "featureType": "administrative.land_parcel",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#64779e"}]
+    },
+    {
+      "featureType": "administrative.province",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#4b6878"}]
+    },
+    {
+      "featureType": "landscape.man_made",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#334e87"}]
+    },
+    {
+      "featureType": "landscape.natural",
+      "elementType": "geometry",
+      "stylers": [{"color": "#023e58"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "geometry",
+      "stylers": [{"color": "#283d6a"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#6f9ba5"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "geometry.fill",
+      "stylers": [{"color": "#023e58"}]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#3C7680"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [{"color": "#304a7d"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#98a5be"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry",
+      "stylers": [{"color": "#2c6675"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#255763"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#b0d5ce"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#023e58"}]
+    },
+    {
+      "featureType": "transit",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#98a5be"}]
+    },
+    {
+      "featureType": "transit",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "featureType": "transit.line",
+      "elementType": "geometry.fill",
+      "stylers": [{"color": "#283d6a"}]
+    },
+    {
+      "featureType": "transit.station",
+      "elementType": "geometry",
+      "stylers": [{"color": "#3a4762"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [{"color": "#0e1626"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#4e6d70"}]
+    }
+  ]
+  ''';
 
   List<Marker> _buildClusteredMarkers(List<EventModel> events) {
     if (events.isEmpty) return [];
@@ -97,6 +230,8 @@ class _MapViewState extends State<MapView> {
     _getUserLocation();
     _loadCategoryIcons();
   }
+  
+  // didChangeDependencies kaldırıldı - style parametresi otomatik olarak güncelleniyor
 
 
   Future<void> _getUserLocation() async {
@@ -196,8 +331,11 @@ class _MapViewState extends State<MapView> {
         ? CameraPosition(target: LatLng(userPosition!.latitude, userPosition!.longitude), zoom: 13)
         : const CameraPosition(target: LatLng(39.925533, 32.866287), zoom: 6); // Ankara default
 
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
@@ -210,7 +348,11 @@ class _MapViewState extends State<MapView> {
                     markers: Set.from(markers),
                     myLocationEnabled: userPosition != null,
                     myLocationButtonEnabled: false,
-                    onMapCreated: (controller) => mapController = controller,
+                    mapType: MapType.normal,
+                    style: isDark ? _darkMapStyle : null, // Dark mode için özel stil
+                    onMapCreated: (controller) {
+                      mapController = controller;
+                    },
                     onCameraMove: (position) {
                       _currentZoom = position.zoom;
                       // Zoom değiştikçe yeniden cluster
@@ -225,7 +367,9 @@ class _MapViewState extends State<MapView> {
                     child: Material(
                       elevation: 4,
                       borderRadius: BorderRadius.circular(28),
-                      color: AppColorConfig.secondaryColor,
+                      color: isDark 
+                          ? theme.colorScheme.primary 
+                          : AppColorConfig.secondaryColor,
                       child: InkWell(
                         onTap: () async {
                           if (userPosition == null) {
@@ -249,7 +393,13 @@ class _MapViewState extends State<MapView> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(28),
                           ),
-                          child: const Icon(Icons.my_location, size: 24, color: Colors.white),
+                          child: Icon(
+                            Icons.my_location, 
+                            size: 24, 
+                            color: isDark 
+                                ? theme.colorScheme.onPrimary 
+                                : Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -262,31 +412,16 @@ class _MapViewState extends State<MapView> {
 
   void _showEventSheet(EventModel event) {
     final theme = Theme.of(context);
-    showModalBottomSheet(
+    GlassModalBottomSheet.show(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusRound),
-        ),
+      padding: EdgeInsets.only(
+        left: AppTheme.spacingXxl,
+        right: AppTheme.spacingXxl,
+        top: AppTheme.spacingXxl,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingXxl,
       ),
-      builder: (_) {
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(AppTheme.radiusRound),
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: AppTheme.spacingXxl,
-              right: AppTheme.spacingXxl,
-              top: AppTheme.spacingXxl,
-              bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingXxl,
-            ),
-          child: Column(
+      child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -366,10 +501,7 @@ class _MapViewState extends State<MapView> {
                 ),
               ),
             ],
-            ),
-          ),
-        );
-      },
+      ),
     );
   }
 } 

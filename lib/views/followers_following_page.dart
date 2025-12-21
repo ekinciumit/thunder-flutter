@@ -8,6 +8,7 @@ import 'user_profile_page.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
+import '../core/widgets/glass_container.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../l10n/app_localizations.dart';
@@ -108,7 +109,6 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
     }
 
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -173,12 +173,12 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
                   final isFollowing = currentUser.following.contains(user.uid);
                   final isMutual = _isMutualFollow(user, currentUser.uid);
 
-                  return Card(
+                  return GlassContainer(
                     margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    ),
+                    borderRadius: AppTheme.radiusLg,
+                    padding: EdgeInsets.zero,
+                    glassAlpha: AppTheme.glassAlphaVeryLight,
+                    borderAlpha: AppTheme.glassAlphaMedium,
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: AppTheme.spacingMd,

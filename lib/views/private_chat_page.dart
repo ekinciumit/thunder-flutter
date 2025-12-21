@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:provider/provider.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
@@ -16,7 +17,6 @@ import 'message_forward_page.dart';
 import 'widgets/reaction_picker.dart';
 import 'widgets/message_reactions.dart';
 import 'widgets/voice_message_widget.dart';
-import 'widgets/voice_recorder_widget.dart';
 import 'widgets/file_picker_widget.dart';
 import 'widgets/modern_loading_widget.dart';
 import 'widgets/file_message_widget.dart';
@@ -26,6 +26,7 @@ import '../core/widgets/modern_components.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
+import '../services/audio_service.dart';
 
 class PrivateChatPage extends StatefulWidget {
   final String currentUserId;
@@ -50,6 +51,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   final ImagePicker _picker = ImagePicker();
   String? _chatId;
   final ScrollController _scrollController = ScrollController();
+  final AudioService _audioService = AudioService();
   
   // Pagination için
   List<MessageModel> _allMessages = [];
@@ -59,6 +61,11 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   bool _isShowingFilePicker = false;
   StreamSubscription<List<MessageModel>>? _messagesSubscription;
   bool _isInitialLoad = true;
+  
+  // WhatsApp tarzı ses kaydı için
+  Duration _voiceRecordingDuration = Duration.zero;
+  DateTime? _voiceRecordingStartTime;
+  Timer? _voiceRecordingTimer;
 
   @override
   void initState() {
@@ -174,6 +181,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     _controller.dispose();
     _scrollController.dispose();
     _messagesSubscription?.cancel();
+    _voiceRecordingTimer?.cancel();
     super.dispose();
   }
 
@@ -448,6 +456,10 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Widget _buildTextMessage(MessageModel message, bool isMe) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
     return GestureDetector(
       onLongPress: () => _showMessageOptions(message),
       child: Container(
@@ -459,7 +471,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             if (!isMe) ...[
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.grey[300],
+                backgroundColor: isDark
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : Colors.grey[300],
                 backgroundImage: message.senderPhotoUrl != null 
                     ? NetworkImage(message.senderPhotoUrl!)
                     : null,
@@ -468,96 +482,98 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         _getDisplayName(message).isNotEmpty 
                             ? _getDisplayName(message)[0].toUpperCase()
                             : '?',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? theme.colorScheme.onSurface
+                              : Colors.black87,
+                        ),
                       )
                     : null,
               ),
               const SizedBox(width: 8),
             ],
             Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isMe ? AppColorConfig.primaryColor : Colors.grey[200],
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(20),
-                    topRight: const Radius.circular(20),
-                    bottomLeft: Radius.circular(isMe ? 20 : 4),
-                    bottomRight: Radius.circular(isMe ? 4 : 20),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!isMe) ...[
-                      Text(
-                        _getDisplayName(message),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: AppColorConfig.primaryColor,
-                        ),
+              child: isDark
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        bottomLeft: Radius.circular(isMe ? 20 : 4),
+                        bottomRight: Radius.circular(isMe ? 4 : 20),
                       ),
-                      const SizedBox(height: 4),
-                    ],
-                    Text(
-                      message.text ?? '',
-                      style: TextStyle(
-                        color: isMe ? Colors.white : Colors.black87,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _formatMessageTime(message.timestamp),
-                          style: TextStyle(
-                            color: isMe ? Colors.white70 : Colors.grey[600],
-                            fontSize: 11,
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isMe
+                                ? AppColorConfig.primaryColor.withValues(alpha: 0.7)
+                                : Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.only(
+                              topLeft: const Radius.circular(20),
+                              topRight: const Radius.circular(20),
+                              bottomLeft: Radius.circular(isMe ? 20 : 4),
+                              bottomRight: Radius.circular(isMe ? 4 : 20),
+                            ),
+                            border: Border.all(
+                              color: isMe
+                                  ? AppColorConfig.primaryColor.withValues(alpha: 0.3)
+                                  : Colors.white.withValues(alpha: 0.15),
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
+                          child: _buildMessageContent(message, isMe, isDark, theme),
                         ),
-                        if (isMe) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            _getMessageStatusIcon(message.status),
-                            size: 12,
-                            color: Colors.white70,
+                      ),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isMe ? AppColorConfig.primaryColor : Colors.grey[200],
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(20),
+                          topRight: const Radius.circular(20),
+                          bottomLeft: Radius.circular(isMe ? 20 : 4),
+                          bottomRight: Radius.circular(isMe ? 4 : 20),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
                           ),
                         ],
-                      ],
+                      ),
+                      child: _buildMessageContent(message, isMe, isDark, theme),
                     ),
-                    // Tepkiler
-                    MessageReactions(
-                      reactions: message.reactions,
-                      currentUserId: widget.currentUserId,
-                      onReactionTap: (emoji) => _handleReactionTap(message, emoji),
-                    ),
-                  ],
-                ),
-              ),
             ),
             if (isMe) ...[
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
-                backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
-                backgroundImage: widget.currentUserName.isNotEmpty 
-                    ? null // Kullanıcı fotoğrafı varsa buraya eklenebilir
-                    : null,
+                backgroundColor: isDark
+                    ? theme.colorScheme.primaryContainer
+                    : AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
                 child: Text(
                   widget.currentUserName.isNotEmpty 
                       ? widget.currentUserName[0].toUpperCase()
                       : '?',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isDark
+                        ? theme.colorScheme.onPrimaryContainer
+                        : AppColorConfig.primaryColor,
+                  ),
                 ),
               ),
             ],
@@ -567,7 +583,72 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     );
   }
 
+  Widget _buildMessageContent(MessageModel message, bool isMe, bool isDark, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!isMe) ...[
+          Text(
+            _getDisplayName(message),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: isDark
+                  ? theme.colorScheme.primary
+                  : AppColorConfig.primaryColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+        Text(
+          message.text ?? '',
+          style: TextStyle(
+            color: isMe
+                ? (isDark ? theme.colorScheme.onPrimary : Colors.white)
+                : (isDark ? theme.colorScheme.onSurface : Colors.black87),
+            fontSize: 16,
+          ),  
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _formatMessageTime(message.timestamp),
+              style: TextStyle(
+                color: isMe
+                    ? (isDark ? theme.colorScheme.onPrimary.withValues(alpha: 0.8) : Colors.white70)
+                    : (isDark ? theme.colorScheme.onSurfaceVariant : Colors.grey[600]),
+                fontSize: 11,
+              ),
+            ),
+            if (isMe) ...[
+              const SizedBox(width: 4),
+              Icon(
+                _getMessageStatusIcon(message.status),
+                size: 12,
+                color: isDark
+                    ? theme.colorScheme.onPrimary.withValues(alpha: 0.8)
+                    : Colors.white70,
+              ),
+            ],
+          ],
+        ),
+        // Tepkiler
+        MessageReactions(
+          reactions: message.reactions,
+          currentUserId: widget.currentUserId,
+          onReactionTap: (emoji) => _handleReactionTap(message, emoji),
+        ),
+      ],
+    );
+  }
+
   Widget _buildImageMessage(MessageModel message, bool isMe) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
@@ -576,7 +657,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           if (!isMe) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.grey[300],
+              backgroundColor: isDark
+                  ? theme.colorScheme.surfaceContainerHighest
+                  : Colors.grey[300],
               backgroundImage: message.senderPhotoUrl != null 
                   ? NetworkImage(message.senderPhotoUrl!)
                   : null,
@@ -585,7 +668,13 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       message.senderName.isNotEmpty 
                           ? message.senderName[0].toUpperCase()
                           : '?',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? theme.colorScheme.onSurface
+                            : Colors.black87,
+                      ),
                     )
                   : null,
             ),
@@ -602,44 +691,93 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
-                      color: Colors.deepPurple[700],
+                      color: isDark
+                          ? theme.colorScheme.primary
+                          : Colors.deepPurple[700],
                     ),
                   ),
                   const SizedBox(height: 4),
                 ],
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    message.imageUrl!,
-                    width: 200,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        width: 200,
-                        height: 200,
-                        color: Colors.grey[300],
-                        child: const Center(
-                          child: ModernLoadingWidget(size: 32, showMessage: false),
+                isDark
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                message.imageUrl!,
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    width: 200,
+                                    height: 200,
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    child: const Center(
+                                      child: ModernLoadingWidget(size: 32, showMessage: false),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 200,
+                                    height: 200,
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    child: Icon(Icons.error, color: theme.colorScheme.error),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
                         ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 200,
-                        height: 200,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error, color: Colors.red),
-                      );
-                    },
-                  ),
-                ),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          message.imageUrl!,
+                          width: 200,
+                          height: 200,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 200,
+                              height: 200,
+                              color: Colors.grey[300],
+                              child: const Center(
+                                child: ModernLoadingWidget(size: 32, showMessage: false),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 200,
+                              height: 200,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.error, color: Colors.red),
+                            );
+                          },
+                        ),
+                      ),
                 const SizedBox(height: 4),
                 Text(
                   _formatMessageTime(message.timestamp),
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: isDark
+                        ? theme.colorScheme.onSurfaceVariant
+                        : Colors.grey[600],
                     fontSize: 11,
                   ),
                 ),
@@ -656,12 +794,20 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
+              backgroundColor: isDark
+                  ? theme.colorScheme.primaryContainer
+                  : AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
               child: Text(
                 widget.currentUserName.isNotEmpty 
                     ? widget.currentUserName[0].toUpperCase()
                     : '?',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark
+                      ? theme.colorScheme.onPrimaryContainer
+                      : AppColorConfig.primaryColor,
+                ),
               ),
             ),
           ],
@@ -671,6 +817,10 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Widget _buildVideoMessage(MessageModel message, bool isMe) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
@@ -679,7 +829,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
           if (!isMe) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.grey[300],
+              backgroundColor: isDark
+                  ? theme.colorScheme.surfaceContainerHighest
+                  : Colors.grey[300],
               backgroundImage: message.senderPhotoUrl != null 
                   ? NetworkImage(message.senderPhotoUrl!)
                   : null,
@@ -688,7 +840,13 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       message.senderName.isNotEmpty 
                           ? message.senderName[0].toUpperCase()
                           : '?',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? theme.colorScheme.onSurface
+                            : Colors.black87,
+                      ),
                     )
                   : null,
             ),
@@ -705,20 +863,45 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
-                      color: Colors.deepPurple[700],
+                      color: isDark
+                          ? theme.colorScheme.primary
+                          : Colors.deepPurple[700],
                     ),
                   ),
                   const SizedBox(height: 4),
                 ],
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: _VideoMessageWidget(videoUrl: message.videoUrl!),
-                ),
+                isDark
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: _VideoMessageWidget(videoUrl: message.videoUrl!),
+                            ),
+                          ),
+                        ),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: _VideoMessageWidget(videoUrl: message.videoUrl!),
+                      ),
                 const SizedBox(height: 4),
                 Text(
                   _formatMessageTime(message.timestamp),
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: isDark
+                        ? theme.colorScheme.onSurfaceVariant
+                        : Colors.grey[600],
                     fontSize: 11,
                   ),
                 ),
@@ -735,12 +918,20 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
+              backgroundColor: isDark
+                  ? theme.colorScheme.primaryContainer
+                  : AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
               child: Text(
                 widget.currentUserName.isNotEmpty 
                     ? widget.currentUserName[0].toUpperCase()
                     : '?',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark
+                      ? theme.colorScheme.onPrimaryContainer
+                      : AppColorConfig.primaryColor,
+                ),
               ),
             ),
           ],
@@ -750,6 +941,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Widget _buildAudioMessage(MessageModel message, bool isMe) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
     final duration = message.metadata?['duration'] != null 
         ? Duration(milliseconds: message.metadata!['duration'])
         : null;
@@ -765,7 +959,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             if (!isMe) ...[
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.grey[300],
+                backgroundColor: isDark
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : Colors.grey[300],
                 backgroundImage: message.senderPhotoUrl != null 
                     ? NetworkImage(message.senderPhotoUrl!)
                     : null,
@@ -774,7 +970,13 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         _getDisplayName(message).isNotEmpty 
                             ? _getDisplayName(message)[0].toUpperCase()
                             : '?',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? theme.colorScheme.onSurface
+                              : Colors.black87,
+                        ),
                       )
                     : null,
               ),
@@ -791,7 +993,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: AppColorConfig.primaryColor,
+                        color: isDark
+                            ? theme.colorScheme.primary
+                            : AppColorConfig.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -806,7 +1010,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   Text(
                     _formatMessageTime(message.timestamp),
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: isDark
+                          ? theme.colorScheme.onSurfaceVariant
+                          : Colors.grey[600],
                       fontSize: 11,
                     ),
                   ),
@@ -823,12 +1029,20 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
-                backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
+                backgroundColor: isDark
+                    ? theme.colorScheme.primaryContainer
+                    : AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
                 child: Text(
                   widget.currentUserName.isNotEmpty 
                       ? widget.currentUserName[0].toUpperCase()
                       : '?',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isDark
+                        ? theme.colorScheme.onPrimaryContainer
+                        : AppColorConfig.primaryColor,
+                  ),
                 ),
               ),
             ],
@@ -839,6 +1053,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   Widget _buildFileMessage(MessageModel message, bool isMe) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
     final fileExtension = message.metadata?['fileExtension'] as String?;
 
     return GestureDetector(
@@ -852,7 +1069,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             if (!isMe) ...[
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Colors.grey[300],
+                backgroundColor: isDark
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : Colors.grey[300],
                 backgroundImage: message.senderPhotoUrl != null 
                     ? NetworkImage(message.senderPhotoUrl!)
                     : null,
@@ -861,7 +1080,13 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         _getDisplayName(message).isNotEmpty 
                             ? _getDisplayName(message)[0].toUpperCase()
                             : '?',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? theme.colorScheme.onSurface
+                              : Colors.black87,
+                        ),
                       )
                     : null,
               ),
@@ -878,7 +1103,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: AppColorConfig.primaryColor,
+                        color: isDark
+                            ? theme.colorScheme.primary
+                            : AppColorConfig.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -902,7 +1129,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   Text(
                     _formatMessageTime(message.timestamp),
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: isDark
+                          ? theme.colorScheme.onSurfaceVariant
+                          : Colors.grey[600],
                       fontSize: 11,
                     ),
                   ),
@@ -919,12 +1148,20 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
-                backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
+                backgroundColor: isDark
+                    ? theme.colorScheme.primaryContainer
+                    : AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
                 child: Text(
                   widget.currentUserName.isNotEmpty 
                       ? widget.currentUserName[0].toUpperCase()
                       : '?',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColorConfig.primaryColor),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isDark
+                        ? theme.colorScheme.onPrimaryContainer
+                        : AppColorConfig.primaryColor,
+                  ),
                 ),
               ),
             ],
@@ -950,82 +1187,127 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   void _showMessageOptions(MessageModel message) {
-    showModalBottomSheet(
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+
+    GlassModalBottomSheet.show(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+      padding: EdgeInsets.zero,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : Colors.grey[400],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // React
+          ListTile(
+            leading: Icon(
+              Icons.emoji_emotions,
+              color: Colors.orange,
+            ),
+            title: Text(
+              AppLocalizations.of(context)?.react ?? 'React',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.emoji_emotions, color: Colors.orange),
-              title: Text(AppLocalizations.of(context)?.react ?? 'React'),
-              onTap: () {
-                Navigator.pop(context);
-                _showReactionPicker(message);
-              },
+            onTap: () {
+              Navigator.pop(context);
+              _showReactionPicker(message);
+            },
+          ),
+          // Forward
+          ListTile(
+            leading: Icon(
+              Icons.forward,
+              color: Colors.deepPurple,
             ),
-            ListTile(
-              leading: const Icon(Icons.forward, color: Colors.deepPurple),
-              title: Text(AppLocalizations.of(context)?.forward ?? 'Forward'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
+            title: Text(
+              AppLocalizations.of(context)?.forward ?? 'Forward',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MessageForwardPage(message: message),
+                ),
+              );
+            },
+          ),
+          // Copy
+          ListTile(
+            leading: Icon(
+              Icons.copy,
+              color: Colors.blue,
+            ),
+            title: Text(
+              AppLocalizations.of(context)?.copy ?? 'Copy',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              if (message.text != null) {
+                Clipboard.setData(ClipboardData(text: message.text!));
+                ModernSnackbar.showSuccess(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => MessageForwardPage(message: message),
-                  ),
+                  AppLocalizations.of(context)?.messageCopied ?? 'Message copied',
                 );
+              }
+            },
+          ),
+          // Edit & Delete (only for own messages)
+          if (message.senderId == widget.currentUserId) ...[
+            ListTile(
+              leading: Icon(
+                Icons.edit,
+                color: Colors.orange,
+              ),
+              title: Text(
+                AppLocalizations.of(context)?.edit ?? 'Edit',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _editMessage(message);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.copy, color: Colors.blue),
-              title: Text(AppLocalizations.of(context)?.copy ?? 'Copy'),
+              leading: Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
+              title: Text(
+                AppLocalizations.of(context)?.delete ?? 'Delete',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
               onTap: () {
                 Navigator.pop(context);
-                if (message.text != null) {
-                  Clipboard.setData(ClipboardData(text: message.text!));
-                  ModernSnackbar.showSuccess(
-                    context,
-                    AppLocalizations.of(context)?.messageCopied ?? 'Message copied',
-                  );
-                }
+                _deleteMessage(message);
               },
             ),
-            if (message.senderId == widget.currentUserId) ...[
-              ListTile(
-                leading: const Icon(Icons.edit, color: Colors.orange),
-                title: Text(AppLocalizations.of(context)?.edit ?? 'Edit'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _editMessage(message);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: Text(AppLocalizations.of(context)?.delete ?? 'Delete'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _deleteMessage(message);
-                },
-              ),
-            ],
-            const SizedBox(height: 20),
           ],
-        ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+        ],
       ),
     );
   }
@@ -1268,16 +1550,428 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     }
   }
 
-  void _showVoiceRecorder() {
-    setState(() {
-      _isRecordingVoice = true;
-    });
+  // Voice recording (hold to record)
+  
+  Future<void> _startVoiceRecording() async {
+    try {
+      final success = await _audioService.startRecording();
+      if (success) {
+        setState(() {
+          _isRecordingVoice = true;
+          _voiceRecordingDuration = Duration.zero;
+          _voiceRecordingStartTime = DateTime.now();
+        });
+        
+        // Süre sayacını başlat
+        _voiceRecordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          if (mounted && _isRecordingVoice) {
+            setState(() {
+              _voiceRecordingDuration = DateTime.now().difference(_voiceRecordingStartTime!);
+            });
+          }
+        });
+        
+        // Haptic feedback
+        HapticFeedback.mediumImpact();
+      }
+    } catch (e) {
+      if (mounted) {
+        ModernSnackbar.showError(context, 'Ses kaydı başlatılamadı: $e');
+      }
+    }
   }
-
-  void _hideVoiceRecorder() {
+  
+  Future<void> _stopAndSendVoiceRecording() async {
+    if (!_isRecordingVoice) return;
+    
+    _voiceRecordingTimer?.cancel();
+    
+    // Minimum 1 saniye kayıt olmalı
+    if (_voiceRecordingDuration.inSeconds < 1) {
+      await _audioService.cancelRecording();
+      setState(() {
+        _isRecordingVoice = false;
+        _voiceRecordingDuration = Duration.zero;
+      });
+      if (mounted) {
+        ModernSnackbar.showInfo(context, 'Çok kısa, daha uzun basılı tutun');
+      }
+      return;
+    }
+    
+    try {
+      final filePath = await _audioService.stopRecording();
+      if (filePath != null) {
+        // Haptic feedback
+        HapticFeedback.lightImpact();
+        
+        await _sendVoiceMessage(filePath, _voiceRecordingDuration);
+      }
+    } catch (e) {
+      if (mounted) {
+        ModernSnackbar.showError(context, 'Ses kaydı gönderilemedi: $e');
+      }
+    } finally {
+      setState(() {
+        _isRecordingVoice = false;
+        _voiceRecordingDuration = Duration.zero;
+      });
+    }
+  }
+  
+  Future<void> _cancelVoiceRecording() async {
+    _voiceRecordingTimer?.cancel();
+    await _audioService.cancelRecording();
+    
     setState(() {
       _isRecordingVoice = false;
+      _voiceRecordingDuration = Duration.zero;
     });
+    
+    HapticFeedback.lightImpact();
+  }
+  
+  String _formatRecordingDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+  
+  Widget _buildModernMessageInputBar() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Container(
+      padding: EdgeInsets.only(
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: MediaQuery.of(context).padding.bottom + 8,
+      ),
+      decoration: BoxDecoration(
+        // Glassmorphism background
+        color: isDark 
+            ? Colors.black.withValues(alpha: 0.6)
+            : Colors.white.withValues(alpha: 0.9),
+        border: Border(
+          top: BorderSide(
+            color: isDark 
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.grey.withValues(alpha: 0.2),
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: _isRecordingVoice 
+          ? _buildVoiceRecordingOverlay(isDark, theme)
+          : _buildNormalInputBar(isDark, theme),
+    );
+  }
+  
+  Widget _buildVoiceRecordingOverlay(bool isDark, ThemeData theme) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.red.withValues(alpha: 0.2),
+            Colors.red.withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.red.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // İptal butonu
+          GestureDetector(
+            onTap: _cancelVoiceRecording,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Kayıt animasyonu
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withValues(alpha: 0.5),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Süre
+          Text(
+            _formatRecordingDuration(_voiceRecordingDuration),
+            style: TextStyle(
+              color: Colors.red[300],
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          
+          const Spacer(),
+          
+          // "Bırak ve Gönder" yazısı
+          Text(
+            '◀ Bırak ve gönder',
+            style: TextStyle(
+              color: isDark ? Colors.white70 : Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(width: 8),
+          
+          // Mikrofon ikonu (aktif)
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Colors.red, Colors.redAccent],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.mic,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildNormalInputBar(bool isDark, ThemeData theme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Emoji butonu
+        IconButton(
+          icon: Icon(
+            _showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
+            color: isDark ? Colors.white60 : Colors.grey[600],
+          ),
+          onPressed: () => setState(() => _showEmojiPicker = !_showEmojiPicker),
+        ),
+        
+        // Ek dosya butonu
+        PopupMenuButton<String>(
+          icon: Icon(
+            Icons.attach_file_rounded,
+            color: isDark ? Colors.white60 : Colors.grey[600],
+          ),
+          color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          onSelected: (value) {
+            switch (value) {
+              case 'photo':
+                _pickMedia(ImageSource.gallery, isVideo: false);
+                break;
+              case 'video':
+                _pickMedia(ImageSource.gallery, isVideo: true);
+                break;
+              case 'camera':
+                _pickMedia(ImageSource.camera, isVideo: false);
+                break;
+              case 'file':
+                _showFilePicker();
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            _buildPopupMenuItem('photo', Icons.photo_rounded, 'Fotoğraf', Colors.blue, isDark),
+            _buildPopupMenuItem('video', Icons.videocam_rounded, 'Video', Colors.red, isDark),
+            _buildPopupMenuItem('camera', Icons.camera_alt_rounded, 'Kamera', Colors.green, isDark),
+            _buildPopupMenuItem('file', Icons.insert_drive_file_rounded, 'Dosya', Colors.orange, isDark),
+          ],
+        ),
+        
+        // Mesaj giriş alanı
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark 
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.grey.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark 
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)?.typeMessage ?? 'Mesaj yaz...',
+                hintStyle: TextStyle(
+                  color: isDark ? Colors.white38 : Colors.grey[500],
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              minLines: 1,
+              maxLines: 4,
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              cursorColor: AppColorConfig.primaryColor,
+            ),
+          ),
+        ),
+        
+        const SizedBox(width: 4),
+        
+        // Gönder veya Mikrofon butonu
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _controller,
+          builder: (context, value, child) {
+            final hasText = value.text.trim().isNotEmpty;
+            
+            if (hasText) {
+              // Gönder butonu
+              return Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      _sendMessage(text: _controller.text);
+                      _scrollToBottom();
+                    },
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColorConfig.primaryColor,
+                            AppColorConfig.primaryColor.withValues(alpha: 0.8),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColorConfig.primaryColor.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            } else {
+              // Mikrofon butonu - WhatsApp tarzı basılı tut
+              return Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                child: GestureDetector(
+                  onLongPressStart: (_) => _startVoiceRecording(),
+                  onLongPressEnd: (_) => _stopAndSendVoiceRecording(),
+                  onLongPressCancel: () => _cancelVoiceRecording(),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: isDark 
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.grey.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.mic_rounded,
+                      color: isDark ? Colors.white70 : Colors.grey[700],
+                      size: 24,
+                    ),
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+      ],
+    );
+  }
+  
+  PopupMenuItem<String> _buildPopupMenuItem(
+    String value, 
+    IconData icon, 
+    String text, 
+    Color color,
+    bool isDark,
+  ) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _sendFileMessage(PlatformFile file) async {
@@ -1516,171 +2210,14 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         },
                       ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.emoji_emotions, color: AppColorConfig.primaryColor),
-                  onPressed: () => setState(() => _showEmojiPicker = !_showEmojiPicker),
-                ),
-                IconButton(
-                  icon: Icon(Icons.mic, color: AppColorConfig.primaryColor),
-                  onPressed: _showVoiceRecorder,
-                ),
-                PopupMenuButton<String>(
-                  icon: Icon(Icons.attach_file, color: AppColorConfig.primaryColor),
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'photo':
-                        _pickMedia(ImageSource.gallery, isVideo: false);
-                        break;
-                      case 'video':
-                        _pickMedia(ImageSource.gallery, isVideo: true);
-                        break;
-                      case 'camera':
-                        _pickMedia(ImageSource.camera, isVideo: false);
-                        break;
-                      case 'file':
-                        _showFilePicker();
-                        break;
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'photo',
-                      child: Row(
-                        children: [
-                          Icon(Icons.photo, color: Colors.blue),
-                          SizedBox(width: 12),
-                          Text('Fotoğraf'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'video',
-                      child: Row(
-                        children: [
-                          Icon(Icons.videocam, color: Colors.red),
-                          SizedBox(width: 12),
-                          Text('Video'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'camera',
-                      child: Row(
-                        children: [
-                          Icon(Icons.camera_alt, color: Colors.green),
-                          SizedBox(width: 12),
-                          Text('Kamera'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'file',
-                      child: Row(
-                        children: [
-                          Icon(Icons.insert_drive_file, color: Colors.orange),
-                          SizedBox(width: 12),
-                          Text('Dosya'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Colors.grey[300]!,
-                        width: 1,
-                      ),
-                    ),
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)?.typeMessage ?? 'Type a message...',
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      minLines: 1,
-                      maxLines: 3,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _controller,
-                  builder: (context, value, child) {
-                    final hasText = value.text.trim().isNotEmpty;
-                    return Container(
-                      margin: const EdgeInsets.only(left: 8, right: 8),
-                      decoration: BoxDecoration(
-                        gradient: hasText
-                            ? LinearGradient(
-                                colors: [
-                                  Theme.of(context).colorScheme.primary,
-                                  Theme.of(context).colorScheme.secondary,
-                                ],
-                              )
-                            : null,
-                        color: hasText ? null : Colors.grey[300],
-                        shape: BoxShape.circle,
-                        boxShadow: hasText
-                            ? [
-                                BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.send,
-                          color: hasText ? Colors.white : Colors.grey[600],
-                        ),
-                        onPressed: hasText
-                            ? () {
-                                _sendMessage(text: _controller.text);
-                                _scrollToBottom();
-                              }
-                            : null,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
+          // Modern Dark Message Input Bar
+          _buildModernMessageInputBar(),
           if (_showEmojiPicker)
             SizedBox(
               height: 280,
               child: EmojiPicker(
                 onEmojiSelected: (category, emoji) => _onEmojiSelected(emoji),
                 config: const Config(),
-              ),
-            ),
-          if (_isRecordingVoice)
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: VoiceRecorderWidget(
-                onRecordingComplete: _sendVoiceMessage,
-                onCancel: _hideVoiceRecorder,
               ),
             ),
           if (_isShowingFilePicker)

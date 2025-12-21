@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
+import '../core/widgets/glass_container.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../services/language_service.dart';
 import '../services/theme_service.dart';
@@ -29,8 +30,8 @@ class SettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.settings),
-        backgroundColor: AppColorConfig.primaryColor,
-        foregroundColor: AppColorConfig.cardColor,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
       body: ListView(
         children: [
@@ -39,6 +40,7 @@ class SettingsPage extends StatelessWidget {
           // Hesap Bölümü
           _buildSectionHeader(l10n.account, theme),
           _buildSettingsTile(
+            context: context,
             icon: Icons.person_outline,
             title: l10n.editProfile,
             subtitle: l10n.editProfileSubtitle,
@@ -47,6 +49,7 @@ class SettingsPage extends StatelessWidget {
             },
           ),
           _buildSettingsTile(
+            context: context,
             icon: Icons.lock_outline,
             title: l10n.changePassword,
             subtitle: l10n.accountSecurity,
@@ -76,6 +79,7 @@ class SettingsPage extends StatelessWidget {
           // Bildirimler Bölümü
           _buildSectionHeader(l10n.notifications, theme),
           _buildSettingsTile(
+            context: context,
             icon: Icons.notifications_outlined,
             title: l10n.notificationSettings,
             subtitle: l10n.notificationSettingsSubtitle,
@@ -87,20 +91,38 @@ class SettingsPage extends StatelessWidget {
           // Görünüm Bölümü
           _buildSectionHeader(l10n.appearance, theme),
           Consumer<ThemeService>(
-            builder: (context, themeService, _) => _buildSettingsTile(
-              icon: Icons.dark_mode_outlined,
-              title: l10n.darkMode,
-              subtitle: themeService.isDark ? l10n.on : l10n.off,
-              onTap: () => themeService.toggleTheme(),
-              trailing: Switch(
-                value: themeService.isDark,
-                activeTrackColor: AppColorConfig.primaryColor,
-                onChanged: (v) => themeService.toggleTheme(),
-              ),
-            ),
+            builder: (context, themeService, _) {
+              // Seçili temaya göre başlık ve icon belirle
+              String themeTitle;
+              IconData themeIcon;
+              String themeSubtitle;
+              
+              if (themeService.isSystem) {
+                themeTitle = 'Tema';
+                themeIcon = Icons.brightness_auto;
+                themeSubtitle = 'Sistem';
+              } else if (themeService.isDark) {
+                themeTitle = 'Gece Modu';
+                themeIcon = Icons.dark_mode;
+                themeSubtitle = 'Aktif';
+              } else {
+                themeTitle = 'Gündüz Modu';
+                themeIcon = Icons.light_mode;
+                themeSubtitle = 'Aktif';
+              }
+              
+              return _buildSettingsTile(
+                context: context,
+                icon: themeIcon,
+                title: themeTitle,
+                subtitle: themeSubtitle,
+                onTap: () => _showThemeSelector(context, themeService, l10n),
+              );
+            },
           ),
           Consumer<LanguageService>(
             builder: (context, languageService, _) => _buildSettingsTile(
+              context: context,
               icon: Icons.language,
               title: l10n.language,
               subtitle: languageService.isTurkish ? 'Türkçe' : 'English',
@@ -113,12 +135,14 @@ class SettingsPage extends StatelessWidget {
           // Gizlilik ve Güvenlik
           _buildSectionHeader(l10n.privacySecurity, theme),
           _buildSettingsTile(
+            context: context,
             icon: Icons.shield_outlined,
             title: l10n.privacySettings,
             subtitle: l10n.accountPrivacy,
             onTap: () => _showPrivacySettings(context, l10n),
           ),
           _buildSettingsTile(
+            context: context,
             icon: Icons.block,
             title: l10n.blockedUsers,
             subtitle: l10n.manageBlockList,
@@ -140,12 +164,14 @@ class SettingsPage extends StatelessWidget {
           // Yardım ve Destek
           _buildSectionHeader(l10n.helpSupport, theme),
           _buildSettingsTile(
+            context: context,
             icon: Icons.help_outline,
             title: l10n.helpCenter,
             subtitle: l10n.faq,
             onTap: () => _openUrl(context, 'https://thunder-app.com/help', l10n),
           ),
           _buildSettingsTile(
+            context: context,
             icon: Icons.bug_report_outlined,
             title: l10n.reportProblem,
             subtitle: l10n.reportProblemSubtitle,
@@ -157,16 +183,19 @@ class SettingsPage extends StatelessWidget {
           // Yasal
           _buildSectionHeader(l10n.legal, theme),
           _buildSettingsTile(
+            context: context,
             icon: Icons.policy_outlined,
             title: l10n.privacyPolicy,
             onTap: () => _openUrl(context, 'https://thunder-app.com/privacy', l10n),
           ),
           _buildSettingsTile(
+            context: context,
             icon: Icons.description_outlined,
             title: l10n.termsOfService,
             onTap: () => _openUrl(context, 'https://thunder-app.com/terms', l10n),
           ),
           _buildSettingsTile(
+            context: context,
             icon: Icons.info_outline,
             title: l10n.about,
             subtitle: '${l10n.version} 1.0.0',
@@ -258,18 +287,99 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget _buildSettingsTile({
+    required BuildContext context,
     required IconData icon,
     required String title,
     String? subtitle,
     required VoidCallback onTap,
     Widget? trailing,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: AppColorConfig.textSecondary),
-      title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: trailing ?? const Icon(Icons.chevron_right),
-      onTap: onTap,
+    return GlassContainer(
+      margin: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd, vertical: AppTheme.spacingXs),
+      borderRadius: AppTheme.radiusLg,
+      padding: EdgeInsets.zero,
+      glassAlpha: AppTheme.glassAlphaVeryLight,
+      borderAlpha: AppTheme.glassAlphaMedium,
+      child: ListTile(
+        leading: Icon(icon, color: AppColorConfig.textSecondary),
+        title: Text(title),
+        subtitle: subtitle != null ? Text(subtitle) : null,
+        trailing: trailing ?? const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  void _showThemeSelector(BuildContext context, ThemeService themeService, AppLocalizations l10n) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusRound)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingLg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingLg),
+            Text(
+              'Tema Seçimi',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingMd),
+            ListTile(
+              leading: const Icon(Icons.light_mode, color: Colors.orange),
+              title: const Text('Gündüz Modu'),
+              subtitle: const Text('Açık renk teması'),
+              trailing: themeService.isLight 
+                  ? const Icon(Icons.check, color: AppColorConfig.primaryColor)
+                  : null,
+              onTap: () async {
+                Navigator.pop(context);
+                await themeService.setLightMode();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.dark_mode, color: Colors.blue),
+              title: const Text('Gece Modu'),
+              subtitle: const Text('Koyu renk teması'),
+              trailing: themeService.isDark 
+                  ? const Icon(Icons.check, color: AppColorConfig.primaryColor)
+                  : null,
+              onTap: () async {
+                Navigator.pop(context);
+                await themeService.setDarkMode();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.brightness_auto, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              title: const Text('Sistem'),
+              subtitle: const Text('Sistem ayarına göre otomatik'),
+              trailing: themeService.isSystem 
+                  ? const Icon(Icons.check, color: AppColorConfig.primaryColor)
+                  : null,
+              onTap: () async {
+                Navigator.pop(context);
+                await themeService.setSystemMode();
+              },
+            ),
+            const SizedBox(height: AppTheme.spacingLg),
+          ],
+        ),
+      ),
     );
   }
 
@@ -290,7 +400,7 @@ class SettingsPage extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context).colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -365,7 +475,7 @@ class SettingsPage extends StatelessWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: Theme.of(context).colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -478,7 +588,7 @@ class SettingsPage extends StatelessWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: Theme.of(context).colorScheme.outlineVariant,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

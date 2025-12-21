@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -13,6 +14,7 @@ class AudioService {
 
   final AudioRecorder _recorder = AudioRecorder();
   final AudioPlayer _player = AudioPlayer();
+  StreamSubscription<void>? _playerCompleteSubscription;
   
   bool _isRecording = false;
   bool _isPlaying = false;
@@ -117,10 +119,13 @@ class AudioService {
       _currentPlayingPath = filePath;
       _isPlaying = true;
 
+      // Önceki listener'ı iptal et (memory leak önlemi)
+      _playerCompleteSubscription?.cancel();
+      
       await _player.play(DeviceFileSource(filePath));
       
-      // Oynatma bittiğinde durumu güncelle
-      _player.onPlayerComplete.listen((_) {
+      // Oynatma bittiğinde durumu güncelle (tek listener)
+      _playerCompleteSubscription = _player.onPlayerComplete.listen((_) {
         _isPlaying = false;
         _currentPlayingPath = null;
       });
@@ -155,6 +160,7 @@ class AudioService {
 
   /// Kaynakları temizle
   void dispose() {
+    _playerCompleteSubscription?.cancel();
     _recorder.dispose();
     _player.dispose();
   }

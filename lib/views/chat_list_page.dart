@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/chat_model.dart';
@@ -70,6 +71,7 @@ class _ChatListPageState extends State<ChatListPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brightness = theme.brightness;
     final authViewModel = Provider.of<AuthViewModel>(context);
     final currentUser = authViewModel.user;
     final l10n = AppLocalizations.of(context)!;
@@ -84,9 +86,10 @@ class _ChatListPageState extends State<ChatListPage> {
         ),
       );
     }
-
+    
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
+      backgroundImagePath: 'assets/backgrounds/background_2.png',
+      backgroundOpacity: 0.7,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
@@ -96,9 +99,11 @@ class _ChatListPageState extends State<ChatListPage> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 28,
-              color: Colors.white,
+              color: brightness == Brightness.dark 
+                  ? theme.colorScheme.onSurface 
+                  : Colors.white,
               letterSpacing: -0.5,
-              shadows: [
+              shadows: brightness == Brightness.dark ? null : [
                 Shadow(
                   color: Colors.black.withAlpha(AppTheme.alphaMediumDark),
                   blurRadius: 8,
@@ -109,7 +114,9 @@ class _ChatListPageState extends State<ChatListPage> {
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          foregroundColor: Colors.white,
+          foregroundColor: brightness == Brightness.dark 
+              ? theme.colorScheme.onSurface 
+              : Colors.white,
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: AppTheme.spacingMd),
@@ -125,8 +132,12 @@ class _ChatListPageState extends State<ChatListPage> {
                 icon: const Icon(Icons.search_rounded, size: 20),
                 label: const Text('Ara'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white.withAlpha(AppTheme.alphaMedium),
-                  foregroundColor: Colors.white,
+                  backgroundColor: brightness == Brightness.dark
+                      ? theme.colorScheme.surface.withAlpha(AppTheme.alphaMedium)
+                      : Colors.white.withAlpha(AppTheme.alphaMedium),
+                  foregroundColor: brightness == Brightness.dark
+                      ? theme.colorScheme.onSurface
+                      : Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppTheme.spacingMd,
                     vertical: AppTheme.spacingSm,
@@ -146,6 +157,7 @@ class _ChatListPageState extends State<ChatListPage> {
           stream: Provider.of<ChatViewModel>(context, listen: false).getUserChats(currentUser.uid),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
+              final isDark = brightness == Brightness.dark;
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -153,12 +165,16 @@ class _ChatListPageState extends State<ChatListPage> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(AppTheme.alphaLight),
+                        color: isDark 
+                            ? theme.colorScheme.surfaceContainerHighest.withAlpha(AppTheme.alphaLight)
+                            : theme.colorScheme.surface.withAlpha(AppTheme.alphaLight),
                         shape: BoxShape.circle,
                       ),
                       child: ModernLoadingWidget(
                         size: 24,
-                        color: Colors.white,
+                        color: isDark 
+                            ? theme.colorScheme.onSurface 
+                            : theme.colorScheme.primary,
                         showMessage: false,
                       ),
                     ),
@@ -166,7 +182,9 @@ class _ChatListPageState extends State<ChatListPage> {
                     Text(
                       'Sohbetler yükleniyor...',
                       style: TextStyle(
-                        color: Colors.white.withAlpha(AppTheme.alphaAlmostOpaque),
+                        color: isDark 
+                            ? theme.colorScheme.onSurfaceVariant
+                            : theme.colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -177,6 +195,7 @@ class _ChatListPageState extends State<ChatListPage> {
             }
 
             if (snapshot.hasError) {
+              final isDark = brightness == Brightness.dark;
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
@@ -186,20 +205,22 @@ class _ChatListPageState extends State<ChatListPage> {
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(AppTheme.alphaVeryLight),
+                          color: isDark 
+                              ? theme.colorScheme.surfaceContainerHighest.withAlpha(AppTheme.alphaVeryLight)
+                              : theme.colorScheme.surfaceContainerHighest.withAlpha(AppTheme.alphaVeryLight),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.error_outline_rounded,
                           size: 48,
-                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
+                          color: theme.colorScheme.error,
                         ),
                       ),
                       const SizedBox(height: 24),
                       Text(
                         'Bir hata oluştu',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: theme.colorScheme.onSurface,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -208,7 +229,7 @@ class _ChatListPageState extends State<ChatListPage> {
                       Text(
                         '${snapshot.error}',
                         style: TextStyle(
-                          color: Colors.white.withAlpha(AppTheme.alphaVeryDark),
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 14,
                         ),
                         textAlign: TextAlign.center,
@@ -221,8 +242,8 @@ class _ChatListPageState extends State<ChatListPage> {
                         icon: const Icon(Icons.refresh_rounded),
                         label: const Text('Tekrar Dene'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: theme.colorScheme.primary,
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
                             vertical: 14,
@@ -250,7 +271,9 @@ class _ChatListPageState extends State<ChatListPage> {
                           Navigator.of(context).popUntil((route) => route.isFirst);
                         },
                 backgroundColor: Colors.transparent,
-                textColor: Colors.white,
+                textColor: brightness == Brightness.dark 
+                    ? theme.colorScheme.onSurface 
+                    : theme.colorScheme.onSurface,
               );
             }
 
@@ -324,192 +347,278 @@ class _ChatListPageState extends State<ChatListPage> {
     final lastMessageTime = _formatLastMessageTime(chat.lastMessageAt);
     final hasUnread = unreadCount > 0;
     
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Builder(
       builder: (context) => Container(
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(AppTheme.alphaVeryLight),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-              spreadRadius: 0,
-            ),
-            BoxShadow(
-              color: theme.colorScheme.primary.withAlpha(AppTheme.alphaVeryLight),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              if (chat.type == ChatType.private) {
-                final otherParticipant = chat.participants.firstWhere(
-                  (id) => id != currentUser.uid,
-                  orElse: () => '',
-                );
-                final otherParticipantName = chat.participantDetails[otherParticipant]?.name ?? displayName;
-                
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PrivateChatPage(
-                      currentUserId: currentUser.uid,
-                      currentUserName: currentUser.displayName ?? 'Kullanıcı',
-                      otherUserId: otherParticipant,
-                      otherUserName: otherParticipantName,
-                    ),
-                  ),
-                );
-              }
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  // Avatar
-                  Stack(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              theme.colorScheme.primary,
-                              theme.colorScheme.secondary,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.primary.withAlpha(AppTheme.alphaMediumDark),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: photoUrl != null
-                            ? ClipOval(
-                                child: Image.network(
-                                  photoUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Center(
-                                      child: Text(
-                                        displayName.isNotEmpty 
-                                            ? displayName[0].toUpperCase()
-                                            : '?',
-                                        style: const TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              )
-                            : Center(
-                                child: Text(
-                                  displayName.isNotEmpty 
-                                      ? displayName[0].toUpperCase()
-                                      : '?',
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
+        child: isDark
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(0), // Tamamen şeffaf
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.1), // İnce şeffaf border
+                        width: 1.0,
                       ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  // Content
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                displayName,
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurface,
-                                  fontWeight: hasUnread ? FontWeight.bold : FontWeight.w600,
-                                  fontSize: 16,
-                                  letterSpacing: -0.3,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              lastMessageTime,
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 12,
-                                fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                chat.lastMessage?.text ?? 'Medya mesajı',
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontSize: 14,
-                                  fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
-                                  height: 1.3,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (hasUnread) ...[
-                              const SizedBox(width: 8),
-                              Badge(
-                                label: Text(
-                                  unreadCount > 99 ? '99+' : unreadCount.toString(),
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                backgroundColor: theme.colorScheme.primary,
-                                textColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                              ),
-                            ],
-                          ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1), // Subtle shadow
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
                         ),
                       ],
                     ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          if (chat.type == ChatType.private) {
+                            final otherParticipant = chat.participants.firstWhere(
+                              (id) => id != currentUser.uid,
+                              orElse: () => '',
+                            );
+                            final otherParticipantName = chat.participantDetails[otherParticipant]?.name ?? displayName;
+                            
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PrivateChatPage(
+                                  currentUserId: currentUser.uid,
+                                  currentUserName: currentUser.displayName ?? 'Kullanıcı',
+                                  otherUserId: otherParticipant,
+                                  otherUserName: otherParticipantName,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: _buildChatItemContent(
+                          chat: chat,
+                          currentUser: currentUser,
+                          displayName: displayName,
+                          photoUrl: photoUrl,
+                          theme: theme,
+                          hasUnread: hasUnread,
+                          lastMessageTime: lastMessageTime,
+                        ),
+                      ),
+                    ),
                   ),
-                ],
+                ),
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(AppTheme.alphaVeryLight),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                      spreadRadius: 0,
+                    ),
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withAlpha(AppTheme.alphaVeryLight),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      if (chat.type == ChatType.private) {
+                        final otherParticipant = chat.participants.firstWhere(
+                          (id) => id != currentUser.uid,
+                          orElse: () => '',
+                        );
+                        final otherParticipantName = chat.participantDetails[otherParticipant]?.name ?? displayName;
+                        
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PrivateChatPage(
+                              currentUserId: currentUser.uid,
+                              currentUserName: currentUser.displayName ?? 'Kullanıcı',
+                              otherUserId: otherParticipant,
+                              otherUserName: otherParticipantName,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: _buildChatItemContent(
+                      chat: chat,
+                      currentUser: currentUser,
+                      displayName: displayName,
+                      photoUrl: photoUrl,
+                      theme: theme,
+                      hasUnread: hasUnread,
+                      lastMessageTime: lastMessageTime,
+                    ),
+                  ),
+                ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildChatItemContent({
+    required ChatModel chat,
+    required currentUser,
+    required String displayName,
+    required String? photoUrl,
+    required ThemeData theme,
+    required bool hasUnread,
+    required String lastMessageTime,
+  }) {
+    final unreadCount = chat.unreadCounts[currentUser.uid] ?? 0;
+    
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          // Avatar
+          Stack(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.secondary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withAlpha(AppTheme.alphaMediumDark),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: photoUrl != null
+                    ? ClipOval(
+                        child: Image.network(
+                          photoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                displayName.isNotEmpty 
+                                    ? displayName[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onPrimary,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          displayName.isNotEmpty 
+                              ? displayName[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: hasUnread ? FontWeight.bold : FontWeight.w600,
+                          fontSize: 16,
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      lastMessageTime,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        chat.lastMessage?.text ?? 'Medya mesajı',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                          fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
+                          height: 1.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (hasUnread) ...[
+                      const SizedBox(width: 8),
+                      Badge(
+                        label: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        backgroundColor: theme.colorScheme.primary,
+                        textColor: theme.colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }

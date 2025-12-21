@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 class MessageReactions extends StatelessWidget {
   final Map<String, List<String>> reactions;
   final String currentUserId;
-  final Function(String emoji) onReactionTap;
+  final Function(String emoji)? onReactionTap;
 
   const MessageReactions({
     super.key,
     required this.reactions,
     required this.currentUserId,
-    required this.onReactionTap,
+    this.onReactionTap,
   });
 
   @override
@@ -45,7 +45,7 @@ class MessageReactions extends StatelessWidget {
           final hasCurrentUser = userIds.contains(currentUserId);
 
           return GestureDetector(
-            onTap: () => onReactionTap(emoji),
+            onTap: onReactionTap != null ? () => onReactionTap!(emoji) : null,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(

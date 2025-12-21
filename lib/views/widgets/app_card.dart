@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import '../../core/theme/app_color_config.dart';
 
 class AppCard extends StatefulWidget {
   final Widget child;
@@ -72,13 +73,14 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brightness = theme.brightness;
     
-    // Glassmorphism için özel widget
-    if (widget.enableGlassmorphism) {
+    // Dark mode'da otomatik glassmorphism, light mode'da normal veya manuel glassmorphism
+    if (widget.enableGlassmorphism || brightness == Brightness.dark) {
       return _buildGlassCard();
     }
     
-    // Normal kart
+    // Light mode normal kart
     Widget cardContent = Container(
       width: widget.width,
       height: widget.height,
@@ -140,6 +142,10 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildGlassCard() {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
     Widget glassContent = Container(
       width: widget.width,
       height: widget.height,
@@ -147,40 +153,42 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(widget.borderRadius),
         child: BackdropFilter(
+          // iOS 16 tarzı güçlü blur
           filter: ImageFilter.blur(
-            sigmaX: widget.blurStrength,
-            sigmaY: widget.blurStrength,
+            sigmaX: isDark ? 20 : widget.blurStrength,
+            sigmaY: isDark ? 20 : widget.blurStrength,
           ),
-          child: CustomPaint(
-            painter: _GlassBorderPainter(
-              borderRadius: widget.borderRadius,
-              opacity: widget.glassOpacity,
-            ),
-            child: Container(
-              padding: widget.padding ?? const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                // Çok hafif şeffaf dolgu - arkası net görünsün
-                color: Colors.white.withValues(alpha: widget.glassOpacity * 0.4),
-                borderRadius: BorderRadius.circular(widget.borderRadius),
+          child: Container(
+            padding: widget.padding ?? const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              // iOS 16 tarzı şeffaf glassmorphism
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05) // Çok şeffaf
+                  : Colors.white.withValues(alpha: 0.15),
+              // İnce, şeffaf border
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : AppColorConfig.primaryColor.withValues(alpha: 0.6),
+                width: isDark ? 1.0 : 1.4,
               ),
-              child: widget.child,
             ),
+            child: widget.child,
           ),
         ),
       ),
     );
 
-    // Dış gölge için sarmalayıcı
+    // Dış gölge için sarmalayıcı - hafif gölge (ChatGPT önerisi)
     glassContent = Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(widget.borderRadius),
         boxShadow: widget.boxShadow ?? [
-          // Alt gölge - derinlik
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
-            spreadRadius: -5,
+            color: theme.colorScheme.shadow.withValues(alpha: brightness == Brightness.dark ? 0.4 : 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -207,76 +215,4 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
 
     return glassContent;
   }
-}
-
-// Gradient kenarlık için CustomPainter
-class _GlassBorderPainter extends CustomPainter {
-  final double borderRadius;
-  final double opacity;
-
-  _GlassBorderPainter({
-    required this.borderRadius,
-    required this.opacity,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
-
-    // Gradient kenarlık - sol üstten sağ alta doğru solan
-    final borderPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withValues(alpha: 0.6),
-          Colors.white.withValues(alpha: 0.3),
-          Colors.white.withValues(alpha: 0.1),
-          Colors.white.withValues(alpha: 0.05),
-        ],
-        stops: const [0.0, 0.3, 0.6, 1.0],
-      ).createShader(rect);
-
-    canvas.drawRRect(rrect, borderPaint);
-
-    // İç ışık efekti - sol üst köşe
-    final highlightPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.center,
-        colors: [
-          Colors.white.withValues(alpha: 0.4),
-          Colors.white.withValues(alpha: 0.0),
-        ],
-      ).createShader(rect);
-
-    // Sadece üst ve sol kenarı çiz
-    final path = Path()
-      ..moveTo(borderRadius, 0)
-      ..lineTo(size.width - borderRadius, 0)
-      ..arcToPoint(
-        Offset(size.width, borderRadius),
-        radius: Radius.circular(borderRadius),
-      );
-    
-    canvas.drawPath(path, highlightPaint);
-
-    final leftPath = Path()
-      ..moveTo(0, size.height - borderRadius)
-      ..lineTo(0, borderRadius)
-      ..arcToPoint(
-        Offset(borderRadius, 0),
-        radius: Radius.circular(borderRadius),
-      );
-    
-    canvas.drawPath(leftPath, highlightPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 } 

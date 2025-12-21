@@ -6,6 +6,7 @@ import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../services/user_service.dart';
 import '../user_profile_page.dart';
 import '../../core/widgets/modern_components.dart';
+import '../../core/widgets/glass_container.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_color_config.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -14,12 +15,14 @@ class UserSuggestionsWidget extends StatelessWidget {
   final String currentUserId;
   final List<String> followingIds;
   final List<String> followersIds;
+  final bool isExpanded;
 
   const UserSuggestionsWidget({
     super.key,
     required this.currentUserId,
     required this.followingIds,
     required this.followersIds,
+    this.isExpanded = true,
   });
 
   Future<List<UserModel>> _getSuggestions() async {
@@ -118,59 +121,33 @@ class UserSuggestionsWidget extends StatelessWidget {
 
         final suggestions = snapshot.data!;
 
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
-          child: Container(
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+          child: GlassContainer(
+            borderRadius: AppTheme.radiusXl,
             padding: const EdgeInsets.all(AppTheme.spacingMd),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              border: Border.all(
-                color: theme.colorScheme.outline.withAlpha(AppTheme.alphaVeryLight),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.explore,
-                      color: AppColorConfig.primaryColor,
-                      size: 20,
-                    ),
-                    const SizedBox(width: AppTheme.spacingXs),
-                    Text(
-                      'Keşfet',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppTheme.spacingMd),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Ekran genişliğinin 1/3'ü kadar genişlik (yan yana 3 tane sığsın)
-                    final itemWidth = (constraints.maxWidth - (AppTheme.spacingMd * 4)) / 3;
-                    return SizedBox(
-                      height: 170,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: suggestions.length,
-                        itemBuilder: (context, index) {
-                          final user = suggestions[index];
-                          return _buildSuggestionItem(context, user, theme, itemWidth);
+            blurStrength: 10,
+            glassAlpha: AppTheme.glassAlphaLight,
+            borderAlpha: AppTheme.glassAlphaMedium,
+            child: isExpanded
+                    ? LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Ekran genişliğinin 1/3'ü kadar genişlik (yan yana 3 tane sığsın)
+                          final itemWidth = (constraints.maxWidth - (AppTheme.spacingMd * 4)) / 3;
+                          return SizedBox(
+                            height: 170,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: suggestions.length,
+                              itemBuilder: (context, index) {
+                                final user = suggestions[index];
+                                return _buildSuggestionItem(context, user, theme, itemWidth);
+                              },
+                            ),
+                          );
                         },
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
+                      )
+                    : const SizedBox.shrink(),
           ),
         );
       },
@@ -273,7 +250,7 @@ class UserSuggestionsWidget extends StatelessWidget {
                     : AppColorConfig.primaryColor,
                 foregroundColor: isMutualFollow
                     ? theme.colorScheme.onSurface
-                    : Colors.white,
+                    : theme.colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 4,

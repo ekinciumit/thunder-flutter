@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'dart:ui' as ui;
 import '../models/user_model.dart';
 import '../models/event_model.dart';
 import 'private_chat_page.dart';
 import 'followers_following_page.dart';
 import 'event_detail_page.dart';
-import 'widgets/modern_loading_widget.dart';
+import 'widgets/user_suggestions_widget.dart';
+import 'widgets/app_gradient_container.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../l10n/app_localizations.dart';
 import '../services/user_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class UserProfilePage extends StatefulWidget {
   final UserModel user;
@@ -28,7 +32,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
   bool hasPendingRequest = false; // Bekleyen takip isteği var
   int followersCount = 0;
   int followingCount = 0;
+  int eventsCount = 0;
+  bool isKesfetVisible = true; // Keşfet bölümü görünürlüğü (başlangıçta görünür)
   UserModel? _currentUser;
+  StreamSubscription<DocumentSnapshot>? _userStreamSubscription;
+  StreamSubscription<DocumentSnapshot>? _currentUserStreamSubscription;
 
   @override
   void initState() {
@@ -44,10 +52,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
     
     if (currentUserDoc.exists) {
       _currentUser = UserModel.fromMap(currentUserDoc.data()!, currentUserDoc.id);
-  }
+    }
 
     // Kullanıcı verilerini stream ile dinle
-    FirebaseFirestore.instance
+    _userStreamSubscription = FirebaseFirestore.instance
         .collection('users')
         .doc(widget.user.uid)
         .snapshots()
@@ -59,7 +67,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     });
 
     // Mevcut kullanıcı verilerini de dinle
-    FirebaseFirestore.instance
+    _currentUserStreamSubscription = FirebaseFirestore.instance
         .collection('users')
         .doc(widget.currentUserId)
         .snapshots()
@@ -69,6 +77,17 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _updateFollowStatus(widget.user);
       }
     });
+
+    // Etkinlik sayısını al
+    final eventsSnapshot = await FirebaseFirestore.instance
+        .collection('events')
+        .where('createdBy', isEqualTo: widget.user.uid)
+        .get();
+    if (mounted) {
+      setState(() {
+        eventsCount = eventsSnapshot.docs.length;
+      });
+    }
   }
 
   void _updateFollowStatus(UserModel targetUser) {
@@ -118,6 +137,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     return FirebaseFirestore.instance
         .collection('events')
         .where('createdBy', isEqualTo: widget.user.uid)
+        .orderBy('datetime', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) {
               final data = doc.data();
@@ -129,177 +149,518 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.user.displayName ?? l10n.profile)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Center(
-              child: widget.user.photoUrl != null && widget.user.photoUrl!.isNotEmpty
-                  ? CircleAvatar(radius: 48, backgroundImage: NetworkImage(widget.user.photoUrl!))
-                  : const CircleAvatar(radius: 48, child: Icon(Icons.person, size: 48)),
+
+    return AppGradientContainer(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              AppTheme.spacingMd,
+              MediaQuery.of(context).padding.top,
+              AppTheme.spacingMd,
+              AppTheme.spacingXl + MediaQuery.of(context).padding.bottom,
             ),
-            const SizedBox(height: 16),
-            Text(widget.user.displayName ?? l10n.user, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-            if (widget.user.bio != null && widget.user.bio!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(widget.user.bio!, style: theme.textTheme.bodyMedium),
-              ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => FollowersFollowingPage(
-                          userId: widget.user.uid,
-                          showFollowers: true,
-                        ),
+                // Geri Butonu (Sol Üst - Profil fotoğrafının dışında)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 0,
+                    bottom: AppTheme.spacingMd,
+                  ),
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.brightness == Brightness.dark
+                            ? theme.colorScheme.surface.withValues(alpha: 0.9)
+                            : Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                  child: Column(
-                  children: [
-                      Text(
-                        '$followersCount',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColorConfig.primaryColor,
-                        ),
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        color: theme.brightness == Brightness.dark
+                            ? AppColorConfig.cardColor
+                            : Colors.black,
+                        size: 20,
                       ),
-                    Text(l10n.followers),
-                  ],
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ),
-                const SizedBox(width: 24),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => FollowersFollowingPage(
-                          userId: widget.user.uid,
-                          showFollowers: false,
+                // Instagram tarzı üst kısım - Profil fotoğrafı ve istatistikler yan yana
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                  child: Row(
+                    children: [
+                      // Profil Fotoğrafı
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: theme.colorScheme.outline.withValues(alpha: AppTheme.alphaMedium / 255.0),
+                            width: 2,
+                          ),
+                        ),
+                        child: widget.user.photoUrl != null && widget.user.photoUrl!.isNotEmpty
+                            ? ClipOval(
+                                child: CachedNetworkImage(
+                                  imageUrl: widget.user.photoUrl!,
+                                  fit: BoxFit.cover,
+                                  memCacheWidth: 180,
+                                  memCacheHeight: 180,
+                                  placeholder: (context, url) => Container(
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    child: const Center(child: CircularProgressIndicator()),
+                                  ),
+                                  errorWidget: (context, url, error) => Container(
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 45,
+                                      color: AppColorConfig.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                color: AppColorConfig.primaryColor.withValues(alpha: AppTheme.alphaVeryLight / 255.0),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 45,
+                                  color: AppColorConfig.primaryColor,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(width: AppTheme.spacingLg),
+                      // İstatistikler
+                      Expanded(
+                        child: StreamBuilder<List<EventModel>>(
+                          stream: _userEventsStream(),
+                          builder: (context, snapshot) {
+                            final eventsCount = snapshot.hasData ? snapshot.data!.length : 0;
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildStatColumn(
+                                  l10n.events,
+                                  eventsCount,
+                                  theme,
+                                  null,
+                                ),
+                                _buildStatColumn(
+                                  l10n.followers,
+                                  followersCount,
+                                  theme,
+                                  () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => FollowersFollowingPage(
+                                          userId: widget.user.uid,
+                                          showFollowers: true,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildStatColumn(
+                                  l10n.following,
+                                  followingCount,
+                                  theme,
+                                  () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => FollowersFollowingPage(
+                                          userId: widget.user.uid,
+                                          showFollowers: false,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingMd),
+                // İsim ve Bio
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.user.displayName ?? l10n.user,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColorConfig.cardColor,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacingXs),
+                      if (widget.user.bio != null && widget.user.bio!.isNotEmpty)
+                        Text(
+                          widget.user.bio!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppColorConfig.cardColor.withValues(alpha: 0.78),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingMd),
+                // Mesaj Yaz ve Arkadaş Ekle Butonları
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => PrivateChatPage(
+                                  currentUserId: widget.currentUserId,
+                                  currentUserName: _currentUser?.displayName ?? 'Kullanıcı',
+                                  otherUserId: widget.user.uid,
+                                  otherUserName: widget.user.displayName ?? 'Kullanıcı',
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                          label: Text(l10n.startChat),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColorConfig.cardColor,
+                            side: const BorderSide(color: AppColorConfig.cardColor, width: 1.5),
+                            padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.spacingXs),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _handleFollowAction,
+                          icon: Icon(
+                            hasSentRequest
+                                ? Icons.check_circle_outline_rounded
+                                : isMutualFollow
+                                    ? Icons.person_remove_outlined
+                                    : Icons.person_add_outlined,
+                            size: 18,
+                          ),
+                          label: Text(
+                            hasSentRequest
+                                ? 'İstek Gönderildi'
+                                : isMutualFollow
+                                    ? l10n.unfollow
+                                    : 'Arkadaş Ekle',
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: hasSentRequest
+                                ? theme.colorScheme.surfaceContainerHighest
+                                : isMutualFollow
+                                    ? theme.colorScheme.errorContainer
+                                    : AppColorConfig.primaryColor,
+                            foregroundColor: hasSentRequest
+                                ? theme.colorScheme.onSurface
+                                : isMutualFollow
+                                    ? theme.colorScheme.onErrorContainer
+                                    : Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingLg),
+                // User Suggestions (Keşfet) - Üstte
+                if (isKesfetVisible)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                    child: Stack(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Keşfet başlığı
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: AppTheme.spacingMd,
+                                bottom: AppTheme.spacingMd,
+                              ),
+                              child: Text(
+                                'Keşfet',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColorConfig.cardColor,
+                                ),
+                              ),
+                            ),
+                            // Keşfet içeriği
+                            UserSuggestionsWidget(
+                              currentUserId: widget.currentUserId,
+                              followingIds: widget.user.following,
+                              followersIds: widget.user.followers,
+                              isExpanded: true,
+                            ),
+                          ],
+                        ),
+                        // X butonu (sağ üst köşe)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                isKesfetVisible = false;
+                              });
+                            },
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: AppColorConfig.cardColor,
+                              size: 20,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            style: IconButton.styleFrom(
+                              backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                              shape: const CircleBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // Ayırıcı çizgi (sadece Keşfet görünürken)
+                if (isKesfetVisible) ...[
+                  const SizedBox(height: AppTheme.spacingLg),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                    child: Divider(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                      thickness: 1,
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spacingLg),
+                ] else
+                  const SizedBox(height: AppTheme.spacingLg),
+                // Etkinliklerim - Dikey Liste
+                StreamBuilder<List<EventModel>>(
+                  stream: _userEventsStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(AppTheme.spacingXl),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+
+                    final events = snapshot.data ?? [];
+
+                    if (events.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(AppTheme.spacingXl),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.event_note_rounded,
+                              size: 64,
+                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: AppTheme.alphaMedium / 255.0),
+                            ),
+                            const SizedBox(height: AppTheme.spacingMd),
+                            Text(
+                              l10n.noData,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    // Dikey liste görünümü
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                      itemCount: events.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: AppTheme.spacingMd),
+                      itemBuilder: (context, index) {
+                        final event = events[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => EventDetailPage(event: event),
+                              ),
+                            );
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                            child: BackdropFilter(
+                              filter: ui.ImageFilter.blur(
+                                sigmaX: theme.brightness == Brightness.dark ? 10 : 0,
+                                sigmaY: theme.brightness == Brightness.dark ? 10 : 0,
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                                  color: theme.brightness == Brightness.dark
+                                      ? theme.colorScheme.surface.withValues(alpha: 0.1)
+                                      : theme.colorScheme.surface.withValues(alpha: 0.9),
+                                  border: Border.all(
+                                    color: theme.brightness == Brightness.dark
+                                        ? theme.colorScheme.outline.withValues(alpha: 0.2)
+                                        : theme.colorScheme.outline.withValues(alpha: 0.1),
+                                    width: 1.0,
+                                  ),
+                                  boxShadow: theme.brightness == Brightness.dark
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.1),
+                                            blurRadius: 20,
+                                            offset: const Offset(0, 5),
+                                          ),
+                                        ]
+                                      : [],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Etkinlik başlığı
+                                    Padding(
+                                      padding: const EdgeInsets.all(AppTheme.spacingMd),
+                                      child: Text(
+                                        event.title,
+                                        style: theme.textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColorConfig.cardColor,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    // Etkinlik görseli
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        bottomLeft: Radius.circular(AppTheme.radiusXl),
+                                        bottomRight: Radius.circular(AppTheme.radiusXl),
+                                      ),
+                                      child: event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty
+                                          ? CachedNetworkImage(
+                                              imageUrl: event.coverPhotoUrl!,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: 200,
+                                              memCacheWidth: 600,
+                                              memCacheHeight: 400,
+                                              placeholder: (context, url) => Container(
+                                                height: 200,
+                                                color: theme.colorScheme.surfaceContainerHighest,
+                                                child: const Center(
+                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                ),
+                                              ),
+                                              errorWidget: (context, url, error) => Container(
+                                                height: 200,
+                                                color: theme.colorScheme.surfaceContainerHighest,
+                                                child: Icon(
+                                                  Icons.event_note_rounded,
+                                                  size: 48,
+                                                  color: theme.colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                            )
+                                          : Container(
+                                              height: 200,
+                                              color: theme.colorScheme.surfaceContainerHighest,
+                                              child: Icon(
+                                                Icons.event_note_rounded,
+                                                size: 48,
+                                                color: theme.colorScheme.onSurfaceVariant,
+                                              ),
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
-                  child: Column(
-                  children: [
-                      Text(
-                        '$followingCount',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColorConfig.primaryColor,
-                        ),
-                      ),
-                    Text(l10n.following),
-                  ],
-                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            if (widget.user.uid != widget.currentUserId)
-              FilledButton(
-                onPressed: _handleFollowAction,
-                style: FilledButton.styleFrom(
-                  backgroundColor: isMutualFollow 
-                      ? Colors.grey 
-                      : hasSentRequest 
-                          ? theme.colorScheme.surfaceContainerHighest
-                          : theme.colorScheme.primary,
-                  foregroundColor: isMutualFollow || hasSentRequest
-                      ? theme.colorScheme.onSurface
-                      : Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                ),
-                child: Text(
-                  isMutualFollow 
-                      ? l10n.unfollow 
-                      : hasSentRequest 
-                          ? l10n.requestSent 
-                          : l10n.follow,
-                ),
-              ),
-            if (widget.user.uid != widget.currentUserId && isMutualFollow)
-              FilledButton.icon(
-                icon: const Icon(Icons.chat),
-                label: Text(l10n.startChat),
-                style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => PrivateChatPage(
-                        currentUserId: widget.currentUserId,
-                        currentUserName: widget.user.displayName ?? 'Kullanıcı',
-                        otherUserId: widget.user.uid,
-                        otherUserName: widget.user.displayName ?? 'Kullanıcı',
-                      ),
-                    ),
-                  );
-                },
-              ),
-            const SizedBox(height: 32),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(l10n.events, style: theme.textTheme.titleMedium),
-            ),
-            const SizedBox(height: 12),
-            StreamBuilder<List<EventModel>>(
-              stream: _userEventsStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: ModernLoadingWidget(message: l10n.loading));
-                }
-                final events = snapshot.data ?? [];
-                if (events.isEmpty) {
-                  return Text(l10n.noData);
-                }
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: events.length,
-                  separatorBuilder: (contextIgnored, indexIgnored) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final event = events[index];
-                    return Card(
-                      elevation: 3,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      child: ListTile(
-                        title: Text(event.title),
-                        subtitle: Text(event.description, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        trailing: Text('${event.datetime.day}.${event.datetime.month}.${event.datetime.year}'),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => EventDetailPage(
-                                event: event,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
-} 
+
+  Widget _buildStatColumn(String label, int count, ThemeData theme, VoidCallback? onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$count',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColorConfig.cardColor,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingXs),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColorConfig.cardColor.withValues(alpha: 0.78),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _userStreamSubscription?.cancel();
+    _currentUserStreamSubscription?.cancel();
+    super.dispose();
+  }
+}

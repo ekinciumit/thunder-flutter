@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_color_config.dart';
@@ -15,7 +16,11 @@ import '../theme/app_color_config.dart';
 class ModernSnackbar {
   /// Success Snackbar
   static void showSuccess(BuildContext context, String message) {
-    _show(context, message, AppColorConfig.successColor, Icons.check_circle);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    // Dark mode için beyaz, light mode için success color
+    final color = isDark ? Colors.white : AppColorConfig.successColor;
+    _show(context, message, color, Icons.check_circle);
   }
 
   /// Error Snackbar
@@ -34,17 +39,27 @@ class ModernSnackbar {
   }
 
   static void _show(BuildContext context, String message, Color color, IconData icon) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    // Dark mode'da beyaz arka plan için koyu metin, light mode'da beyaz metin
+    final textColor = isDark && color == Colors.white 
+        ? Colors.black 
+        : Colors.white;
+    final iconColor = isDark && color == Colors.white 
+        ? Colors.black 
+        : Colors.white;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: iconColor, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: textColor,
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
                 ),
@@ -78,36 +93,64 @@ class ModernDialog {
     String confirmText = 'Tamam',
     Color? confirmColor,
   }) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    Widget dialog = AlertDialog(
+      backgroundColor: isDark ? Colors.transparent : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
         ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              confirmText,
-              style: TextStyle(
-                color: confirmColor ?? AppColorConfig.primaryColor,
-                fontWeight: FontWeight.w600,
-              ),
+      ),
+      content: Text(
+        message,
+        style: const TextStyle(fontSize: 14),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(
+            confirmText,
+            style: TextStyle(
+              color: confirmColor ?? AppColorConfig.primaryColor,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+    
+    // Dark mode'da glassmorphism ekle
+    if (isDark) {
+      dialog = ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1.0,
+              ),
+            ),
+            child: dialog,
+          ),
+        ),
+      );
+    }
+    
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => dialog,
     );
   }
 
@@ -120,46 +163,74 @@ class ModernDialog {
     String cancelText = 'İptal',
     Color? confirmColor,
   }) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    Widget dialog = AlertDialog(
+      backgroundColor: isDark ? Colors.transparent : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
         ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+      ),
+      content: Text(
+        message,
+        style: const TextStyle(fontSize: 14),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(
+            cancelText,
+            style: TextStyle(
+              color: AppColorConfig.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          style: FilledButton.styleFrom(
+            backgroundColor: confirmColor ?? AppColorConfig.primaryColor,
+          ),
+          child: Text(
+            confirmText,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              cancelText,
-              style: TextStyle(
-                color: AppColorConfig.textSecondary,
-                fontWeight: FontWeight.w500,
+      ],
+    );
+    
+    // Dark mode'da glassmorphism ekle
+    if (isDark) {
+      dialog = ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1.0,
               ),
             ),
+            child: dialog,
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: confirmColor ?? AppColorConfig.primaryColor,
-            ),
-            child: Text(
-              confirmText,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
+        ),
+      );
+    }
+    
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => dialog,
     );
   }
 
@@ -505,6 +576,82 @@ class ErrorStateWidget extends StatelessWidget {
 }
 
 // ============================================================================
+// 🎨 MODERN MODAL BOTTOM SHEET HELPER
+// ============================================================================
+
+/// Glassmorphism wrapper for modal bottom sheets in dark mode
+class GlassModalBottomSheet {
+  static Future<T?> show<T>({
+    required BuildContext context,
+    required Widget child,
+    bool isScrollControlled = false,
+    double? height,
+    EdgeInsetsGeometry? padding,
+  }) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    Widget content = Container(
+      constraints: height != null ? BoxConstraints(maxHeight: height) : null,
+      padding: padding ?? const EdgeInsets.all(AppTheme.spacingLg),
+      child: child,
+    );
+    
+    // Dark mode'da glassmorphism ekle
+    if (isDark) {
+      content = ClipRRect(
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusRound),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppTheme.radiusRound),
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  width: 1.0,
+                ),
+              ),
+            ),
+            child: content,
+          ),
+        ),
+      );
+    } else {
+      content = Container(
+        constraints: height != null ? BoxConstraints(maxHeight: height) : null,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppTheme.radiusRound),
+          ),
+        ),
+        padding: padding ?? const EdgeInsets.all(AppTheme.spacingLg),
+        child: child,
+      );
+    }
+    
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: isScrollControlled,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusRound),
+        ),
+      ),
+      builder: (context) => content,
+    );
+  }
+}
+
+// ============================================================================
 // 🎨 MODERN INPUT FIELD
 // ============================================================================
 
@@ -578,7 +725,10 @@ class _ModernInputFieldState extends State<ModernInputField> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Focus(
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    final textField = Focus(
       onFocusChange: (focused) {
         setState(() {
           _isFocused = focused;
@@ -617,19 +767,25 @@ class _ModernInputFieldState extends State<ModernInputField> {
                 )
               : widget.suffixIcon,
           filled: true,
-          fillColor: _isFocused
-              ? theme.colorScheme.primaryContainer.withAlpha(AppTheme.alphaVeryLight)
-              : theme.colorScheme.surfaceContainerHighest,
+          fillColor: isDark
+              ? Colors.transparent // Dark mode'da şeffaf (glassmorphism için)
+              : (_isFocused
+                  ? theme.colorScheme.primaryContainer.withAlpha(AppTheme.alphaVeryLight)
+                  : theme.colorScheme.surfaceContainerHighest),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             borderSide: BorderSide(
-              color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             borderSide: BorderSide(
-              color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
             ),
           ),
           focusedBorder: OutlineInputBorder(
@@ -660,6 +816,29 @@ class _ModernInputFieldState extends State<ModernInputField> {
         ),
       ),
     );
+    
+    // Dark mode'da glassmorphism ekle
+    if (isDark) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1.0,
+              ),
+            ),
+            child: textField,
+          ),
+        ),
+      );
+    }
+    
+    return textField;
   }
 }
 

@@ -64,7 +64,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
           AndroidUiSettings(
             toolbarTitle: l10n.cropPhoto,
             toolbarColor: theme.colorScheme.primary,
-            toolbarWidgetColor: Colors.white,
+            toolbarWidgetColor: theme.colorScheme.onPrimary,
             initAspectRatio: CropAspectRatioPreset.ratio16x9,
             lockAspectRatio: false, // Serbest kırpma
           ),
@@ -228,7 +228,6 @@ class _EventDetailPageState extends State<EventDetailPage> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return AppGradientContainer(
-            gradientColors: AppTheme.gradientPrimary,
             child: Scaffold(
               appBar: AppBar(title: Text(event.title)),
               body: Center(child: ModernLoadingWidget(message: l10n.loading)),
@@ -246,7 +245,6 @@ class _EventDetailPageState extends State<EventDetailPage> {
         final hasPendingRequest = currentEvent.pendingRequests.contains(userId);
 
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -287,8 +285,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           currentEvent.pendingRequests.length > 9 
                               ? '9+' 
                               : currentEvent.pendingRequests.length.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: theme.colorScheme.onPrimary,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -352,17 +350,17 @@ class _EventDetailPageState extends State<EventDetailPage> {
                                 child: Text(
                                   currentEvent.category,
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Colors.white,
+                                    color: theme.colorScheme.onPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Icon(Icons.calendar_today, color: Colors.white, size: 18),
+                              Icon(Icons.calendar_today, color: theme.colorScheme.onPrimary, size: 18),
                               const SizedBox(width: 4),
                               Text(
                                 '${currentEvent.datetime.day}.${currentEvent.datetime.month}.${currentEvent.datetime.year} - ${currentEvent.datetime.hour.toString().padLeft(2, '0')}:${currentEvent.datetime.minute.toString().padLeft(2, '0')}',
-                                style: theme.textTheme.bodySmall?.copyWith(color: Colors.white),
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimary),
                               ),
                             ],
                           ),
@@ -370,7 +368,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           Text(
                             currentEvent.title,
                             style: theme.textTheme.headlineSmall?.copyWith(
-                              color: Colors.white,
+                              color: theme.colorScheme.onPrimary,
                               fontWeight: FontWeight.bold,
                               shadows: [Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 8)],
                             ),
@@ -391,6 +389,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                 borderRadius: 28,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                enableGlassmorphism: true,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -447,100 +446,23 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       label: Text(l10n.createRoute),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: theme.colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.all(8),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Katılma butonu mantığı
+                    // Katılma durumu widget'ı - Temiz ve anlaşılır UX
                     if (!isOwner)
-                      if (isFull)
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Center(
-                            child: Text(
-                              l10n.quotaFull,
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        )
-                      else if (hasPendingRequest)
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                            await eventViewModel.cancelJoinRequest(currentEvent, userId);
-                          if (!context.mounted) return;
-                            ModernSnackbar.showSuccess(
-                              context,
-                              l10n.joinRequestCancelled,
-                            );
-                        },
-                          icon: Icon(Icons.hourglass_empty, color: Colors.orange[700]),
-                          label: Text(
-                            l10n.requestSent,
-                            style: TextStyle(
-                              color: Colors.orange[700],
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                        style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.orange.withValues(alpha: 0.1),
-                            foregroundColor: Colors.orange[700],
-                            side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                            ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        )
-                      else if (isApproved || isParticipant)
-                      FilledButton.icon(
-                        onPressed: () async {
-                            await eventViewModel.leaveEvent(currentEvent, userId);
-                          if (!context.mounted) return;
-                            ModernSnackbar.showSuccess(
-                              context,
-                              l10n.leftEvent,
-                            );
-                        },
-                        icon: const Icon(Icons.exit_to_app),
-                        label: Text(l10n.leave),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.grey,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        )
-                      else
-                        FilledButton.icon(
-                          onPressed: () async {
-                            await eventViewModel.sendJoinRequest(currentEvent, userId);
-                            if (!context.mounted) return;
-                            ModernSnackbar.showSuccess(
-                              context,
-                              l10n.joinRequestSent,
-                            );
-                          },
-                          icon: const Icon(Icons.person_add),
-                          label: Text(l10n.sendJoinRequest),
-                          style: FilledButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
+                      _EventParticipationButton(
+                        event: currentEvent,
+                        userId: userId,
+                        isFull: isFull,
+                        hasPendingRequest: hasPendingRequest,
+                        isParticipant: isApproved || isParticipant,
+                        eventViewModel: eventViewModel,
+                        l10n: l10n,
+                        theme: theme,
                       ),
                   ],
                 ),
@@ -853,7 +775,7 @@ class _CommentsSectionState extends State<_CommentsSection> {
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: Colors.deepPurple.withAlpha(30)),
                             ),
@@ -1011,4 +933,325 @@ class _ParticipantChips extends StatelessWidget {
       )).toList(),
     );
   }
+}
+
+/// Etkinliğe Katılma Durumu Widget'ı
+/// 
+/// Net ve anlaşılır UX için tek bir widget ile tüm durumları yönetir:
+/// - Kontenjan doldu → Bilgi mesajı
+/// - İstek bekliyor → İptal et butonu (turuncu)
+/// - Katılmış → Ayrıl butonu (gri)
+/// - Katılmamış → Katıl butonu (primary)
+/// 
+/// Her durumda loading ve error feedback sağlar.
+class _EventParticipationButton extends StatefulWidget {
+  final EventModel event;
+  final String userId;
+  final bool isFull;
+  final bool hasPendingRequest;
+  final bool isParticipant;
+  final EventViewModel eventViewModel;
+  final AppLocalizations l10n;
+  final ThemeData theme;
+
+  const _EventParticipationButton({
+    required this.event,
+    required this.userId,
+    required this.isFull,
+    required this.hasPendingRequest,
+    required this.isParticipant,
+    required this.eventViewModel,
+    required this.l10n,
+    required this.theme,
+  });
+
+  @override
+  State<_EventParticipationButton> createState() => _EventParticipationButtonState();
+}
+
+class _EventParticipationButtonState extends State<_EventParticipationButton> {
+  bool _isLoading = false;
+
+  /// Katılma durumunu belirle
+  _ParticipationState get _state {
+    if (widget.isFull && !widget.isParticipant && !widget.hasPendingRequest) {
+      return _ParticipationState.full;
+    } else if (widget.hasPendingRequest) {
+      return _ParticipationState.pending;
+    } else if (widget.isParticipant) {
+      return _ParticipationState.joined;
+    } else {
+      return _ParticipationState.notJoined;
+    }
+  }
+
+  Future<void> _handleAction() async {
+    setState(() => _isLoading = true);
+
+    try {
+      switch (_state) {
+        case _ParticipationState.pending:
+          await widget.eventViewModel.cancelJoinRequest(widget.event, widget.userId);
+          if (mounted) {
+            ModernSnackbar.showSuccess(context, widget.l10n.joinRequestCancelled);
+          }
+          break;
+        case _ParticipationState.joined:
+          await widget.eventViewModel.leaveEvent(widget.event, widget.userId);
+          if (mounted) {
+            ModernSnackbar.showSuccess(context, widget.l10n.leftEvent);
+          }
+          break;
+        case _ParticipationState.notJoined:
+          await widget.eventViewModel.sendJoinRequest(widget.event, widget.userId);
+          if (mounted) {
+            ModernSnackbar.showSuccess(context, widget.l10n.joinRequestSent);
+          }
+          break;
+        case _ParticipationState.full:
+          // No action for full state
+          break;
+      }
+    } catch (e) {
+      if (mounted) {
+        ModernSnackbar.showError(context, e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      width: double.infinity,
+      child: _buildButton(),
+    );
+  }
+
+  Widget _buildButton() {
+    switch (_state) {
+      case _ParticipationState.full:
+        return _buildFullStateWidget();
+      case _ParticipationState.pending:
+        return _buildPendingButton();
+      case _ParticipationState.joined:
+        return _buildJoinedButton();
+      case _ParticipationState.notJoined:
+        return _buildJoinButton();
+    }
+  }
+
+  /// Kontenjan doldu durumu
+  Widget _buildFullStateWidget() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      decoration: BoxDecoration(
+        color: widget.theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(
+          color: widget.theme.colorScheme.error.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_busy_rounded,
+            color: widget.theme.colorScheme.error,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Text(
+            widget.l10n.quotaFull,
+            style: TextStyle(
+              color: widget.theme.colorScheme.error,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// İstek bekliyor durumu - turuncu tema
+  Widget _buildPendingButton() {
+    return OutlinedButton(
+      onPressed: _isLoading ? null : _handleAction,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: Colors.orange.withValues(alpha: 0.1),
+        foregroundColor: Colors.orange[700],
+        side: BorderSide(color: Colors.orange.withValues(alpha: 0.5), width: 1.5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+      child: _isLoading
+          ? SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.orange[700],
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.hourglass_top_rounded, color: Colors.orange[700], size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  widget.l10n.requestSent,
+                  style: TextStyle(
+                    color: Colors.orange[700],
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'İptal Et',
+                    style: TextStyle(
+                      color: Colors.orange[800],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  /// Katılmış durumu - gri tema
+  Widget _buildJoinedButton() {
+    return FilledButton(
+      onPressed: _isLoading ? null : _handleAction,
+      style: FilledButton.styleFrom(
+        backgroundColor: widget.theme.colorScheme.surfaceContainerHighest,
+        foregroundColor: widget.theme.colorScheme.onSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+      child: _isLoading
+          ? SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: widget.theme.colorScheme.onSurface,
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.green[600],
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Katıldın ✓',
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: widget.theme.colorScheme.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: widget.theme.colorScheme.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.exit_to_app,
+                        size: 16,
+                        color: widget.theme.colorScheme.error,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.l10n.leave,
+                        style: TextStyle(
+                          color: widget.theme.colorScheme.error,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  /// Katılmamış durumu - primary tema
+  Widget _buildJoinButton() {
+    return FilledButton(
+      onPressed: _isLoading ? null : _handleAction,
+      style: FilledButton.styleFrom(
+        backgroundColor: widget.theme.colorScheme.primary,
+        foregroundColor: widget.theme.colorScheme.onPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        elevation: 2,
+      ),
+      child: _isLoading
+          ? SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: widget.theme.colorScheme.onPrimary,
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.person_add_rounded, size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  widget.l10n.sendJoinRequest,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+/// Katılma durumu enum'ı
+enum _ParticipationState {
+  full,       // Kontenjan doldu
+  pending,    // İstek bekliyor
+  joined,     // Katılmış
+  notJoined,  // Katılmamış
 } 

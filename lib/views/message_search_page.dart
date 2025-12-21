@@ -7,6 +7,7 @@ import 'private_chat_page.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
+import '../core/widgets/glass_container.dart';
 import '../core/theme/app_theme.dart';
 
 class MessageSearchPage extends StatefulWidget {
@@ -95,26 +96,23 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
     }
   }
 
-  Widget _buildSearchResult(MessageModel message) {
+  Widget _buildSearchResult(MessageModel message, BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final currentUser = authViewModel.user;
     final isMe = message.senderId == currentUser?.uid;
+    final theme = Theme.of(context);
 
-    return Container(
+    return GlassContainer(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
+      borderRadius: 12,
+      padding: EdgeInsets.zero,
+      glassAlpha: AppTheme.glassAlphaVeryLight,
+      borderAlpha: AppTheme.glassAlphaMedium,
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
         leading: CircleAvatar(
           radius: 20,
-          backgroundColor: Colors.white.withValues(alpha: 0.2),
+          backgroundColor: theme.colorScheme.primaryContainer,
           backgroundImage: message.senderPhotoUrl != null 
               ? NetworkImage(message.senderPhotoUrl!)
               : null,
@@ -123,18 +121,18 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                   message.senderName.isNotEmpty 
                       ? message.senderName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: theme.colorScheme.onPrimaryContainer,
                   ),
                 )
               : null,
         ),
         title: Text(
           message.senderName,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -146,7 +144,7 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
             Text(
               message.text ?? 'Medya mesajı',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 13,
               ),
               maxLines: 2,
@@ -156,7 +154,7 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
             Text(
               _formatMessageTime(message.timestamp),
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 fontSize: 11,
               ),
             ),
@@ -186,8 +184,11 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -195,14 +196,15 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
             widget.chatName != null 
                 ? '${widget.chatName} - Arama'
                 : 'Mesaj Ara',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 20,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          foregroundColor: Colors.white,
+          foregroundColor: theme.colorScheme.onSurface,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),
@@ -214,10 +216,14 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
             Container(
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: isDark 
+                    ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+                    : theme.colorScheme.surface.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: isDark 
+                      ? theme.colorScheme.outline.withValues(alpha: 0.3)
+                      : theme.colorScheme.outline.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),
@@ -228,13 +234,13 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                       : 'Tüm mesajlarda ara...',
                   prefixIcon: Icon(
                     Icons.search,
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: Icon(
                             Icons.clear,
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                           onPressed: () {
                             _searchController.clear();
@@ -257,19 +263,19 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
             // Arama sonuçları
             Expanded(
               child: _isSearching
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           ModernLoadingWidget(
                             size: 32,
-                            color: Colors.white,
+                            color: theme.colorScheme.primary,
                             showMessage: false,
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
                             'Aranıyor...',
-                            style: TextStyle(color: Colors.white70),
+                            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ),
@@ -282,24 +288,24 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                               Icon(
                                 Icons.search,
                                 size: 80,
-                                color: Colors.white.withValues(alpha: 0.3),
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 24),
                               Text(
                                 widget.chatId != null 
                                     ? 'Bu sohbette mesaj ara'
                                     : 'Tüm sohbetlerde mesaj ara',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.white70,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Arama yapmak için yukarıdaki kutuya yazın',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -314,22 +320,22 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                                   Icon(
                                     Icons.search_off,
                                     size: 80,
-                                    color: Colors.white.withValues(alpha: 0.3),
+                                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                                   ),
                                   const SizedBox(height: 24),
-                                  const Text(
+                                  Text(
                                     'Sonuç bulunamadı',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w500,
-                                      color: Colors.white70,
+                                      color: theme.colorScheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     '"$_currentQuery" için sonuç bulunamadı',
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.5),
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -345,7 +351,7 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                                       Text(
                                         '${_searchResults.length} sonuç bulundu',
                                         style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.7),
+                                          color: theme.colorScheme.onSurfaceVariant,
                                           fontSize: 14,
                                         ),
                                       ),
@@ -358,7 +364,7 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
                                     padding: const EdgeInsets.symmetric(vertical: 8),
                                     itemCount: _searchResults.length,
                                     itemBuilder: (context, index) {
-                                      return _buildSearchResult(_searchResults[index]);
+                                      return _buildSearchResult(_searchResults[index], context);
                                     },
                                   ),
                                 ),

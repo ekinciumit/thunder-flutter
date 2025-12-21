@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import 'event_list_view.dart';
 import 'map_view.dart';
 import 'profile_view.dart';
@@ -32,8 +33,11 @@ class _HomePageState extends State<HomePage> {
   final NotificationService _notificationService = NotificationService();
   int _totalUnreadCount = 0;
   int _unreadNotificationCount = 0;
+  StreamSubscription<QuerySnapshot>? _chatsStreamSubscription;
+  StreamSubscription<QuerySnapshot>? _notificationsStreamSubscription;
 
-  static final List<Widget> _pages = <Widget>[
+  // Pages'i build metodunda oluştur ki theme değişikliklerini dinlesin
+  List<Widget> get _pages => <Widget>[
     EventListView(),
     ChatListPage(),
     MapView(),
@@ -50,18 +54,13 @@ class _HomePageState extends State<HomePage> {
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.edgeToEdge,
     );
-    // Status bar'ı şeffaf yap
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.transparent,
-      ),
-    );
+    // Status bar ayarları build'de brightness'a göre ayarlanacak
   }
 
   @override
   void dispose() {
+    _chatsStreamSubscription?.cancel();
+    _notificationsStreamSubscription?.cancel();
     // System UI ayarlarını sıfırla (opsiyonel)
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
@@ -136,7 +135,8 @@ class _HomePageState extends State<HomePage> {
     final currentUser = authViewModel.user;
     if (currentUser == null) return;
 
-    FirebaseFirestore.instance
+    _chatsStreamSubscription?.cancel();
+    _chatsStreamSubscription = FirebaseFirestore.instance
         .collection('chats')
         .where('participants', arrayContains: currentUser.uid)
         .snapshots()
@@ -160,7 +160,8 @@ class _HomePageState extends State<HomePage> {
     final currentUser = authViewModel.user;
     if (currentUser == null) return;
 
-    FirebaseFirestore.instance
+    _notificationsStreamSubscription?.cancel();
+    _notificationsStreamSubscription = FirebaseFirestore.instance
         .collection('notifications')
         .where('userId', isEqualTo: currentUser.uid)
         .where('isRead', isEqualTo: false)
@@ -184,9 +185,26 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    
+    // Status bar'ı brightness'a göre ayarla
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: brightness == Brightness.dark 
+            ? Brightness.light 
+            : Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: brightness == Brightness.dark 
+            ? Brightness.light 
+            : Brightness.dark,
+      ),
+    );
     
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
+      backgroundImagePath: 'assets/backgrounds/background_2.png',
+      backgroundOpacity: 0.7,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
@@ -214,22 +232,62 @@ class _HomePageState extends State<HomePage> {
                       );
                     },
                     borderRadius: BorderRadius.circular(28),
-                    child: Container(
+                    child: SizedBox(
                       width: 56,
                       height: 56,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: Badge(
-                        label: _unreadNotificationCount > 0
-                            ? Text(
-                                _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
-                                style: const TextStyle(fontSize: 10),
-                              )
-                            : null,
-                        isLabelVisible: _unreadNotificationCount > 0,
-                        backgroundColor: AppColorConfig.errorColor,
-                        child: const Icon(Icons.notifications_rounded, size: 24, color: Colors.white),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            Icons.notifications_rounded, 
+                            size: 26, 
+                            color: brightness == Brightness.dark 
+                                ? theme.colorScheme.onPrimary 
+                                : Colors.white,
+                          ),
+                          if (_unreadNotificationCount > 0)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColorConfig.errorColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: AppColorConfig.secondaryColor,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColorConfig.errorColor.withValues(alpha: 0.4),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 18,
+                                  minHeight: 16,
+                                ),
+                                child: Text(
+                                  _unreadNotificationCount > 99 
+                                      ? '99+' 
+                                      : '$_unreadNotificationCount',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -257,7 +315,7 @@ class _HomePageState extends State<HomePage> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(28),
                       ),
-                      child: const Icon(Icons.add_rounded, size: 24, color: Colors.white),
+                      child: Icon(Icons.add_rounded, size: 24, color: brightness == Brightness.dark ? theme.colorScheme.onPrimary : Colors.white),
                     ),
                   ),
                 ),
@@ -272,35 +330,46 @@ class _HomePageState extends State<HomePage> {
             MediaQuery.of(context).padding.bottom + AppTheme.spacingXs, // Alt (4px)
           ),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColorConfig.primaryColor.withValues(alpha: 0.95),
-                AppColorConfig.secondaryColor.withValues(alpha: 0.95),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            // Dark mode'da düz renk, light mode'da gradient
+            color: brightness == Brightness.dark
+                ? theme.colorScheme.surfaceContainerHighest // Düz renk
+                : null,
+            gradient: brightness == Brightness.dark
+                ? null // Dark mode'da gradient yok
+                : LinearGradient(
+                    colors: [
+                      AppColorConfig.primaryColor.withValues(alpha: 0.95),
+                      AppColorConfig.secondaryColor.withValues(alpha: 0.95),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
             borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
-            boxShadow: [
-              BoxShadow(
-                color: AppColorConfig.primaryColor.withValues(alpha: 0.4),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-                spreadRadius: 0,
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-                spreadRadius: 0,
-              ),
-              BoxShadow(
-                color: AppColorConfig.primaryColor.withValues(alpha: 0.1),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-                spreadRadius: 0,
-              ),
-            ],
+            boxShadow: brightness == Brightness.dark
+                ? [
+                    // Dark mode için çok subtle shadow - sadece derinlik için
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 15,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0,
+                    ),
+                  ]
+                : [
+                    // Light mode için yumuşak shadow
+                    BoxShadow(
+                      color: AppColorConfig.primaryColor.withValues(alpha: 0.12),
+                      blurRadius: 18,
+                      offset: const Offset(0, 5),
+                      spreadRadius: 0,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0,
+                    ),
+                  ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
@@ -436,6 +505,24 @@ class _NavBarIconState extends State<_NavBarIcon> with SingleTickerProviderState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    // Dark mode'da navigation bar arka planı koyu olduğu için icon renkleri açık olmalı
+    // Light mode'da navigation bar mavi olduğu için icon renkleri beyaz olmalı
+    final iconColor = isDark 
+        ? (widget.selected ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant)
+        : (widget.selected ? Colors.white : Colors.white.withValues(alpha: 0.7));
+    
+    final backgroundColor = isDark
+        ? (widget.selected ? theme.colorScheme.primaryContainer : Colors.transparent)
+        : (widget.selected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent);
+    
+    final borderColor = isDark
+        ? (widget.selected ? theme.colorScheme.primary : null)
+        : (widget.selected ? Colors.white.withValues(alpha: 0.3) : null);
+    
     return GestureDetector(
       onTap: widget.onTap,
       child: AnimatedBuilder(
@@ -447,13 +534,11 @@ class _NavBarIconState extends State<_NavBarIcon> with SingleTickerProviderState
               width: 64,
               height: 56,
               decoration: BoxDecoration(
-                color: widget.selected 
-                  ? Colors.white.withValues(alpha: 0.2)
-                  : Colors.transparent,
+                color: backgroundColor,
                 borderRadius: BorderRadius.circular(20),
-                border: widget.selected
+                border: widget.selected && borderColor != null
                   ? Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
+                      color: borderColor,
                       width: 1.5,
                     )
                   : null,
@@ -463,9 +548,7 @@ class _NavBarIconState extends State<_NavBarIcon> with SingleTickerProviderState
                 children: [
                   Icon(
                     widget.icon,
-                    color: widget.selected 
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.7),
+                    color: iconColor,
                     size: 24,
                   ),
                   const SizedBox(height: 4),
@@ -474,9 +557,7 @@ class _NavBarIconState extends State<_NavBarIcon> with SingleTickerProviderState
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: widget.selected ? FontWeight.w600 : FontWeight.normal,
-                      color: widget.selected 
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.7),
+                      color: iconColor,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),

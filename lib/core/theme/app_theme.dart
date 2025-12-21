@@ -43,6 +43,15 @@ class AppTheme {
   static const int alphaDark = 40;        // Koyu
   static const int alphaDarker = 60;      // Daha koyu
   static const int alphaVeryDark = 100;   // Çok koyu
+
+  /// Glassmorphism Alpha Constants (0.0 - 1.0 arası double değerler)
+  /// 
+  /// Dark mode glassmorphism efektleri için kullanılan alpha değerleri
+  static const double glassAlphaVeryLight = 0.05;  // Çok şeffaf (genel glassmorphism)
+  static const double glassAlphaLight = 0.1;      // Şeffaf (hafif glassmorphism)
+  static const double glassAlphaMedium = 0.15;    // Orta şeffaf (border için)
+  static const double glassAlphaDark = 0.3;       // Daha opak (border için)
+  static const double glassAlphaPrimary = 0.7;    // Primary renk glassmorphism (mesaj bubble'ları için)
   static const int alphaAlmostOpaque = 120; // Neredeyse opak
 
   /// Icon Sizes
@@ -135,8 +144,8 @@ class AppTheme {
         onSurfaceVariant: AppColorConfig.textSecondary,
         outline: AppColorConfig.borderColor,
         outlineVariant: AppColorConfig.borderColorLight,
-        shadow: AppColorConfig.shadowColor,
-        scrim: AppColorConfig.shadowColor,
+        shadow: AppColorConfig.getShadowColor(Brightness.light),
+        scrim: AppColorConfig.getShadowColor(Brightness.light),
         inverseSurface: const Color(0xFF313033), // Dark surface
         onInverseSurface: const Color(0xFFF4EFF4), // Light text on dark
         inversePrimary: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaMedium),
@@ -198,13 +207,99 @@ class AppTheme {
     );
   }
 
-  /// Dark Theme (gelecekte eklenebilir)
+  /// Dark Theme
   static ThemeData get darkTheme {
+    // Dark mode için optimize edilmiş primary renkler (daha parlak)
+    final primaryDark = const Color(0xFF5B9BD5); // Daha parlak mavi
+    final secondaryDark = const Color(0xFF7BB3E8); // Daha parlak açık mavi
+    final tertiaryDark = const Color(0xFF9DD4F0); // Daha parlak sky blue
+    
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColorConfig.primaryColor,
+        seedColor: primaryDark,
         brightness: Brightness.dark,
+        primary: primaryDark, // Daha parlak primary
+        onPrimary: const Color(0xFF000000), // Siyah metin (daha iyi kontrast)
+        primaryContainer: const Color(0xFF1A3A5A), // Koyu mavi container
+        onPrimaryContainer: const Color(0xFFB8D4F0), // Açık mavi metin
+        secondary: secondaryDark, // Daha parlak secondary
+        onSecondary: const Color(0xFF000000), // Siyah metin
+        secondaryContainer: const Color(0xFF2A4A6A), // Koyu mavi container
+        onSecondaryContainer: const Color(0xFFC8E4F8), // Açık mavi metin
+        tertiary: tertiaryDark, // Daha parlak tertiary
+        onTertiary: const Color(0xFF000000), // Siyah metin
+        tertiaryContainer: const Color(0xFF3A5A7A), // Koyu mavi container
+        onTertiaryContainer: const Color(0xFFD8F0FF), // Açık mavi metin
+        error: AppColorConfig.errorColor,
+        onError: const Color(0xFFFFFFFF), // White on error
+        errorContainer: AppColorConfig.getErrorContainer(Brightness.dark),
+        onErrorContainer: AppColorConfig.getErrorContainerText(Brightness.dark),
+        surface: AppColorConfig.surfaceColorDark,
+        onSurface: AppColorConfig.textPrimaryDark,
+        surfaceContainerHighest: AppColorConfig.surfaceContainerHighestDark,
+        onSurfaceVariant: AppColorConfig.textSecondaryDark,
+        outline: AppColorConfig.borderColorDark, // Daha belirgin border
+        outlineVariant: AppColorConfig.borderColorLightDark,
+        shadow: AppColorConfig.getShadowColor(Brightness.dark),
+        scrim: AppColorConfig.getShadowColor(Brightness.dark),
+        inverseSurface: const Color(0xFFE8E8E8), // Light surface
+        onInverseSurface: const Color(0xFF121212), // Dark text on light
+        inversePrimary: primaryDark.withAlpha(AppTheme.alphaMedium),
+        surfaceTint: primaryDark, // Daha parlak tint
+      ),
+      scaffoldBackgroundColor: AppColorConfig.surfaceColorDark,
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Color(0xFFE6E1E5), // Light text in dark mode
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        color: AppColorConfig.cardColorDark,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColorConfig.surfaceContainerHighestDark,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColorConfig.borderColorInputDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColorConfig.borderColorInputDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColorConfig.primaryColor, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColorConfig.errorColor),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }

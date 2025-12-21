@@ -12,6 +12,7 @@ import 'private_chat_page.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
+import '../core/widgets/glass_container.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../l10n/app_localizations.dart';
@@ -148,7 +149,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
 
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -253,113 +253,383 @@ class _NotificationsPageState extends State<NotificationsPage> {
           : Future.value(null),
       builder: (context, userSnapshot) {
         final user = userSnapshot.data;
+        final l10n = AppLocalizations.of(context)!;
 
-        return Card(
+        return GlassContainer(
           margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
-          elevation: 0,
-          color: notification.isRead
-              ? theme.colorScheme.surface
-              : AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            side: BorderSide(
-              color: notification.isRead
-                  ? Colors.transparent
-                  : AppColorConfig.primaryColor.withAlpha(AppTheme.alphaMedium),
-              width: 1,
+          borderRadius: AppTheme.radiusLg,
+          padding: const EdgeInsets.all(AppTheme.spacingMd),
+          glassAlpha: notification.isRead
+              ? AppTheme.glassAlphaVeryLight
+              : AppTheme.glassAlphaLight,
+          borderAlpha: notification.isRead
+              ? AppTheme.glassAlphaMedium
+              : AppTheme.glassAlphaDark,
+          backgroundColor: notification.isRead
+              ? null
+              : AppColorConfig.primaryColor.withValues(alpha: AppTheme.glassAlphaVeryLight),
+          borderColor: notification.isRead
+              ? null
+              : AppColorConfig.primaryColor.withValues(alpha: AppTheme.glassAlphaMedium),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Ana satır - Avatar, içerik ve unread indicator
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Avatar - Sabit boyut
+                    _buildNotificationAvatar(notification, user, theme),
+                    const SizedBox(width: AppTheme.spacingMd),
+                    // İçerik - Flexible
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _handleNotificationTap(notification),
+                        behavior: HitTestBehavior.opaque,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Başlık satırı
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    notification.title,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: notification.isRead
+                                          ? theme.colorScheme.onSurface
+                                          : _getNotificationColor(notification.type),
+                                    ),
+                                  ),
+                                ),
+                                // Okunmadı göstergesi - sağ üst köşede
+                                if (!notification.isRead)
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    margin: const EdgeInsets.only(left: 8),
+                                    decoration: BoxDecoration(
+                                      color: _getNotificationColor(notification.type),
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: _getNotificationColor(notification.type).withValues(alpha: 0.4),
+                                          blurRadius: 4,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            // Mesaj
+                            Text(
+                              notification.body,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            // Zaman ve durum göstergesi
+                            Row(
+                              children: [
+                                Icon(
+                                  _getNotificationIcon(notification.type),
+                                  size: 14,
+                                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _formatDate(notification.createdAt, l10n),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Takip isteği butonları - SADECE bekleyen istek varsa göster
+              _buildFollowRequestActions(notification, currentUserId, user, theme, l10n),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Bildirim avatarı
+  Widget _buildNotificationAvatar(NotificationModel notification, UserModel? user, ThemeData theme) {
+    final color = _getNotificationColor(notification.type);
+    final icon = _getNotificationIcon(notification.type);
+    
+    if (user != null && user.photoUrl != null && user.photoUrl!.isNotEmpty) {
+      return GestureDetector(
+        onTap: () => _handleNotificationTap(notification),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: color.withValues(alpha: 0.3),
+              width: 2,
             ),
           ),
-          child: InkWell(
-            onTap: () => _handleNotificationTap(notification),
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            child: Padding(
-              padding: const EdgeInsets.all(AppTheme.spacingMd),
+          child: ClipOval(
+            child: CachedNetworkImage(
+              imageUrl: user.photoUrl!,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: color.withValues(alpha: 0.1),
+                child: Icon(Icons.person, color: color, size: 24),
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: color.withValues(alpha: 0.1),
+                child: Icon(Icons.person, color: color, size: 24),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return GestureDetector(
+      onTap: () => _handleNotificationTap(notification),
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: color.withValues(alpha: 0.3),
+            width: 2,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: color,
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  /// Takip isteği için butonlar - SADECE bekleyen istek varsa göster
+  Widget _buildFollowRequestActions(
+    NotificationModel notification,
+    String currentUserId,
+    UserModel? user,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    // Sadece follow_request tipindeyse ve relatedUserId varsa kontrol et
+    if (notification.type != 'follow_request' || notification.relatedUserId == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Gerçek zamanlı olarak pending durumunu kontrol et
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final userData = snapshot.data!.data() as Map<String, dynamic>?;
+        if (userData == null) return const SizedBox.shrink();
+
+        final pendingRequests = List<String>.from(userData['pendingFollowRequests'] ?? []);
+        final followers = List<String>.from(userData['followers'] ?? []);
+        
+        final isPending = pendingRequests.contains(notification.relatedUserId);
+        // Tek yönlü takip sistemi: İstek kabul edildiyse, requester artık bizi takip ediyor
+        final isNowFollower = followers.contains(notification.relatedUserId);
+        // NOT: isNowFriends için karşılıklı takip kontrolü KALDIRILDI
+        // Çünkü artık tek yönlü takip sistemi var
+
+        // İstek kabul edildi - Yeşil başarı göstergesi
+        if (isNowFollower && !isPending) {
+          return Padding(
+            padding: const EdgeInsets.only(top: AppTheme.spacingMd),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                border: Border.all(
+                  color: Colors.green.withValues(alpha: 0.4),
+                ),
+              ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Avatar
-                  if (user != null)
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
-                      backgroundImage: user.photoUrl != null && user.photoUrl!.isNotEmpty
-                          ? CachedNetworkImageProvider(user.photoUrl!)
-                          : null,
-                      child: user.photoUrl == null || user.photoUrl!.isEmpty
-                          ? Icon(
-                              Icons.person,
-                              color: AppColorConfig.primaryColor,
-                              size: 24,
-                            )
-                          : null,
-                    )
-                  else
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _getNotificationIcon(notification.type),
-                        color: AppColorConfig.primaryColor,
-                        size: 24,
-                      ),
-                    ),
-                  const SizedBox(width: AppTheme.spacingMd),
-                  // Content
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          notification.title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: notification.isRead
-                                ? theme.colorScheme.onSurface
-                                : AppColorConfig.primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: AppTheme.spacingXs),
-                        Text(
-                          notification.body,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: AppTheme.spacingXs),
-                        Builder(
-                          builder: (context) {
-                            final l10n = AppLocalizations.of(context)!;
-                            return Text(
-                              _formatDate(notification.createdAt, l10n),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant.withAlpha(AppTheme.alphaMedium),
-                              ),
-                            );
-                          }
-                        ),
-                      ],
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green[700],
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Seni takip ediyor ✓',
+                    style: TextStyle(
+                      color: Colors.green[700],
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
                   ),
-                  if (!notification.isRead)
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppColorConfig.primaryColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
                 ],
               ),
+            ),
+          );
+        }
+
+        // İstek hala beklemede - Butonları göster
+        if (isPending) {
+          return Padding(
+            padding: const EdgeInsets.only(top: AppTheme.spacingMd),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _FollowActionButton(
+                    onPressed: () => _acceptFollowRequest(currentUserId, notification),
+                    icon: Icons.check_rounded,
+                    label: 'Kabul Et',
+                    isPrimary: true,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spacingSm),
+                Expanded(
+                  child: _FollowActionButton(
+                    onPressed: () => _rejectFollowRequest(currentUserId, notification),
+                    icon: Icons.close_rounded,
+                    label: 'Reddet',
+                    isPrimary: false,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // İstek işlendi ama arkadaş değiller (reddedilmiş olabilir)
+        return Padding(
+          padding: const EdgeInsets.only(top: AppTheme.spacingMd),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'İstek işlendi',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
           ),
         );
       },
     );
+  }
+
+  /// Takip isteğini kabul et
+  Future<void> _acceptFollowRequest(String currentUserId, NotificationModel notification) async {
+    if (!mounted) return;
+    
+    try {
+      await _userService.acceptFollowRequest(
+        currentUserId,
+        notification.relatedUserId!,
+      );
+      
+      // Bildirimi sil ve yenisini ekle (type'ı değiştirmek yerine)
+      await _userService.markNotificationAsRead(notification.id);
+      
+      if (mounted) {
+        final authVM = Provider.of<AuthViewModel>(context, listen: false);
+        await authVM.refreshUserProfile();
+        ModernSnackbar.showSuccess(context, 'Takip isteği kabul edildi ✓');
+      }
+    } catch (e) {
+      if (mounted) {
+        ModernSnackbar.showError(context, 'Hata: ${e.toString()}');
+      }
+    }
+  }
+
+  /// Takip isteğini reddet
+  Future<void> _rejectFollowRequest(String currentUserId, NotificationModel notification) async {
+    if (!mounted) return;
+    
+    try {
+      await _userService.rejectFollowRequest(
+        currentUserId,
+        notification.relatedUserId!,
+      );
+      await _userService.markNotificationAsRead(notification.id);
+      
+      if (mounted) {
+        ModernSnackbar.showSuccess(context, 'Takip isteği reddedildi');
+      }
+    } catch (e) {
+      if (mounted) {
+        ModernSnackbar.showError(context, 'Hata: ${e.toString()}');
+      }
+    }
+  }
+
+  /// Bildirim tipine göre renk
+  Color _getNotificationColor(String type) {
+    switch (type) {
+      case 'follow_request':
+        return Colors.blue;
+      case 'follow_request_accepted':
+        return Colors.green;
+      case 'follow':
+        return AppColorConfig.primaryColor;
+      case 'event':
+      case 'event_invitation':
+      case 'event_reminder':
+        return Colors.orange;
+      case 'event_join_request':
+      case 'event_join_approved':
+        return Colors.teal;
+      case 'message':
+      case 'message_request':
+        return Colors.purple;
+      default:
+        return AppColorConfig.primaryColor;
+    }
   }
 
   IconData _getNotificationIcon(String type) {
@@ -398,6 +668,121 @@ class _NotificationsPageState extends State<NotificationsPage> {
     } else {
       return DateFormat('dd MMM yyyy').format(date);
     }
+  }
+}
+
+/// Takip işlem butonu - Loading state destekli
+class _FollowActionButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final IconData icon;
+  final String label;
+  final bool isPrimary;
+
+  const _FollowActionButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+    required this.isPrimary,
+  });
+
+  @override
+  State<_FollowActionButton> createState() => _FollowActionButtonState();
+}
+
+class _FollowActionButtonState extends State<_FollowActionButton> {
+  bool _isLoading = false;
+
+  Future<void> _handlePress() async {
+    if (_isLoading) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      widget.onPressed();
+      // Callback'in bitmesini beklemiyoruz çünkü VoidCallback async değil
+      // Ama işlem başladığını göstermek için kısa bir gecikme
+      await Future.delayed(const Duration(milliseconds: 500));
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.isPrimary) {
+      return FilledButton(
+        onPressed: _isLoading ? null : _handlePress,
+        style: FilledButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          ),
+          elevation: 0,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(widget.icon, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    widget.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+      );
+    }
+
+    return OutlinedButton(
+      onPressed: _isLoading ? null : _handlePress,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.red[700],
+        side: BorderSide(color: Colors.red.withValues(alpha: 0.5)),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+      ),
+      child: _isLoading
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.red[700],
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(widget.icon, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  widget.label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+    );
   }
 }
 

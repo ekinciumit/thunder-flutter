@@ -35,6 +35,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
   bool isUploading = false;
   bool isEditing = false;
   double uploadProgress = 0.0;
+  bool isKesfetVisible = true; // Keşfet bölümü görünürlüğü (başlangıçta görünür)
   late TextEditingController nameController;
   late TextEditingController bioController;
   late AnimationController _animationController;
@@ -305,6 +306,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         authViewModel.user = updatedUser;
         nameController.text = updatedUser.displayName ?? '';
         bioController.text = updatedUser.bio ?? '';
+        isKesfetVisible = true; // Refresh'te Keşfet bölümünü tekrar göster
       });
     }
   }
@@ -338,7 +340,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     }
 
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
+      backgroundImagePath: 'assets/backgrounds/background_2.png',
+      backgroundOpacity: 0.7,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
@@ -606,7 +609,81 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                     ),
                   ),
                   const SizedBox(height: AppTheme.spacingLg),
-                  // Etkinlikler Grid (Instagram tarzı)
+                  // User Suggestions (Keşfet) - Üstte
+                  if (isKesfetVisible)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                      child: Stack(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Keşfet başlığı
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: AppTheme.spacingMd,
+                                  bottom: AppTheme.spacingMd,
+                                ),
+                                child: Text(
+                                  'Keşfet',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColorConfig.cardColor,
+                                  ),
+                                ),
+                              ),
+                              // Keşfet içeriği
+                              UserSuggestionsWidget(
+                                currentUserId: user.uid,
+                                followingIds: user.following,
+                                followersIds: user.followers,
+                                isExpanded: true,
+                              ),
+                            ],
+                          ),
+                          // X butonu (sağ üst köşe)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  isKesfetVisible = false;
+                                });
+                              },
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: AppColorConfig.cardColor,
+                                size: 20,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                              style: IconButton.styleFrom(
+                                backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                shape: const CircleBorder(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  // Ayırıcı çizgi (sadece Keşfet görünürken)
+                  if (isKesfetVisible) ...[
+                    const SizedBox(height: AppTheme.spacingLg),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                      child: Divider(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                        thickness: 1,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spacingLg),
+                  ] else
+                    const SizedBox(height: AppTheme.spacingLg),
+                  // Etkinliklerim - Dikey Liste
                   StreamBuilder<List<EventModel>>(
                     stream: _getUserEventsStream(user.uid),
                     builder: (context, snapshot) {
@@ -629,7 +706,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                               Icon(
                                 Icons.event_note_rounded,
                                 size: 64,
-                                color: theme.colorScheme.onSurfaceVariant.withAlpha(AppTheme.alphaMedium),
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: AppTheme.alphaMedium / 255.0),
                               ),
                               const SizedBox(height: AppTheme.spacingMd),
                               Text(
@@ -643,108 +720,118 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                         );
                       }
 
-                      // Grid görünümü (3 sütun)
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Tab bar (Instagram tarzı)
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: theme.colorScheme.outline.withAlpha(AppTheme.alphaVeryLight),
-                                  width: 1,
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
-                                    decoration: BoxDecoration(
-                                      border: Border(
-                                        bottom: BorderSide(
-                                          color: AppColorConfig.primaryColor,
-                                          width: 2,
-                        ),
-                                      ),
-                                    ),
-                                    child: Icon(
-                                      Icons.grid_on_rounded,
-                                      color: AppColorConfig.primaryColor,
-                                    ),
-                                  ),
-                    ),
-                  ],
-                ),
-                          ),
-                          // Grid
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(1),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 2,
-                              mainAxisSpacing: 2,
-                              childAspectRatio: 1,
-                            ),
-                            itemCount: events.length,
-                            itemBuilder: (context, index) {
-                              final event = events[index];
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => EventDetailPage(event: event),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  color: theme.colorScheme.surfaceContainerHighest,
-                                  child: event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty
-                                      ? CachedNetworkImage(
-                                          imageUrl: event.coverPhotoUrl!,
-                                          fit: BoxFit.cover,
-                                          memCacheWidth: 300,
-                                          memCacheHeight: 300,
-                                          placeholder: (context, url) => Container(
-                                            color: theme.colorScheme.surfaceContainerHighest,
-                                            child: const Center(
-                                              child: CircularProgressIndicator(strokeWidth: 2),
-                                            ),
-                                          ),
-                                          errorWidget: (context, url, error) => Container(
-                                            color: theme.colorScheme.surfaceContainerHighest,
-                                            child: Icon(
-                                              Icons.event_note_rounded,
-                                              color: theme.colorScheme.onSurfaceVariant,
-                                            ),
-                                          ),
-                                        )
-                                      : Container(
-                                          color: theme.colorScheme.surfaceContainerHighest,
-                                          child: Icon(
-                                            Icons.event_note_rounded,
-                                            size: 40,
-                                            color: theme.colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
+                      // Dikey liste görünümü
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                        itemCount: events.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: AppTheme.spacingMd),
+                        itemBuilder: (context, index) {
+                          final event = events[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => EventDetailPage(event: event),
                                 ),
                               );
                             },
-                          ),
-                        ],
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                              child: BackdropFilter(
+                                filter: ui.ImageFilter.blur(
+                                  sigmaX: theme.brightness == Brightness.dark ? 10 : 0,
+                                  sigmaY: theme.brightness == Brightness.dark ? 10 : 0,
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                                    color: theme.brightness == Brightness.dark
+                                        ? theme.colorScheme.surface.withValues(alpha: 0.1)
+                                        : theme.colorScheme.surface.withValues(alpha: 0.9),
+                                    border: Border.all(
+                                      color: theme.brightness == Brightness.dark
+                                          ? theme.colorScheme.outline.withValues(alpha: 0.2)
+                                          : theme.colorScheme.outline.withValues(alpha: 0.1),
+                                      width: 1.0,
+                                    ),
+                                    boxShadow: theme.brightness == Brightness.dark
+                                        ? [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.1),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 5),
+                                            ),
+                                          ]
+                                        : [],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Etkinlik başlığı
+                                      Padding(
+                                        padding: const EdgeInsets.all(AppTheme.spacingMd),
+                                        child: Text(
+                                          event.title,
+                                          style: theme.textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColorConfig.cardColor,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                  // Etkinlik görseli
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.only(
+                                      bottomLeft: Radius.circular(AppTheme.radiusLg),
+                                      bottomRight: Radius.circular(AppTheme.radiusLg),
+                                    ),
+                                    child: event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty
+                                        ? CachedNetworkImage(
+                                            imageUrl: event.coverPhotoUrl!,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: 200,
+                                            memCacheWidth: 600,
+                                            memCacheHeight: 400,
+                                            placeholder: (context, url) => Container(
+                                              height: 200,
+                                              color: theme.colorScheme.surfaceContainerHighest,
+                                              child: const Center(
+                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                              ),
+                                            ),
+                                            errorWidget: (context, url, error) => Container(
+                                              height: 200,
+                                              color: theme.colorScheme.surfaceContainerHighest,
+                                              child: Icon(
+                                                Icons.event_note_rounded,
+                                                size: 48,
+                                                color: theme.colorScheme.onSurfaceVariant,
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            height: 200,
+                                            color: theme.colorScheme.surfaceContainerHighest,
+                                            child: Icon(
+                                              Icons.event_note_rounded,
+                                              size: 48,
+                                              color: theme.colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                  ),
+                                ],
+                              ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
-                  ),
-                  const SizedBox(height: AppTheme.spacingLg),
-                  // User Suggestions
-                  UserSuggestionsWidget(
-                    currentUserId: user.uid,
-                    followingIds: user.following,
-                    followersIds: user.followers,
                   ),
                   const SizedBox(height: AppTheme.spacingXl),
                 ],

@@ -28,6 +28,139 @@ class CreateEventPage extends StatefulWidget {
 }
 
 class _CreateEventPageState extends State<CreateEventPage> {
+  // Dark mode için Google Maps style JSON (map_view.dart ile aynı)
+  static const String _darkMapStyle = '''
+  [
+    {
+      "elementType": "geometry",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#8ec3b9"}]
+    },
+    {
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1a3646"}]
+    },
+    {
+      "featureType": "administrative.country",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#4b6878"}]
+    },
+    {
+      "featureType": "administrative.land_parcel",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#64779e"}]
+    },
+    {
+      "featureType": "administrative.province",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#4b6878"}]
+    },
+    {
+      "featureType": "landscape.man_made",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#334e87"}]
+    },
+    {
+      "featureType": "landscape.natural",
+      "elementType": "geometry",
+      "stylers": [{"color": "#023e58"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "geometry",
+      "stylers": [{"color": "#283d6a"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#6f9ba5"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "geometry.fill",
+      "stylers": [{"color": "#023e58"}]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#3C7680"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [{"color": "#304a7d"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#98a5be"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry",
+      "stylers": [{"color": "#2c6675"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#255763"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#b0d5ce"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#023e58"}]
+    },
+    {
+      "featureType": "transit",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#98a5be"}]
+    },
+    {
+      "featureType": "transit",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "featureType": "transit.line",
+      "elementType": "geometry.fill",
+      "stylers": [{"color": "#283d6a"}]
+    },
+    {
+      "featureType": "transit.station",
+      "elementType": "geometry",
+      "stylers": [{"color": "#3a4762"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [{"color": "#0e1626"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#4e6d70"}]
+    }
+  ]
+  ''';
+  
   final _formKey = GlobalKey<FormState>();
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descController = TextEditingController();
@@ -192,7 +325,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           AndroidUiSettings(
             toolbarTitle: l10n.cropPhoto,
             toolbarColor: theme.colorScheme.primary,
-            toolbarWidgetColor: Colors.white,
+            toolbarWidgetColor: theme.colorScheme.onPrimary,
             initAspectRatio: CropAspectRatioPreset.ratio16x9,
             lockAspectRatio: false, // Serbest kırpma
           ),
@@ -411,21 +544,31 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     Expanded(
                       child: !iconsLoaded
                           ? Center(child: ModernLoadingWidget(message: l10n.loading))
-                          : GoogleMap(
-                              initialCameraPosition: CameraPosition(target: tempLatLng, zoom: 14),
-                              markers: {
-                                Marker(
-                                  markerId: const MarkerId('selected'),
-                                  position: tempLatLng,
-                                  draggable: true,
-                                  icon: _getCategoryIcon(tempCategory),
-                                  onDragEnd: (newPos) {
-                                    setModalState(() { tempLatLng = newPos; });
+                          : Builder(
+                              builder: (context) {
+                                final theme = Theme.of(context);
+                                final isDark = theme.brightness == Brightness.dark;
+                                // map_view.dart'taki dark map style'ı kullan
+                                final darkMapStyle = _CreateEventPageState._darkMapStyle;
+                                
+                                return GoogleMap(
+                                  initialCameraPosition: CameraPosition(target: tempLatLng, zoom: 14),
+                                  style: isDark ? darkMapStyle : null,
+                                  markers: {
+                                    Marker(
+                                      markerId: const MarkerId('selected'),
+                                      position: tempLatLng,
+                                      draggable: true,
+                                      icon: _getCategoryIcon(tempCategory),
+                                      onDragEnd: (newPos) {
+                                        setModalState(() { tempLatLng = newPos; });
+                                      },
+                                    ),
                                   },
-                                ),
-                              },
-                              onTap: (latLng) {
-                                setModalState(() { tempLatLng = latLng; });
+                                  onTap: (latLng) {
+                                    setModalState(() { tempLatLng = latLng; });
+                                  },
+                                );
                               },
                             ),
                     ),
@@ -476,20 +619,40 @@ class _CreateEventPageState extends State<CreateEventPage> {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final brightness = theme.brightness;
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final isKeyboardOpen = keyboardHeight > 0;
+    
     return Scaffold(
+      // Keyboard açıldığında layout kaymasını engelle
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
+        // Bottom inset'i manuel yönet (keyboard için)
+        bottom: false,
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: AppTheme.gradientPrimary,
+              colors: AppColorConfig.getGradientPrimary(brightness),
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
           child: Stack(
           children: [
+            // Keyboard-aware scroll view
             SingleChildScrollView(
-              padding: ResponsiveHelper.getPadding(context),
+              // Keyboard açıkken otomatik scroll
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(
+                left: ResponsiveHelper.getPadding(context).left,
+                right: ResponsiveHelper.getPadding(context).right,
+                top: ResponsiveHelper.getPadding(context).top,
+                // Keyboard açıkken extra bottom padding
+                bottom: isKeyboardOpen 
+                    ? keyboardHeight + AppTheme.spacingXl 
+                    : ResponsiveHelper.getPadding(context).bottom + mediaQuery.padding.bottom,
+              ),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -605,7 +768,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                                   Text(
                                     l10n.uploadingPhoto,
                                     style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: Colors.white,
+                                      color: theme.colorScheme.onPrimary,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -623,8 +786,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                               icon: const Icon(Icons.edit, size: 18),
                               label: Text(l10n.change),
                               style: FilledButton.styleFrom(
-                                backgroundColor: Colors.white.withAlpha(AppTheme.alphaAlmostOpaque),
-                                foregroundColor: AppColorConfig.primaryColor,
+                                backgroundColor: theme.colorScheme.surface.withAlpha(AppTheme.alphaAlmostOpaque),
+                                foregroundColor: theme.colorScheme.primary,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AppTheme.spacingMd,
                                   vertical: AppTheme.spacingSm,
@@ -780,7 +943,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColorConfig.primaryColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: theme.colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppTheme.spacingXl,
                       vertical: AppTheme.spacingLg,
@@ -845,7 +1008,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   label: Text(l10n.createEvent),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColorConfig.tertiaryColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: theme.colorScheme.onTertiary,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppTheme.spacingXl,
                       vertical: AppTheme.spacingLg,
@@ -870,7 +1033,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 onPressed: () => Navigator.of(context).pop(),
                 color: theme.colorScheme.onSurface,
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withAlpha(AppTheme.alphaLight),
+                  backgroundColor: theme.colorScheme.surface.withAlpha(AppTheme.alphaLight),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                   ),

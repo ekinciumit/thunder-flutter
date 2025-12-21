@@ -6,7 +6,6 @@ import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
-import '../core/theme/app_theme.dart';
 
 class MessageForwardPage extends StatefulWidget {
   final MessageModel message;
@@ -127,25 +126,33 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
     return chat.photoUrl;
   }
 
-  Widget _buildMessagePreview() {
+  Widget _buildMessagePreview(BuildContext context) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: isDark 
+            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+            : theme.colorScheme.surface.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: isDark 
+              ? theme.colorScheme.outline.withValues(alpha: 0.3)
+              : theme.colorScheme.outline.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'İletilecek Mesaj:',
             style: TextStyle(
-              color: Colors.white,
+              color: theme.colorScheme.onSurface,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
@@ -155,7 +162,9 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                backgroundColor: isDark 
+                    ? theme.colorScheme.primaryContainer
+                    : theme.colorScheme.primaryContainer,
                 backgroundImage: widget.message.senderPhotoUrl != null 
                     ? NetworkImage(widget.message.senderPhotoUrl!)
                     : null,
@@ -164,10 +173,10 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                         widget.message.senderName.isNotEmpty 
                             ? widget.message.senderName[0].toUpperCase()
                             : '?',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: theme.colorScheme.onPrimaryContainer,
                         ),
                       )
                     : null,
@@ -179,8 +188,8 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                   children: [
                     Text(
                       widget.message.senderName,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -189,7 +198,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                     Text(
                       widget.message.text ?? 'Medya mesajı',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontSize: 13,
                       ),
                       maxLines: 2,
@@ -209,30 +218,36 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
     final currentUser = authViewModel.user;
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
     
     if (currentUser == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: Text('Kullanıcı bilgisi bulunamadı'),
+          child: Text(
+            'Kullanıcı bilgisi bulunamadı',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
         ),
       );
     }
 
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text(
+          title: Text(
             'Mesaj İlet',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 20,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          foregroundColor: Colors.white,
+          foregroundColor: theme.colorScheme.onSurface,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),
@@ -240,24 +255,26 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
         ),
         body: Column(
           children: [
-            _buildMessagePreview(),
+            _buildMessagePreview(context),
             
             // Sohbet listesi
             Expanded(
               child: _isLoading
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           ModernLoadingWidget(
                             size: 32,
-                            color: Colors.white,
+                            color: theme.colorScheme.primary,
                             showMessage: false,
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
                             'Sohbetler yükleniyor...',
-                            style: TextStyle(color: Colors.white70),
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -270,22 +287,22 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                               Icon(
                                 Icons.chat_bubble_outline,
                                 size: 80,
-                                color: Colors.white.withValues(alpha: 0.3),
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 24),
-                              const Text(
+                              Text(
                                 'İletilecek sohbet yok',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.white70,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Mesajı iletmek için başka sohbetleriniz olmalı',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -301,7 +318,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                                   Text(
                                     'Sohbet Seçin (${_chats.length})',
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.7),
+                                      color: theme.colorScheme.onSurfaceVariant,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -321,10 +338,14 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                                   return Container(
                                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.1),
+                                      color: isDark 
+                                          ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+                                          : theme.colorScheme.surface.withValues(alpha: 0.7),
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.2),
+                                        color: isDark 
+                                            ? theme.colorScheme.outline.withValues(alpha: 0.3)
+                                            : theme.colorScheme.outline.withValues(alpha: 0.2),
                                         width: 1,
                                       ),
                                     ),
@@ -335,7 +356,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                                       ),
                                       leading: CircleAvatar(
                                         radius: 28,
-                                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                        backgroundColor: theme.colorScheme.primaryContainer,
                                         backgroundImage: photoUrl != null 
                                             ? NetworkImage(photoUrl)
                                             : null,
@@ -344,18 +365,18 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                                                 displayName.isNotEmpty 
                                                     ? displayName[0].toUpperCase()
                                                     : '?',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 20,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
+                                                  color: theme.colorScheme.onPrimaryContainer,
                                                 ),
                                               )
                                             : null,
                                       ),
                                       title: Text(
                                         displayName,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: theme.colorScheme.onSurface,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 16,
                                         ),
@@ -364,7 +385,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                                           ? Text(
                                               chat.lastMessage!.text ?? 'Medya mesajı',
                                               style: TextStyle(
-                                                color: Colors.white.withValues(alpha: 0.8),
+                                                color: theme.colorScheme.onSurfaceVariant,
                                                 fontSize: 14,
                                               ),
                                               maxLines: 1,
@@ -372,18 +393,18 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
                                             )
                                           : null,
                                       trailing: _isForwarding
-                                          ? const SizedBox(
+                                          ? SizedBox(
                                               width: 20,
                                               height: 20,
                                               child: ModernLoadingWidget(
                                                 size: 20,
-                                                color: Colors.white,
+                                                color: theme.colorScheme.primary,
                                                 showMessage: false,
                                               ),
                                             )
-                                          : const Icon(
+                                          : Icon(
                                               Icons.arrow_forward_ios,
-                                              color: Colors.white70,
+                                              color: theme.colorScheme.onSurfaceVariant,
                                               size: 16,
                                             ),
                                       onTap: _isForwarding ? null : () => _forwardMessage(chat),

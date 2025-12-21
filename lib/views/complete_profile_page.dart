@@ -8,6 +8,7 @@ import '../core/validators/form_validators.dart';
 import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
 import '../l10n/app_localizations.dart';
 import 'widgets/modern_loading_widget.dart';
@@ -150,12 +151,13 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brightness = theme.brightness;
     return Scaffold(
       appBar: AppBar(title: const Text('Profilini Tamamla')),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: AppTheme.gradientPrimary,
+            colors: AppColorConfig.getGradientPrimary(brightness),
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -174,7 +176,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                       colors: AppTheme.gradientWithAlpha(
-                        AppTheme.gradientPrimaryLight,
+                        AppColorConfig.getGradientPrimaryLight(brightness),
                         AppTheme.alphaMediumLight,
                       ),
                   ),

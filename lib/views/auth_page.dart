@@ -47,7 +47,6 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Center(
@@ -60,6 +59,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
               ),
               padding: ResponsiveHelper.getPadding(context),
               borderRadius: ResponsiveHelper.getBorderRadius(context, 32),
+              enableGlassmorphism: true,
               child: Form(
                 key: _formKey,
                 child: Column(
