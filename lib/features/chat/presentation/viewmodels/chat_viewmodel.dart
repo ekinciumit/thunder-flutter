@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
-import '../../../../models/chat_model.dart';
-import '../../../../models/message_model.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:async';
+import '../../domain/entities/chat_entity.dart';
+import '../../domain/entities/message_entity.dart';
 import '../../domain/repositories/chat_repository.dart';
 import '../../domain/usecases/get_or_create_private_chat_usecase.dart';
 import '../../domain/usecases/create_group_chat_usecase.dart';
@@ -30,6 +31,10 @@ class ChatViewModel extends ChangeNotifier {
   bool isLoading = false;
 
   final ChatRepository _chatRepository;
+  
+  // Performance: Mesajları cache'le (chatId -> messages)
+  final Map<String, List<MessageEntity>> _messagesCache = {};
+  final Map<String, StreamSubscription<List<MessageEntity>>> _messageSubscriptions = {};
 
   // Use Cases - Clean Architecture Domain Layer
   late final GetOrCreatePrivateChatUseCase _getOrCreatePrivateChatUseCase;
@@ -85,7 +90,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Özel sohbet oluştur veya getir
-  Future<ChatModel?> getOrCreatePrivateChat(String userA, String userB) async {
+  Future<ChatEntity?> getOrCreatePrivateChat(String userA, String userB) async {
     isLoading = true;
     error = null;
     notifyListeners();
@@ -104,6 +109,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in getOrCreatePrivateChat: $e');
+      }
       error = e.toString();
       isLoading = false;
       notifyListeners();
@@ -112,7 +120,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Grup sohbeti oluştur
-  Future<ChatModel?> createGroupChat({
+  Future<ChatEntity?> createGroupChat({
     required String name,
     required String createdBy,
     required List<String> participants,
@@ -144,6 +152,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in createGroupChat: $e');
+      }
       error = e.toString();
       isLoading = false;
       notifyListeners();
@@ -152,7 +163,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Mesaj gönder
-  Future<MessageModel?> sendMessage({
+  Future<MessageEntity?> sendMessage({
     required String chatId,
     required String senderId,
     required String senderName,
@@ -202,6 +213,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in sendMessage: $e');
+      }
       error = e.toString();
       notifyListeners();
       return null;
@@ -209,12 +223,46 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Mesajları stream olarak getir
-  Stream<List<MessageModel>> getMessagesStream(String chatId, {int limit = 50}) {
+  Stream<List<MessageEntity>> getMessagesStream(String chatId, {int limit = 50}) {
     return _getMessagesUseCase(chatId, limit: limit);
+  }
+  
+  /// Performance: Cache'lenmiş mesajları getir (Selector için)
+  List<MessageEntity> getMessagesForChat(String chatId) {
+    return _messagesCache[chatId] ?? [];
+  }
+  
+  /// Performance: Mesaj stream'ini başlat ve cache'le
+  void startListeningToMessages(String chatId, {int limit = 50}) {
+    // Eğer zaten dinleniyorsa, tekrar başlatma
+    if (_messageSubscriptions.containsKey(chatId)) {
+      return;
+    }
+    
+    final subscription = getMessagesStream(chatId, limit: limit).listen(
+      (messages) {
+        _messagesCache[chatId] = messages;
+        notifyListeners(); // Sadece mesajlar değiştiğinde notify et
+      },
+      onError: (error) {
+        if (kDebugMode) {
+          debugPrint('❌ Chat messages stream error: $error');
+        }
+      },
+    );
+    
+    _messageSubscriptions[chatId] = subscription;
+  }
+  
+  /// Performance: Mesaj stream'ini durdur
+  void stopListeningToMessages(String chatId) {
+    _messageSubscriptions[chatId]?.cancel();
+    _messageSubscriptions.remove(chatId);
+    _messagesCache.remove(chatId);
   }
 
   /// Daha eski mesajları yükle
-  Future<List<MessageModel>> loadOlderMessages(
+  Future<List<MessageEntity>> loadOlderMessages(
     String chatId,
     DateTime lastMessageTime, {
     int limit = 20,
@@ -232,6 +280,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in loadOlderMessages: $e');
+      }
       error = e.toString();
       notifyListeners();
       return [];
@@ -239,7 +290,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Kullanıcının sohbetlerini getir
-  Stream<List<ChatModel>> getUserChats(String userId) {
+  Stream<List<ChatEntity>> getUserChats(String userId) {
     return _getUserChatsUseCase(userId);
   }
 
@@ -257,6 +308,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in markMessageAsRead: $e');
+      }
       error = e.toString();
       notifyListeners();
     }
@@ -276,6 +330,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in deleteMessage: $e');
+      }
       error = e.toString();
       notifyListeners();
     }
@@ -295,6 +352,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in editMessage: $e');
+      }
       error = e.toString();
       notifyListeners();
     }
@@ -314,6 +374,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in updateTypingStatus: $e');
+      }
       error = e.toString();
       notifyListeners();
     }
@@ -333,6 +396,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in addReaction: $e');
+      }
       error = e.toString();
       notifyListeners();
     }
@@ -352,13 +418,16 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in removeReaction: $e');
+      }
       error = e.toString();
       notifyListeners();
     }
   }
 
   /// Sesli mesaj gönder
-  Future<MessageModel?> sendVoiceMessage({
+  Future<MessageEntity?> sendVoiceMessage({
     required String chatId,
     required String senderId,
     required String senderName,
@@ -386,6 +455,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in sendVoiceMessage: $e');
+      }
       error = e.toString();
       notifyListeners();
       return null;
@@ -393,7 +465,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Dosya mesajı gönder
-  Future<MessageModel?> sendFileMessage({
+  Future<MessageEntity?> sendFileMessage({
     required String chatId,
     required String senderId,
     required String senderName,
@@ -425,15 +497,115 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in sendFileMessage: $e');
+      }
       error = e.toString();
       notifyListeners();
       return null;
     }
   }
 
+  /// Ses dosyasını yükle ve URL'ini döndür
+  Future<String?> uploadVoiceMessage(String audioFilePath) async {
+    try {
+      isLoading = true;
+      error = null;
+      notifyListeners();
+
+      final result = await _chatRepository.uploadVoiceMessage(audioFilePath);
+      return result.fold(
+        (failure) {
+          error = failure.message;
+          isLoading = false;
+          notifyListeners();
+          return null;
+        },
+        (url) {
+          isLoading = false;
+          notifyListeners();
+          return url;
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in uploadVoiceMessage: $e');
+      }
+      error = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Dosyayı yükle ve URL'ini döndür
+  Future<String?> uploadFileMessage(String filePath, String fileName) async {
+    try {
+      isLoading = true;
+      error = null;
+      notifyListeners();
+
+      final result = await _chatRepository.uploadFileMessage(filePath, fileName);
+      return result.fold(
+        (failure) {
+          error = failure.message;
+          isLoading = false;
+          notifyListeners();
+          return null;
+        },
+        (url) {
+          isLoading = false;
+          notifyListeners();
+          return url;
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in uploadFileMessage: $e');
+      }
+      error = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Chat medya (image/video) dosyasını yükle ve URL'ini döndür
+  /// Progress callback ile progress güncellemesi yapılabilir
+  Future<String?> uploadChatMedia(String filePath, String storagePath, {String? contentType, void Function(double progress)? onProgress}) async {
+    try {
+      isLoading = true;
+      error = null;
+      notifyListeners();
+
+      final result = await _chatRepository.uploadChatMedia(filePath, storagePath, contentType: contentType, onProgress: onProgress);
+      return result.fold(
+        (failure) {
+          error = failure.message;
+          isLoading = false;
+          notifyListeners();
+          return null;
+        },
+        (url) {
+          isLoading = false;
+          notifyListeners();
+          return url;
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in uploadChatMedia: $e');
+      }
+      error = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
   /// Mesaj ilet
-  Future<MessageModel?> forwardMessage({
-    required MessageModel originalMessage,
+  Future<MessageEntity?> forwardMessage({
+    required MessageEntity originalMessage,
     required String targetChatId,
     required String senderId,
     required String senderName,
@@ -458,6 +630,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in forwardMessage: $e');
+      }
       error = e.toString();
       notifyListeners();
       return null;
@@ -465,7 +640,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Mesajlarda arama yap
-  Future<List<MessageModel>> searchMessages(
+  Future<List<MessageEntity>> searchMessages(
     String chatId,
     String query, {
     int limit = 50,
@@ -483,6 +658,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in searchMessages: $e');
+      }
       error = e.toString();
       notifyListeners();
       return [];
@@ -490,7 +668,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Tüm sohbetlerde arama yap
-  Future<List<MessageModel>> searchAllMessages(
+  Future<List<MessageEntity>> searchAllMessages(
     String userId,
     String query, {
     int limit = 100,
@@ -508,6 +686,9 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in searchAllMessages: $e');
+      }
       error = e.toString();
       notifyListeners();
       return [];
@@ -517,7 +698,7 @@ class ChatViewModel extends ChangeNotifier {
   /// Chat ID'ye göre chat getir
   /// 
   /// Clean Architecture: UseCase kullanır
-  Future<ChatModel?> getChatById(String chatId) async {
+  Future<ChatEntity?> getChatById(String chatId) async {
     try {
       final result = await _getChatByIdUseCase(chatId);
       return result.fold(
@@ -531,10 +712,24 @@ class ChatViewModel extends ChangeNotifier {
         },
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in getChatById: $e');
+      }
       error = e.toString();
       notifyListeners();
       return null;
     }
+  }
+
+  @override
+  void dispose() {
+    // Performance: Tüm stream subscription'ları iptal et
+    for (final subscription in _messageSubscriptions.values) {
+      subscription.cancel();
+    }
+    _messageSubscriptions.clear();
+    _messagesCache.clear();
+    super.dispose();
   }
 }
 

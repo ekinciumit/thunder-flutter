@@ -33,7 +33,7 @@ service cloud.firestore {
       allow create: if request.auth != null;
 
       // Güncelleme: 
-      // 1. Etkinlik sahibi her şeyi güncelleyebilir
+      // 1. Etkinlik sahibi her şeyi güncelleyebilir (katılımcı çıkarma dahil)
       // 2. Diğer kullanıcılar:
       //    - pendingRequests array'ine kendi ID'lerini ekleyip çıkarabilir
       //    - participants ve approvedParticipants array'lerinden kendi ID'lerini çıkarabilir (ayrılma)
@@ -88,10 +88,16 @@ service cloud.firestore {
             get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])))
         );
 
-        // Güncelleme/Silme: Sadece yorumu yazan kullanıcı (sistem mesajları silinemez/güncellenemez)
-        allow update, delete: if request.auth != null && 
-          resource.data.userId == request.auth.uid &&
-          (!('type' in resource.data) || resource.data.type != 'system');
+        // Güncelleme/Silme: 
+        // 1. Yorumu yazan kullanıcı silebilir
+        // 2. Event sahibi tüm yorumları silebilir (event silme işlemi için)
+        // Sistem mesajları silinemez/güncellenemez
+        allow update, delete: if request.auth != null && (
+          (resource.data.userId == request.auth.uid &&
+           (!('type' in resource.data) || resource.data.type != 'system')) ||
+          (get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid &&
+           (!('type' in resource.data) || resource.data.type != 'system'))
+        );
       }
     }
 
@@ -151,9 +157,18 @@ service cloud.firestore {
         (isChatParticipant(request.resource.data.chatId) || 
          chatIdContainsUser(request.resource.data.chatId));
 
-      // Mesaj okuma: Giriş yapmış kullanıcı
-      // Güvenlik: Uygulama seviyesinde chatId filtrelemesi yapılıyor
-      allow read: if request.auth != null;
+      // Mesaj okuma: Kullanıcı sadece kendi chat'lerindeki mesajları okuyabilir
+      // NOT: Query seviyesinde tam kontrol mümkün değil (Firestore limitation)
+      // Bu rule sadece document-level koruma sağlar
+      // Uzun vadede: messages'ı chats/{chatId}/messages/{messageId} alt koleksiyonuna taşı
+      allow read: if request.auth != null && (
+        // Chat participant kontrolü (grup chat için)
+        isChatParticipant(resource.data.chatId) ||
+        // Private chat kontrolü (chatId kullanıcının ID'sini içeriyor mu?)
+        chatIdContainsUser(resource.data.chatId) ||
+        // Gönderen kendi mesajlarını okuyabilir
+        resource.data.senderId == request.auth.uid
+      );
 
       // Mesaj güncelleme: Gönderen VEYA chat participant'ı (okundu işaretleme için)
       allow update: if request.auth != null && 
@@ -171,9 +186,27 @@ service cloud.firestore {
       allow read: if request.auth != null && 
         resource.data.userId == request.auth.uid;
 
-      // Oluşturma: Sistem bildirimleri oluşturabilir (takip bildirimleri için)
-      // Kullanıcılar kendi bildirimlerini oluşturamaz, sadece sistem oluşturur
-      allow create: if request.auth != null;
+      // Oluşturma: Güvenlik için kısıtlanmış
+      // NOT: Cloud Functions (admin SDK) rules'ı bypass eder, bu yüzden client tarafından oluşturma kısıtlanmış
+      // Client tarafından bildirim oluşturma: Sadece başka kullanıcılara bildirim gönderebilir (kendine değil)
+      // ve sadece belirli tiplerde bildirimler oluşturulabilir
+      allow create: if request.auth != null && 
+        // Bildirimi alan kullanıcı, bildirimi oluşturan kullanıcıdan farklı olmalı
+        request.resource.data.userId != request.auth.uid &&
+        // Sadece belirli bildirim tipleri client tarafından oluşturulabilir
+        request.resource.data.type in [
+          'follow_request', 
+          'event_invitation', 
+          'new_followers',
+          'message',
+          'message_request',
+          'event_reminder_24h',
+          'event_reminder_2h',
+          'event_check_in'
+        ] &&
+        // userId alanı mevcut ve geçerli olmalı
+        request.resource.data.userId is string &&
+        request.resource.data.userId != '';
 
       // Güncelleme: Sadece kendi bildirimlerini güncelleyebilir (okundu işaretleme)
       allow update: if request.auth != null && 
