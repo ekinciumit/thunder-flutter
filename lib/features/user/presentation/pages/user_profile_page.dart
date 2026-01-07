@@ -94,13 +94,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
     // Etkinlik sayısını al (EventViewModel üzerinden)
     final userEventsStream = eventViewModel.getUserEventsStream(widget.user.uid);
-    userEventsStream.first.then((events) {
+    try {
+      final events = await userEventsStream.first;
       if (mounted) {
         setState(() {
           eventsCount = events.length;
         });
       }
-    });
+    } catch (e) {
+      // Stream hatası - sessizce devam et
+      if (mounted) {
+        setState(() {
+          eventsCount = 0;
+        });
+      }
+    }
   }
 
   void _updateFollowStatus(UserEntity targetUser) {

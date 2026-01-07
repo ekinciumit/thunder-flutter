@@ -226,12 +226,22 @@ class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-      ..initialize().then((_) {
-        if (mounted) {
-          setState(() => _initialized = true);
-        }
-      });
+    _initializeVideo();
+  }
+  
+  Future<void> _initializeVideo() async {
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+    try {
+      await _controller.initialize();
+      if (mounted) {
+        setState(() => _initialized = true);
+      }
+    } catch (e) {
+      // Video initialize hatası - sessizce devam et
+      if (mounted) {
+        setState(() => _initialized = false);
+      }
+    }
   }
 
   @override

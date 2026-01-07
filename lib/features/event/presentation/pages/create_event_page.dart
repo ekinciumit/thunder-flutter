@@ -318,7 +318,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   Future<void> _pickCategory() async {
     final l10n = AppLocalizations.of(context);
-    await showDialog<String>(
+    final category = await showDialog<String>(
       context: context,
       builder: (context) {
         String tempCategory = selectedCategory;
@@ -370,13 +370,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
           ),
         );
       },
-    ).then((category) {
-      if (category != null) {
-        setState(() {
-          selectedCategory = category;
-        });
-      }
-    });
+    );
+    
+    if (category != null && mounted) {
+      setState(() {
+        selectedCategory = category;
+      });
+    }
   }
 
   Future<void> _pickDateTime() async {

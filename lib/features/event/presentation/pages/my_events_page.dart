@@ -682,24 +682,24 @@ class _MyEventsPageState extends State<MyEventsPage> {
     // go_router ile context.pop() kullanıldığında otomatik refresh yapılır
   }
 
-  void _showDeleteDialog(EventEntity event, EventViewModel eventViewModel) {
-    ModernDialog.showConfirmation(
+  Future<void> _showDeleteDialog(EventEntity event, EventViewModel eventViewModel) async {
+    final confirmed = await ModernDialog.showConfirmation(
       context: context,
       title: 'Etkinliği Sil',
       message: '"${event.title}" etkinliğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
       confirmText: 'Sil',
       cancelText: 'İptal',
       confirmColor: AppColorConfig.errorColor,
-    ).then((confirmed) async {
-      if (confirmed == true) {
-        await eventViewModel.deleteEvent(event.id);
-        if (!mounted) return;
-        ModernSnackbar.showSuccess(
-          context,
-          'Etkinlik silindi',
-        );
-      }
-    });
+    );
+    
+    if (confirmed == true) {
+      await eventViewModel.deleteEvent(event.id);
+      if (!mounted) return;
+      ModernSnackbar.showSuccess(
+        context,
+        'Etkinlik silindi',
+      );
+    }
   }
 }
 
