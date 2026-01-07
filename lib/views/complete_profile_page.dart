@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../core/validators/form_validators.dart';
 import '../core/widgets/responsive_widgets.dart';
 import '../core/utils/responsive_helper.dart';
@@ -120,25 +120,29 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     if (photoFile == null || !mounted) return;
     
     setState(() { isUploading = true; });
-    final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final ref = FirebaseStorage.instance.ref().child('profile_photos').child(fileName);
     
     try {
-      // Web platformu için putData kullan
-      if (kIsWeb) {
-        final bytes = await photoFile!.readAsBytes();
-        await ref.putData(bytes);
-      } else {
-        await ref.putFile(photoFile!);
+      if (!mounted) return;
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      
+      if (authViewModel.user == null) {
+        setState(() { isUploading = false; });
+        ModernSnackbar.showError(context, 'Kullanıcı bilgisi bulunamadı');
+        return;
       }
       
-      final url = await ref.getDownloadURL();
+      // Clean Architecture: ViewModel üzerinden yükle
+      final url = await authViewModel.uploadProfilePhoto(photoFile!.path);
       
-      if (mounted) {
+      if (!mounted) return;
+      if (url != null) {
         setState(() {
           uploadedPhotoUrl = url;
           isUploading = false;
         });
+      } else {
+        setState(() { isUploading = false; });
+        ModernSnackbar.showError(context, 'Fotoğraf yüklenemedi');
       }
     } catch (e) {
       if (mounted) {

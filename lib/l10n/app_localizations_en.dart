@@ -418,6 +418,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploading => 'Uploading...';
 
   @override
+  String get compressingImage => 'Compressing image...';
+
+  @override
+  String get preparingVideo => 'Preparing video...';
+
+  @override
+  String get uploadError => 'Upload error';
+
+  @override
+  String get videoUpload => 'Video Upload';
+
+  @override
+  String get photoUpload => 'Photo Upload';
+
+  @override
+  String get videoSent => 'Video sent';
+
+  @override
+  String get photoSent => 'Photo sent';
+
+  @override
+  String get uploadCancelled => 'Upload cancelled';
+
+  @override
+  String get voiceRecordingCancelled => 'Voice recording cancelled';
+
+  @override
+  String get slideToCancel => '◀ Slide to cancel';
+
+  @override
+  String get releaseToCancel => 'Release to cancel';
+
+  @override
+  String get releaseToSend => 'Release → Send';
+
+  @override
   String get editEvent => 'Edit Event';
 
   @override
@@ -829,4 +865,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fileOpenSoon => 'File opening feature coming soon';
+
+  @override
+  String get deleteEvent => 'Delete Event';
+
+  @override
+  String get deleteEventConfirm =>
+      'Are you sure you want to delete this event?';
+
+  @override
+  String get deleteEventWarning =>
+      'This action cannot be undone. All messages and media associated with this event will be deleted.';
+
+  @override
+  String get eventDeleted => 'Event deleted successfully';
+
+  @override
+  String get removeParticipant => 'Remove Participant';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get participantRemoved => 'Participant removed';
+
+  @override
+  String get participantManagement => 'Participant Management';
 }

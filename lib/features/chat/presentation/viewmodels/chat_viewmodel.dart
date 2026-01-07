@@ -507,13 +507,13 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Ses dosyasını yükle ve URL'ini döndür
-  Future<String?> uploadVoiceMessage(String audioFilePath) async {
+  Future<String?> uploadVoiceMessage(String audioFilePath, {required String chatId, required String senderId}) async {
     try {
       isLoading = true;
       error = null;
       notifyListeners();
 
-      final result = await _chatRepository.uploadVoiceMessage(audioFilePath);
+      final result = await _chatRepository.uploadVoiceMessage(audioFilePath, chatId: chatId, senderId: senderId);
       return result.fold(
         (failure) {
           error = failure.message;
@@ -539,13 +539,13 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   /// Dosyayı yükle ve URL'ini döndür
-  Future<String?> uploadFileMessage(String filePath, String fileName) async {
+  Future<String?> uploadFileMessage(String filePath, String fileName, {required String chatId, required String senderId}) async {
     try {
       isLoading = true;
       error = null;
       notifyListeners();
 
-      final result = await _chatRepository.uploadFileMessage(filePath, fileName);
+      final result = await _chatRepository.uploadFileMessage(filePath, fileName, chatId: chatId, senderId: senderId);
       return result.fold(
         (failure) {
           error = failure.message;

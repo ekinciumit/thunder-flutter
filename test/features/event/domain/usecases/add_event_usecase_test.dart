@@ -4,7 +4,8 @@ import 'package:mockito/annotations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:thunder/features/event/domain/usecases/add_event_usecase.dart';
 import 'package:thunder/features/event/domain/repositories/event_repository.dart';
-import 'package:thunder/models/event_model.dart';
+import 'package:thunder/features/event/data/models/event_model.dart';
+import 'package:thunder/features/event/data/mappers/event_mapper.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'add_event_usecase_test.mocks.dart';
@@ -21,7 +22,7 @@ void main() {
   });
 
   group('AddEventUseCase', () {
-    final testEvent = EventModel(
+    final testEventModel = EventModel(
       id: 'event-123',
       title: 'Test Event',
       description: 'Test Description',
@@ -32,6 +33,7 @@ void main() {
       createdBy: 'user-123',
       participants: [],
     );
+    final testEvent = EventMapper.toEntity(testEventModel);
 
     test('should return Right(void) when event is added successfully', () async {
       // Arrange
@@ -50,7 +52,7 @@ void main() {
 
     test('should return Left(ValidationFailure) when title is empty', () async {
       // Arrange
-      final invalidEvent = EventModel(
+      final invalidEventModel = EventModel(
         id: 'event-123',
         title: '', // Boş title
         description: 'Test Description',
@@ -61,6 +63,7 @@ void main() {
         createdBy: 'user-123',
         participants: [],
       );
+      final invalidEvent = EventMapper.toEntity(invalidEventModel);
 
       // Act
       final result = await useCase.call(invalidEvent);
@@ -74,7 +77,7 @@ void main() {
 
     test('should return Left(ValidationFailure) when description is empty', () async {
       // Arrange
-      final invalidEvent = EventModel(
+      final invalidEventModel = EventModel(
         id: 'event-123',
         title: 'Test Event',
         description: '', // Boş description
@@ -85,6 +88,7 @@ void main() {
         createdBy: 'user-123',
         participants: [],
       );
+      final invalidEvent = EventMapper.toEntity(invalidEventModel);
 
       // Act
       final result = await useCase.call(invalidEvent);
@@ -98,7 +102,7 @@ void main() {
 
     test('should return Left(ValidationFailure) when quota is zero', () async {
       // Arrange
-      final invalidEvent = EventModel(
+      final invalidEventModel = EventModel(
         id: 'event-123',
         title: 'Test Event',
         description: 'Test Description',
@@ -109,6 +113,7 @@ void main() {
         createdBy: 'user-123',
         participants: [],
       );
+      final invalidEvent = EventMapper.toEntity(invalidEventModel);
 
       // Act
       final result = await useCase.call(invalidEvent);
@@ -122,7 +127,7 @@ void main() {
 
     test('should return Left(ValidationFailure) when quota is negative', () async {
       // Arrange
-      final invalidEvent = EventModel(
+      final invalidEventModel = EventModel(
         id: 'event-123',
         title: 'Test Event',
         description: 'Test Description',
@@ -133,6 +138,7 @@ void main() {
         createdBy: 'user-123',
         participants: [],
       );
+      final invalidEvent = EventMapper.toEntity(invalidEventModel);
 
       // Act
       final result = await useCase.call(invalidEvent);

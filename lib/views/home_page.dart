@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'event_list_view.dart';
 import 'map_view.dart';
 import 'profile_view.dart';
-import 'create_event_page.dart';
 import 'chat_list_page.dart';
-import 'private_chat_page.dart';
-import 'notifications_page.dart';
 import '../services/notification_service.dart';
+import '../services/user_service.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
-import '../models/chat_model.dart';
+import '../features/chat/domain/entities/chat_entity.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/utils/fab_position_helper.dart';
 import '../l10n/app_localizations.dart';
 import 'widgets/app_gradient_container.dart';
+import 'widgets/custom_bottom_navigation_bar.dart';
+import '../core/navigation/app_navigation.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -31,10 +31,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final NotificationService _notificationService = NotificationService();
+  final UserService _userService = UserService();
   int _totalUnreadCount = 0;
   int _unreadNotificationCount = 0;
-  StreamSubscription<QuerySnapshot>? _chatsStreamSubscription;
-  StreamSubscription<QuerySnapshot>? _notificationsStreamSubscription;
+  StreamSubscription<List<ChatEntity>>? _chatsStreamSubscription;
+  StreamSubscription<int>? _notificationsStreamSubscription;
 
   // Pages'i build metodunda oluştur ki theme değişikliklerini dinlesin
   List<Widget> get _pages => <Widget>[
@@ -109,16 +110,12 @@ class _HomePageState extends State<HomePage> {
           });
           
           // Sonra sohbet sayfasına navigate et
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PrivateChatPage(
-                currentUserId: currentUser.uid,
-                currentUserName: currentUser.displayName ?? 'User',
-                otherUserId: otherParticipant,
-                otherUserName: otherUserName,
-              ),
-            ),
+          AppNavigation.toChat(
+            context: context,
+            currentUserId: currentUser.uid,
+            currentUserName: currentUser.displayName ?? 'User',
+            otherUserId: otherParticipant,
+            otherUserName: otherUserName,
           );
         }
       }
@@ -132,20 +129,17 @@ class _HomePageState extends State<HomePage> {
 
   void _loadUnreadCount() {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
     final currentUser = authViewModel.user;
     if (currentUser == null) return;
 
     _chatsStreamSubscription?.cancel();
-    _chatsStreamSubscription = FirebaseFirestore.instance
-        .collection('chats')
-        .where('participants', arrayContains: currentUser.uid)
-        .snapshots()
-        .listen((snapshot) {
+    // Clean Architecture: ChatViewModel üzerinden chats stream
+    _chatsStreamSubscription = chatViewModel.getUserChats(currentUser.uid).listen((chats) {
       int total = 0;
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final unreadCounts = data['unreadCounts'] as Map<String, dynamic>? ?? {};
-        total += unreadCounts[currentUser.uid] as int? ?? 0;
+      for (var chat in chats) {
+        final unreadCounts = chat.unreadCounts;
+        total += unreadCounts[currentUser.uid] ?? 0;
       }
       if (mounted) {
         setState(() {
@@ -161,24 +155,31 @@ class _HomePageState extends State<HomePage> {
     if (currentUser == null) return;
 
     _notificationsStreamSubscription?.cancel();
-    _notificationsStreamSubscription = FirebaseFirestore.instance
-        .collection('notifications')
-        .where('userId', isEqualTo: currentUser.uid)
-        .where('isRead', isEqualTo: false)
-        .snapshots()
-        .listen((snapshot) {
+    // Clean Architecture: UserService üzerinden notification count stream
+    final userService = _userService;
+    _notificationsStreamSubscription = userService.getUnreadNotificationCountStream(currentUser.uid).listen((count) {
       if (mounted) {
         setState(() {
-          _unreadNotificationCount = snapshot.docs.length;
+          _unreadNotificationCount = count;
         });
       }
     });
   }
 
   void _onItemTapped(int index) {
+    if (kDebugMode) {
+      debugPrint('🔵 [HOMEPAGE] Navigation tapped: index=$index, currentIndex=$_selectedIndex');
+      debugPrint('🔵 [HOMEPAGE] Pages count: ${_pages.length}');
+      if (index < _pages.length) {
+        debugPrint('🔵 [HOMEPAGE] Page widget type: ${_pages[index].runtimeType}');
+      }
+    }
     setState(() {
       _selectedIndex = index;
     });
+    if (kDebugMode) {
+      debugPrint('🔵 [HOMEPAGE] Navigation updated: newIndex=$_selectedIndex');
+    }
   }
 
 
@@ -227,9 +228,7 @@ class _HomePageState extends State<HomePage> {
                   color: AppColorConfig.secondaryColor,
                   child: InkWell(
                     onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                      );
+                      AppNavigation.toNotifications(context);
                     },
                     borderRadius: BorderRadius.circular(28),
                     child: SizedBox(
@@ -304,9 +303,18 @@ class _HomePageState extends State<HomePage> {
                   color: AppColorConfig.primaryColor,
                   child: InkWell(
                     onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const CreateEventPage()),
-                      );
+                      try {
+                        if (!mounted) return;
+                        AppNavigation.toCreateEvent(context);
+                      } catch (e) {
+                        if (mounted) {
+                          final l10n = AppLocalizations.of(context);
+                          ModernSnackbar.showError(
+                            context,
+                            l10n?.error ?? 'Navigation error: $e',
+                          );
+                        }
+                      }
                     },
                     borderRadius: BorderRadius.circular(28),
                     child: Container(
@@ -322,251 +330,30 @@ class _HomePageState extends State<HomePage> {
               ),
           ],
         ),
-        bottomNavigationBar: Container(
-          margin: EdgeInsets.fromLTRB(
-            AppTheme.spacingMd, // Sol
-            AppTheme.spacingSm, // Üst
-            AppTheme.spacingMd, // Sağ
-            MediaQuery.of(context).padding.bottom + AppTheme.spacingXs, // Alt (4px)
-          ),
-          decoration: BoxDecoration(
-            // Dark mode'da düz renk, light mode'da gradient
-            color: brightness == Brightness.dark
-                ? theme.colorScheme.surfaceContainerHighest // Düz renk
-                : null,
-            gradient: brightness == Brightness.dark
-                ? null // Dark mode'da gradient yok
-                : LinearGradient(
-                    colors: [
-                      AppColorConfig.primaryColor.withValues(alpha: 0.95),
-                      AppColorConfig.secondaryColor.withValues(alpha: 0.95),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-            borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
-            boxShadow: brightness == Brightness.dark
-                ? [
-                    // Dark mode için çok subtle shadow - sadece derinlik için
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 15,
-                      offset: const Offset(0, 2),
-                      spreadRadius: 0,
-                    ),
-                  ]
-                : [
-                    // Light mode için yumuşak shadow
-                    BoxShadow(
-                      color: AppColorConfig.primaryColor.withValues(alpha: 0.12),
-                      blurRadius: 18,
-                      offset: const Offset(0, 5),
-                      spreadRadius: 0,
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                      spreadRadius: 0,
-                    ),
-                  ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppTheme.radiusXxl),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTheme.spacingXxl,
-                vertical: AppTheme.spacingMd,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _NavBarIcon(
-                    icon: Icons.home_rounded,
-                    label: l10n.home,
-                    selected: _selectedIndex == 0,
-                    onTap: () => _onItemTapped(0),
-                  ),
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      _NavBarIcon(
-                        icon: Icons.chat_rounded,
-                        label: l10n.chat,
-                        selected: _selectedIndex == 1,
-                        onTap: () => _onItemTapped(1),
-                      ),
-                      if (_totalUnreadCount > 0)
-                        Positioned(
-                          right: -2,
-                          top: -2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColorConfig.errorColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.surface,
-                                width: 2,
-                              ),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 18,
-                              minHeight: 18,
-                            ),
-                            child: Text(
-                              _totalUnreadCount > 99 ? '99+' : _totalUnreadCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  _NavBarIcon(
-                    icon: Icons.map_rounded,
-                    label: l10n.map,
-                    selected: _selectedIndex == 2,
-                    onTap: () => _onItemTapped(2),
-                  ),
-                  _NavBarIcon(
-                    icon: Icons.person_rounded,
-                    label: l10n.profile,
-                    selected: _selectedIndex == 3,
-                    onTap: () => _onItemTapped(3),
-                  ),
-                ],
-              ),
+        bottomNavigationBar: CustomBottomNavigationBar(
+          selectedIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          unreadChatCount: _totalUnreadCount > 0 ? _totalUnreadCount : null,
+          items: [
+            NavigationItem(
+              icon: Icons.home_rounded,
+              label: l10n.home,
             ),
-          ),
+            NavigationItem(
+              icon: Icons.chat_rounded,
+              label: l10n.chat,
+            ),
+            NavigationItem(
+              icon: Icons.map_rounded,
+              label: l10n.map,
+            ),
+            NavigationItem(
+              icon: Icons.person_rounded,
+              label: l10n.profile,
+            ),
+          ],
         ),
       ),
     );
   }
 }
-
-class _NavBarIcon extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  
-  const _NavBarIcon({
-    required this.icon, 
-    required this.label,
-    required this.selected, 
-    required this.onTap
-  });
-
-  @override
-  State<_NavBarIcon> createState() => _NavBarIconState();
-}
-
-class _NavBarIconState extends State<_NavBarIcon> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void didUpdateWidget(_NavBarIcon oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.selected != oldWidget.selected) {
-      if (widget.selected) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final brightness = theme.brightness;
-    final isDark = brightness == Brightness.dark;
-    
-    // Dark mode'da navigation bar arka planı koyu olduğu için icon renkleri açık olmalı
-    // Light mode'da navigation bar mavi olduğu için icon renkleri beyaz olmalı
-    final iconColor = isDark 
-        ? (widget.selected ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant)
-        : (widget.selected ? Colors.white : Colors.white.withValues(alpha: 0.7));
-    
-    final backgroundColor = isDark
-        ? (widget.selected ? theme.colorScheme.primaryContainer : Colors.transparent)
-        : (widget.selected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent);
-    
-    final borderColor = isDark
-        ? (widget.selected ? theme.colorScheme.primary : null)
-        : (widget.selected ? Colors.white.withValues(alpha: 0.3) : null);
-    
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Container(
-              width: 64,
-              height: 56,
-              decoration: BoxDecoration(
-                color: backgroundColor,
-                borderRadius: BorderRadius.circular(20),
-                border: widget.selected && borderColor != null
-                  ? Border.all(
-                      color: borderColor,
-                      width: 1.5,
-                    )
-                  : null,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    widget.icon,
-                    color: iconColor,
-                    size: 24,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.label,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: widget.selected ? FontWeight.w600 : FontWeight.normal,
-                      color: iconColor,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-} 

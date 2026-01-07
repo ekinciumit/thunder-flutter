@@ -17,22 +17,29 @@ import '../../features/chat/data/datasources/chat_remote_data_source.dart';
 import '../../services/language_service.dart';
 import '../../services/theme_service.dart';
 import '../../services/settings_service.dart';
-import '../../models/user_model.dart';
+import '../../features/user/data/models/user_model.dart';
 
 /// App Providers Configuration
 /// 
 /// Clean Architecture: Tüm Provider'lar burada yönetiliyor
 class AppProviders {
   /// Tüm Provider'ları döndürür
-  static List<SingleChildWidget> getProviders() {
-    final languageService = LanguageService();
-    final themeService = ThemeService();
-    final settingsService = SettingsService();
+  /// 
+  /// Eğer servisler önceden oluşturulmuşsa (main'de), onları kullan
+  /// Değilse yeni oluştur (geriye dönük uyumluluk için)
+  static List<SingleChildWidget> getProviders({
+    LanguageService? languageService,
+    ThemeService? themeService,
+    SettingsService? settingsService,
+  }) {
+    final langService = languageService ?? LanguageService();
+    final themeSvc = themeService ?? ThemeService();
+    final settingsSvc = settingsService ?? SettingsService();
     
     return [
-      ChangeNotifierProvider(create: (_) => languageService),
-      ChangeNotifierProvider(create: (_) => themeService),
-      ChangeNotifierProvider(create: (_) => settingsService),
+      ChangeNotifierProvider.value(value: langService),
+      ChangeNotifierProvider.value(value: themeSvc),
+      ChangeNotifierProvider.value(value: settingsSvc),
     ];
   }
 
@@ -44,13 +51,10 @@ class AppProviders {
         create: (_) async {
           try {
             final repository = await createAuthRepository();
-            if (kDebugMode) {
-              debugPrint('✅ Yeni AuthRepository aktif edildi (Clean Architecture)');
-            }
             return repository;
           } catch (e) {
             if (kDebugMode) {
-              debugPrint('⚠️ AuthRepository oluşturulamadı: $e');
+              debugPrint('❌ [APP_PROVIDERS] AuthRepository oluşturulurken hata: $e');
             }
             return null;
           }
@@ -62,13 +66,10 @@ class AppProviders {
         create: (_) async {
           try {
             final repository = await createEventRepository();
-            if (kDebugMode) {
-              debugPrint('✅ Yeni EventRepository aktif edildi (Clean Architecture)');
-            }
             return repository;
           } catch (e) {
             if (kDebugMode) {
-              debugPrint('⚠️ EventRepository oluşturulamadı: $e');
+              debugPrint('❌ [APP_PROVIDERS] EventRepository oluşturulurken hata: $e');
             }
             return null;
           }
@@ -80,13 +81,10 @@ class AppProviders {
         create: (_) async {
           try {
             final repository = await createChatRepository();
-            if (kDebugMode) {
-              debugPrint('✅ Yeni ChatRepository aktif edildi (Clean Architecture)');
-            }
             return repository;
           } catch (e) {
             if (kDebugMode) {
-              debugPrint('⚠️ ChatRepository oluşturulamadı: $e');
+              debugPrint('❌ [APP_PROVIDERS] ChatRepository oluşturulurken hata: $e');
             }
             return null;
           }
@@ -107,11 +105,11 @@ class AppProviders {
         },
         update: (_, authRepository, previous) {
           if (authRepository == null) {
+            // Repository henüz hazır değil, temporary ile devam et
             return previous ?? AuthViewModel(authRepository: _createTemporaryAuthRepository());
           }
-          if (previous != null) {
-            return previous;
-          }
+          // Repository hazır - yeni ViewModel oluştur (state kaybı kabul edilebilir, uygulama başlangıcında)
+          // NOT: previous varsa bile yeni oluştur çünkü repository değişti
           return AuthViewModel(authRepository: authRepository);
         },
       ),
@@ -125,14 +123,14 @@ class AppProviders {
         },
         update: (_, eventRepository, previous) {
           if (eventRepository == null) {
+            // Repository henüz hazır değil, temporary ile devam et
             final temporaryRepository = EventRepositoryImpl(
               remoteDataSource: EventRemoteDataSourceImpl(),
             );
             return previous ?? EventViewModel(eventRepository: temporaryRepository);
           }
-          if (previous != null) {
-            return previous;
-          }
+          // Repository hazır - yeni ViewModel oluştur (state kaybı kabul edilebilir, uygulama başlangıcında)
+          // NOT: previous varsa bile yeni oluştur çünkü repository değişti
           return EventViewModel(eventRepository: eventRepository);
         },
       ),
@@ -146,14 +144,14 @@ class AppProviders {
         },
         update: (_, chatRepository, previous) {
           if (chatRepository == null) {
+            // Repository henüz hazır değil, temporary ile devam et
             final temporaryRepository = ChatRepositoryImpl(
               remoteDataSource: ChatRemoteDataSourceImpl(),
             );
             return previous ?? ChatViewModel(chatRepository: temporaryRepository);
           }
-          if (previous != null) {
-            return previous;
-          }
+          // Repository hazır - yeni ViewModel oluştur (state kaybı kabul edilebilir, uygulama başlangıcında)
+          // NOT: previous varsa bile yeni oluştur çünkü repository değişti
           return ChatViewModel(chatRepository: chatRepository);
         },
       ),

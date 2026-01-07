@@ -547,6 +547,18 @@
   "selectPhoto": "Select Photo",
   "cropPhoto": "Crop Photo",
   "uploading": "Uploading...",
+  "compressingImage": "Compressing image...",
+  "preparingVideo": "Preparing video...",
+  "uploadError": "Upload error",
+  "videoUpload": "Video Upload",
+  "photoUpload": "Photo Upload",
+  "videoSent": "Video sent",
+  "photoSent": "Photo sent",
+  "uploadCancelled": "Upload cancelled",
+  "voiceRecordingCancelled": "Voice recording cancelled",
+  "slideToCancel": "◀ Slide to cancel",
+  "releaseToCancel": "Release to cancel",
+  "releaseToSend": "Release → Send",
   "editEvent": "Edit Event",
   "user": "User",
   "createRoute": "Get Directions",
@@ -682,6 +694,26 @@
   "gallery": "Gallery",
   "camera": "Camera",
   "unknownFile": "Unknown file",
-  "fileOpenSoon": "File opening feature coming soon"
+  "fileOpenSoon": "File opening feature coming soon",
+  "deleteEvent": "Delete Event",
+  "deleteEventConfirm": "Are you sure you want to delete this event?",
+  "deleteEventWarning": "This action cannot be undone. All messages and media associated with this event will be deleted.",
+  "eventDeleted": "Event deleted successfully",
+  "removeParticipant": "Remove Participant",
+  "@removeParticipant": {
+    "description": "Remove participant dialog title"
+  },
+  "remove": "Remove",
+  "@remove": {
+    "description": "Remove button"
+  },
+  "participantRemoved": "Participant removed",
+  "@participantRemoved": {
+    "description": "Participant removed message"
+  },
+  "participantManagement": "Participant Management",
+  "@participantManagement": {
+    "description": "Participant management title"
+  }
 }
 

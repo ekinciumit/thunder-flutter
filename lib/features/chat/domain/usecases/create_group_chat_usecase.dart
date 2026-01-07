@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/chat_model.dart';
+import '../entities/chat_entity.dart';
 import '../repositories/chat_repository.dart';
 
 /// Create Group Chat Use Case
@@ -13,8 +13,8 @@ class CreateGroupChatUseCase {
 
   /// Grup sohbeti oluştur
   /// 
-  /// Returns: ``Either<Failure, ChatModel>``
-  Future<Either<Failure, ChatModel>> call({
+  /// Returns: ``Either<Failure, ChatEntity>``
+  Future<Either<Failure, ChatEntity>> call({
     required String name,
     required String createdBy,
     required List<String> participants,

@@ -4,7 +4,8 @@ import 'package:mockito/annotations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:thunder/features/event/data/repositories/event_repository_impl.dart';
 import 'package:thunder/features/event/data/datasources/event_remote_data_source.dart';
-import 'package:thunder/models/event_model.dart';
+import 'package:thunder/features/event/data/models/event_model.dart';
+import 'package:thunder/features/event/data/mappers/event_mapper.dart';
 import 'package:thunder/core/errors/exceptions.dart';
 import 'package:thunder/core/errors/failures.dart';
 
@@ -37,11 +38,13 @@ void main() {
     group('addEvent', () {
       test('should return Right(void) when event is added successfully', () async {
         // Arrange
+        // Repository Entity bekliyor, data source Model döndürüyor
+        final testEventEntity = EventMapper.toEntity(testEvent);
         when(mockRemoteDataSource.addEvent(testEvent))
             .thenAnswer((_) async => Future.value());
 
         // Act
-        final result = await repository.addEvent(testEvent);
+        final result = await repository.addEvent(testEventEntity);
 
         // Assert
         expect(result.isRight, true);
@@ -51,11 +54,12 @@ void main() {
 
       test('should return Left(ServerFailure) when ServerException is thrown', () async {
         // Arrange
+        final testEventEntity = EventMapper.toEntity(testEvent);
         when(mockRemoteDataSource.addEvent(testEvent))
             .thenThrow(ServerException('Server error'));
 
         // Act
-        final result = await repository.addEvent(testEvent);
+        final result = await repository.addEvent(testEventEntity);
 
         // Assert
         expect(result.isLeft, true);
@@ -66,11 +70,12 @@ void main() {
 
       test('should return Left(UnknownFailure) when unknown exception is thrown', () async {
         // Arrange
+        final testEventEntity = EventMapper.toEntity(testEvent);
         when(mockRemoteDataSource.addEvent(testEvent))
             .thenThrow(Exception('Unknown error'));
 
         // Act
-        final result = await repository.addEvent(testEvent);
+        final result = await repository.addEvent(testEventEntity);
 
         // Assert
         expect(result.isLeft, true);
@@ -115,11 +120,12 @@ void main() {
     group('updateEvent', () {
       test('should return Right(void) when event is updated successfully', () async {
         // Arrange
+        final testEventEntity = EventMapper.toEntity(testEvent);
         when(mockRemoteDataSource.updateEvent(testEvent))
             .thenAnswer((_) async => Future.value());
 
         // Act
-        final result = await repository.updateEvent(testEvent);
+        final result = await repository.updateEvent(testEventEntity);
 
         // Assert
         expect(result.isRight, true);
@@ -128,11 +134,12 @@ void main() {
 
       test('should return Left(ServerFailure) when ServerException is thrown', () async {
         // Arrange
+        final testEventEntity = EventMapper.toEntity(testEvent);
         when(mockRemoteDataSource.updateEvent(testEvent))
             .thenThrow(ServerException('Update failed'));
 
         // Act
-        final result = await repository.updateEvent(testEvent);
+        final result = await repository.updateEvent(testEventEntity);
 
         // Assert
         expect(result.isLeft, true);

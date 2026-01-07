@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
-import '../../../../models/event_model.dart';
+import '../models/event_model.dart';
 import '../../../../core/errors/exceptions.dart';
 
 /// Event Remote Data Source Interface
@@ -20,6 +22,26 @@ abstract class EventRemoteDataSource {
   Future<void> approveJoinRequest(String eventId, String userId);
   Future<void> rejectJoinRequest(String eventId, String userId);
   Future<void> cancelJoinRequest(String eventId, String userId);
+  Future<void> removeParticipant(String eventId, String userId);
+  Future<void> cancelEvent(String eventId, String cancellationReason);
+  
+  /// Event cover fotoğrafını yükler ve download URL'ini döndürür
+  Future<String> uploadEventCoverPhoto(File photoFile, {String? eventId});
+  
+  /// Event fotoğrafını yükler ve download URL'ini döndürür
+  Future<String> uploadEventPhoto(File photoFile, String eventId);
+  
+  /// Tek bir event'i stream olarak getir
+  Stream<EventModel?> getEventStream(String eventId);
+  
+  /// Event comments stream
+  Stream<List<Map<String, dynamic>>> getEventCommentsStream(String eventId);
+  
+  /// Event comment ekle
+  Future<void> addEventComment(String eventId, String text, String userId, String userName);
+  
+  /// Event comments'i sil (event silindiğinde kullanılır)
+  Future<void> deleteEventComments(String eventId);
 }
 
 /// Event Remote Data Source Implementation
@@ -28,10 +50,14 @@ abstract class EventRemoteDataSource {
 /// Firebase Firestore işlemlerini yapar.
 class EventRemoteDataSourceImpl implements EventRemoteDataSource {
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
   final CollectionReference<Map<String, dynamic>> _eventsRef;
 
-  EventRemoteDataSourceImpl({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
+  EventRemoteDataSourceImpl({
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _storage = storage ?? FirebaseStorage.instance,
         _eventsRef = (firestore ?? FirebaseFirestore.instance).collection('events');
 
   @override
@@ -95,6 +121,9 @@ class EventRemoteDataSourceImpl implements EventRemoteDataSource {
   @override
   Future<void> deleteEvent(String eventId) async {
     try {
+      // Önce comments'leri sil
+      await deleteEventComments(eventId);
+      // Sonra event'i sil
       await _eventsRef.doc(eventId).delete();
     } catch (e) {
       throw ServerException('Etkinlik silinirken hata oluştu: ${e.toString()}');
@@ -176,6 +205,49 @@ class EventRemoteDataSourceImpl implements EventRemoteDataSource {
     }
   }
 
+  @override
+  Future<void> removeParticipant(String eventId, String userId) async {
+    try {
+      // Önce sistem mesajını oluştur
+      await _addSystemMessage(eventId, userId, 'removed');
+      
+      // Sonra kullanıcıyı array'lerden çıkar
+      await _eventsRef.doc(eventId).update({
+        'participants': FieldValue.arrayRemove([userId]),
+        'approvedParticipants': FieldValue.arrayRemove([userId]),
+        'pendingRequests': FieldValue.arrayRemove([userId]),
+      });
+    } catch (e) {
+      throw ServerException('Katılımcı çıkarılırken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> cancelEvent(String eventId, String cancellationReason) async {
+    try {
+      // Event'i iptal et
+      await _eventsRef.doc(eventId).update({
+        'status': 'cancelled',
+        'cancelledAt': FieldValue.serverTimestamp(),
+        'cancellationReason': cancellationReason,
+      });
+      
+      // Sistem mesajı oluştur
+      await _eventsRef
+          .doc(eventId)
+          .collection('comments')
+          .add({
+        'text': 'Etkinlik iptal edildi. Sebep: $cancellationReason',
+        'userId': 'system',
+        'userName': 'Sistem',
+        'type': 'system',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw ServerException('Etkinlik iptal edilirken hata oluştu: ${e.toString()}');
+    }
+  }
+
   /// Sistem mesajı ekler (katılma/ayrılma bildirimleri için)
   Future<void> _addSystemMessage(String eventId, String userId, String type) async {
     try {
@@ -190,6 +262,8 @@ class EventRemoteDataSourceImpl implements EventRemoteDataSource {
         messageText = '$userName etkinliğe katıldı';
       } else if (type == 'left') {
         messageText = '$userName etkinlikten ayrıldı';
+      } else if (type == 'removed') {
+        messageText = '$userName etkinlikten çıkarıldı';
       } else {
         return;
       }
@@ -210,6 +284,147 @@ class EventRemoteDataSourceImpl implements EventRemoteDataSource {
       // Sadece log'a yaz
       if (kDebugMode) {
         debugPrint('⚠️ Sistem mesajı eklenemedi: $e');
+      }
+    }
+  }
+
+  @override
+  Future<String> uploadEventCoverPhoto(File photoFile, {String? eventId}) async {
+    try {
+      if (!await photoFile.exists()) {
+        throw ServerException('Fotoğraf dosyası bulunamadı');
+      }
+
+      // Güvenlik: EventId bazlı path yapısı - eventId yoksa geçici ID kullan
+      final tempEventId = eventId ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
+      final fileId = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef = _storage.ref().child('event_covers').child(tempEventId).child(fileId);
+
+      final uploadTask = storageRef.putFile(photoFile);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Event cover fotoğrafı yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> uploadEventPhoto(File photoFile, String eventId) async {
+    try {
+      if (!await photoFile.exists()) {
+        throw ServerException('Fotoğraf dosyası bulunamadı');
+      }
+
+      final fileName = 'event_${eventId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef = _storage.ref().child('event_photos').child(fileName);
+
+      final uploadTask = storageRef.putFile(photoFile);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Event fotoğrafı yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Stream<EventModel?> getEventStream(String eventId) {
+    try {
+      return _eventsRef
+          .doc(eventId)
+          .snapshots()
+          .map((snapshot) {
+            if (!snapshot.exists) {
+              return null;
+            }
+            return EventModel.fromMap(snapshot.data()!, snapshot.id);
+          });
+    } catch (e) {
+      throw ServerException('Event getirilirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> getEventCommentsStream(String eventId) {
+    try {
+      return _eventsRef
+          .doc(eventId)
+          .collection('comments')
+          .orderBy('timestamp', descending: false)
+          .snapshots()
+          .map((snapshot) => snapshot.docs.map((doc) {
+                final data = doc.data();
+                // Clean Architecture: Timestamp'ı DateTime'a çevir (UI Firestore tipi bilmemeli)
+                final timestamp = data['timestamp'];
+                DateTime? dateTime;
+                if (timestamp != null) {
+                  if (timestamp is Timestamp) {
+                    dateTime = timestamp.toDate();
+                  } else if (timestamp is Map) {
+                    // Firestore Timestamp'ı Map olarak gelirse convert et
+                    final seconds = timestamp['seconds'] ?? timestamp['_seconds'] ?? 0;
+                    final nanoseconds = timestamp['nanoseconds'] ?? timestamp['_nanoseconds'] ?? 0;
+                    dateTime = DateTime.fromMillisecondsSinceEpoch(
+                      (seconds as int) * 1000 + (nanoseconds as int) ~/ 1000000,
+                    );
+                  }
+                }
+                return {
+                  ...data,
+                  'id': doc.id,
+                  'timestamp': dateTime, // Timestamp yerine DateTime
+                };
+              }).toList());
+    } catch (e) {
+      throw ServerException('Event yorumları getirilirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> addEventComment(String eventId, String text, String userId, String userName) async {
+    try {
+      await _eventsRef
+          .doc(eventId)
+          .collection('comments')
+          .add({
+        'text': text,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw ServerException('Yorum eklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> deleteEventComments(String eventId) async {
+    try {
+      final commentsRef = _eventsRef
+          .doc(eventId)
+          .collection('comments');
+      
+      final comments = await commentsRef.get();
+      
+      // Batch delete için tüm referansları topla
+      final batch = _firestore.batch();
+      for (final doc in comments.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      if (comments.docs.isNotEmpty) {
+        await batch.commit();
+      }
+    } catch (e) {
+      // Comments silme hatası kritik değil (event zaten silinmiş olabilir)
+      // Sessizce devam et
+      if (kDebugMode) {
+        debugPrint('⚠️ Event comments silinemedi: $e');
       }
     }
   }

@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:io';
 
 /// Feedback Service
@@ -35,15 +34,8 @@ class FeedbackService {
         'status': 'pending', // pending, reviewed, resolved
       });
       
-      if (kDebugMode) {
-        debugPrint('✅ Geri bildirim başarıyla gönderildi');
-      }
-      
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Geri bildirim gönderilemedi: $e');
-      }
       return false;
     }
   }

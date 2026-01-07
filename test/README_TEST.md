@@ -27,14 +27,12 @@
 - ✅ `FilePickerWidget` testleri (6 test)
 - ✅ `AppCard` testleri (4 test)
 - ✅ `AppGradientContainer` testleri (4 test)
-- ✅ `ModernButton` testleri (7 test)
 - ✅ `CacheService` testleri (8 test)
 - ✅ `ModernLoadingWidget` testleri (7 test)
 - ✅ `MessageReactions` testleri (6 test)
 - ✅ `FileMessageWidget` testleri (10 test)
 - ✅ `LanguageSelector` testleri (6 test)
 - ✅ `VoiceMessageWidget` testleri (5 test)
-- ✅ `VoiceRecorderWidget` testleri (2 test)
 - ⏳ `HomePage` testleri
 - ⏳ `PrivateChatPage` testleri
 
@@ -345,13 +343,11 @@ test/
   - FilePickerWidget: 6 test
   - AppCard: 4 test
   - AppGradientContainer: 4 test
-  - ModernButton: 7 test
   - ModernLoadingWidget: 7 test
   - MessageReactions: 6 test
   - FileMessageWidget: 10 test
   - LanguageSelector: 6 test
   - VoiceMessageWidget: 5 test
-  - VoiceRecorderWidget: 2 test
   
 - **Integration Tests**: 0 test ❌
 

@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import '../models/user_model.dart';
+import '../features/user/domain/entities/user_entity.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import 'user_profile_page.dart';
-import 'widgets/modern_loading_widget.dart';
 import 'widgets/app_gradient_container.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/widgets/glass_container.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
+import '../core/widgets/skeleton_widgets.dart';
 import '../l10n/app_localizations.dart';
+import '../core/navigation/app_navigation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class UserSearchPage extends StatefulWidget {
@@ -30,10 +29,10 @@ class _UserSearchPageState extends State<UserSearchPage> {
     super.dispose();
   }
 
-  Stream<List<UserModel>> _userStream() {
-    return FirebaseFirestore.instance.collection('users').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => UserModel.fromMap(doc.data(), doc.id)).toList();
-    });
+  Stream<List<UserEntity>> _userStream(BuildContext context) {
+    // Clean Architecture: ViewModel üzerinden users stream
+    // ViewModel Entity döndürüyor
+    return Provider.of<AuthViewModel>(context, listen: false).getAllUsersStream();
   }
 
   @override
@@ -124,16 +123,12 @@ class _UserSearchPageState extends State<UserSearchPage> {
               const SizedBox(height: AppTheme.spacingMd),
               // Results
           Expanded(
-            child: StreamBuilder<List<UserModel>>(
-              stream: _userStream(),
+          child: StreamBuilder<List<UserEntity>>(
+            stream: _userStream(context),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: ModernLoadingWidget(
-                          message: l10n.loading,
-                        ),
-                      );
-                    }
+                  return const UserListSkeleton();
+                }
 
                     if (snapshot.hasError) {
                       return ErrorStateWidget(
@@ -237,14 +232,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                             onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => UserProfilePage(
-                                    user: user,
-                                    currentUserId: currentUserId,
-                            ),
-                          ),
-                              );
+                              AppNavigation.toUserProfile(context: context, userId: user.uid);
                             },
                       ),
                     );

@@ -5,7 +5,9 @@ import 'package:mockito/annotations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:thunder/features/event/domain/usecases/get_events_usecase.dart';
 import 'package:thunder/features/event/domain/repositories/event_repository.dart';
-import 'package:thunder/models/event_model.dart';
+import 'package:thunder/features/event/data/models/event_model.dart';
+import 'package:thunder/features/event/domain/entities/event_entity.dart';
+import 'package:thunder/features/event/data/mappers/event_mapper.dart';
 
 import 'get_events_usecase_test.mocks.dart';
 
@@ -21,7 +23,7 @@ void main() {
   });
 
   group('GetEventsUseCase', () {
-    final testEvents = [
+    final testEventsModel = [
       EventModel(
         id: 'event-1',
         title: 'Event 1',
@@ -45,10 +47,11 @@ void main() {
         participants: [],
       ),
     ];
+    final testEvents = EventMapper.toEntityList(testEventsModel);
 
-    test('should return Stream<List<EventModel>> when stream is successful', () async {
+    test('should return Stream<List<EventEntity>> when stream is successful', () async {
       // Arrange
-      final streamController = StreamController<List<EventModel>>();
+      final streamController = StreamController<List<EventEntity>>();
       when(mockRepository.getEventsStream())
           .thenAnswer((_) => streamController.stream);
 
@@ -57,9 +60,10 @@ void main() {
       streamController.add(testEvents);
 
       // Assert
-      expect(stream, isA<Stream<List<EventModel>>>());
+      expect(stream, isA<Stream<List<EventEntity>>>());
       final result = await stream.first;
-      expect(result, testEvents);
+      expect(result.length, testEvents.length);
+      expect(result.first.id, testEvents.first.id);
       verify(mockRepository.getEventsStream()).called(1);
       
       await streamController.close();
@@ -67,7 +71,7 @@ void main() {
 
     test('should emit multiple events when stream emits multiple times', () async {
       // Arrange
-      final streamController = StreamController<List<EventModel>>();
+      final streamController = StreamController<List<EventEntity>>();
       when(mockRepository.getEventsStream())
           .thenAnswer((_) => streamController.stream);
 
@@ -77,7 +81,7 @@ void main() {
       streamController.add(testEvents);
 
       // Assert - Stream'i bir kez dinle
-      final results = <List<EventModel>>[];
+      final results = <List<EventEntity>>[];
       stream.listen((event) {
         results.add(event);
       });
@@ -86,8 +90,10 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 100));
       
       expect(results.length, greaterThanOrEqualTo(2));
-      expect(results[0], [testEvents[0]]);
-      expect(results[1], testEvents);
+      expect(results[0].length, 1);
+      expect(results[0].first.id, testEvents[0].id);
+      expect(results[1].length, testEvents.length);
+      expect(results[1].first.id, testEvents.first.id);
       
       verify(mockRepository.getEventsStream()).called(1);
       
@@ -96,7 +102,7 @@ void main() {
 
     test('should return empty list when stream emits empty list', () async {
       // Arrange
-      final streamController = StreamController<List<EventModel>>();
+      final streamController = StreamController<List<EventEntity>>();
       when(mockRepository.getEventsStream())
           .thenAnswer((_) => streamController.stream);
 

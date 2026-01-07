@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import '../models/user_model.dart';
+import '../features/user/domain/entities/user_entity.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../services/user_service.dart';
-import 'user_profile_page.dart';
 import 'widgets/app_gradient_container.dart';
-import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/widgets/glass_container.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
+import '../core/widgets/skeleton_widgets.dart';
 import '../l10n/app_localizations.dart';
+import '../core/navigation/app_navigation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class FollowersFollowingPage extends StatefulWidget {
@@ -31,37 +30,31 @@ class FollowersFollowingPage extends StatefulWidget {
 class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
   final UserService _userService = UserService();
 
-  Stream<List<UserModel>> _getUsersStream() {
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.userId)
-        .snapshots()
-        .asyncMap((snapshot) async {
-      if (!snapshot.exists) return [];
+  Stream<List<UserEntity>> _getUsersStream() {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    
+    // Clean Architecture: AuthViewModel üzerinden user stream
+    // ViewModel Entity döndürüyor
+    return authViewModel.getAllUsersStream().map((allUserEntities) {
+      // Önce userId'ye ait user'ı bul
+      final targetUserEntity = allUserEntities.firstWhere(
+        (user) => user.uid == widget.userId,
+        orElse: () => UserEntity(uid: widget.userId, email: ''),
+      );
       
-      final userData = snapshot.data()!;
       final userIds = widget.showFollowers
-          ? List<String>.from(userData['followers'] ?? [])
-          : List<String>.from(userData['following'] ?? []);
+          ? targetUserEntity.followers
+          : targetUserEntity.following;
 
-      if (userIds.isEmpty) return [];
+      if (userIds.isEmpty) return <UserEntity>[];
 
-      // Her kullanıcı için bilgileri çek
-      final users = <UserModel>[];
-      for (final id in userIds) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(id)
-            .get();
-        if (userDoc.exists) {
-          users.add(UserModel.fromMap(userDoc.data()!, userDoc.id));
-        }
-      }
-      return users;
+      // userIds'deki user'ları allUsers içinden bul (performans için asyncMap yerine map)
+      final userIdsSet = userIds.toSet();
+      return allUserEntities.where((user) => userIdsSet.contains(user.uid)).toList();
     });
   }
 
-  Future<void> _toggleFollow(String targetUserId, UserModel targetUser, bool isCurrentlyFollowing) async {
+  Future<void> _toggleFollow(String targetUserId, UserEntity targetUser, bool isCurrentlyFollowing) async {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final currentUserId = authViewModel.user?.uid;
     final currentUser = authViewModel.user;
@@ -89,7 +82,7 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
     }
   }
 
-  bool _isMutualFollow(UserModel user, String currentUserId) {
+  bool _isMutualFollow(UserEntity user, String currentUserId) {
     return user.followers.contains(currentUserId) && 
            user.following.contains(currentUserId);
   }
@@ -129,15 +122,11 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
         body: SafeArea(
           top: false,
           bottom: false,
-          child: StreamBuilder<List<UserModel>>(
+          child: StreamBuilder<List<UserEntity>>(
             stream: _getUsersStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: ModernLoadingWidget(
-                    message: l10n.loading,
-                  ),
-                );
+                return const UserListSkeleton();
               }
 
               if (snapshot.hasError) {
@@ -186,14 +175,7 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
                       ),
                       leading: GestureDetector(
                         onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => UserProfilePage(
-                                user: user,
-                                currentUserId: currentUser.uid,
-                              ),
-                            ),
-                          );
+                          AppNavigation.toUserProfile(context: context, userId: user.uid);
                         },
                         child: CircleAvatar(
                           radius: 28,
@@ -215,13 +197,9 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
                           Expanded(
                             child: GestureDetector(
                               onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => UserProfilePage(
-                                      user: user,
-                                      currentUserId: currentUser.uid,
-                                    ),
-                                  ),
+                                AppNavigation.toUserProfile(
+                                  context: context,
+                                  userId: user.uid,
                                 );
                               },
                               child: Column(

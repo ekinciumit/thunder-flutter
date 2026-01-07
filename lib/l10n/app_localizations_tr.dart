@@ -421,6 +421,42 @@ class AppLocalizationsTr extends AppLocalizations {
   String get uploading => 'Yükleniyor...';
 
   @override
+  String get compressingImage => 'Resim sıkıştırılıyor...';
+
+  @override
+  String get preparingVideo => 'Video hazırlanıyor...';
+
+  @override
+  String get uploadError => 'Yükleme hatası';
+
+  @override
+  String get videoUpload => 'Video Yükleme';
+
+  @override
+  String get photoUpload => 'Fotoğraf Yükleme';
+
+  @override
+  String get videoSent => 'Video gönderildi';
+
+  @override
+  String get photoSent => 'Fotoğraf gönderildi';
+
+  @override
+  String get uploadCancelled => 'Yükleme iptal edildi';
+
+  @override
+  String get voiceRecordingCancelled => 'Ses kaydı iptal edildi';
+
+  @override
+  String get slideToCancel => '◀ Kaydır iptal';
+
+  @override
+  String get releaseToCancel => 'Bırak ve iptal et';
+
+  @override
+  String get releaseToSend => 'Bırak → Gönder';
+
+  @override
   String get editEvent => 'Etkinliği Düzenle';
 
   @override
@@ -835,4 +871,30 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get fileOpenSoon => 'Dosya açma özelliği yakında eklenecek';
+
+  @override
+  String get deleteEvent => 'Etkinliği Sil';
+
+  @override
+  String get deleteEventConfirm =>
+      'Bu etkinliği silmek istediğinize emin misiniz?';
+
+  @override
+  String get deleteEventWarning =>
+      'Bu işlem geri alınamaz. Etkinliğe ait tüm mesajlar ve medyalar silinecektir.';
+
+  @override
+  String get eventDeleted => 'Etkinlik başarıyla silindi';
+
+  @override
+  String get removeParticipant => 'Katılımcıyı Çıkar';
+
+  @override
+  String get remove => 'Çıkar';
+
+  @override
+  String get participantRemoved => 'Katılımcı çıkarıldı';
+
+  @override
+  String get participantManagement => 'Katılımcı Yönetimi';
 }

@@ -6,6 +6,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'audio_state_notifier.dart';
 
 class AudioService {
   static final AudioService _instance = AudioService._internal();
@@ -15,11 +16,18 @@ class AudioService {
   final AudioRecorder _recorder = AudioRecorder();
   final AudioPlayer _player = AudioPlayer();
   StreamSubscription<void>? _playerCompleteSubscription;
+  StreamSubscription<Duration>? _positionSubscription;
+  StreamSubscription<Duration>? _durationSubscription;
+  
+  final AudioStateNotifier _stateNotifier = AudioStateNotifier();
   
   bool _isRecording = false;
   bool _isPlaying = false;
   String? _currentRecordingPath;
   String? _currentPlayingPath;
+  
+  /// Get audio state notifier for widgets to listen
+  AudioStateNotifier get stateNotifier => _stateNotifier;
 
   bool get isRecording => _isRecording;
   bool get isPlaying => _isPlaying;
@@ -119,20 +127,53 @@ class AudioService {
       _currentPlayingPath = filePath;
       _isPlaying = true;
 
-      // Önceki listener'ı iptal et (memory leak önlemi)
+      // Önceki listener'ları iptal et (memory leak önlemi)
       _playerCompleteSubscription?.cancel();
+      _positionSubscription?.cancel();
+      _durationSubscription?.cancel();
       
       await _player.play(DeviceFileSource(filePath));
       
-      // Oynatma bittiğinde durumu güncelle (tek listener)
+      // State notifier'ı güncelle
+      final duration = await _player.getDuration() ?? Duration.zero;
+      _stateNotifier.updatePlayingState(
+        url: filePath,
+        isPlaying: true,
+        currentPosition: Duration.zero,
+        totalDuration: duration,
+      );
+      
+      // Position stream'i dinle
+      _positionSubscription = _player.onPositionChanged.listen((position) {
+        _stateNotifier.updatePlayingState(
+          url: filePath,
+          isPlaying: true,
+          currentPosition: position,
+          totalDuration: _stateNotifier.totalDuration,
+        );
+      });
+      
+      // Duration stream'i dinle
+      _durationSubscription = _player.onDurationChanged.listen((duration) {
+        _stateNotifier.updatePlayingState(
+          url: filePath,
+          isPlaying: true,
+          currentPosition: _stateNotifier.currentPosition,
+          totalDuration: duration,
+        );
+      });
+      
+      // Oynatma bittiğinde durumu güncelle
       _playerCompleteSubscription = _player.onPlayerComplete.listen((_) {
         _isPlaying = false;
         _currentPlayingPath = null;
+        _stateNotifier.stop();
       });
     } catch (e) {
       debugPrint('Ses oynatma hatası: $e');
       _isPlaying = false;
       _currentPlayingPath = null;
+      _stateNotifier.stop();
     }
   }
 
@@ -142,6 +183,7 @@ class AudioService {
       await _player.stop();
       _isPlaying = false;
       _currentPlayingPath = null;
+      _stateNotifier.stop();
     } catch (e) {
       debugPrint('Ses durdurma hatası: $e');
     }
@@ -161,6 +203,8 @@ class AudioService {
   /// Kaynakları temizle
   void dispose() {
     _playerCompleteSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _durationSubscription?.cancel();
     _recorder.dispose();
     _player.dispose();
   }

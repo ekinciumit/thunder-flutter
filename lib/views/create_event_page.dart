@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/event_model.dart';
+import '../features/event/domain/entities/location_entity.dart';
+import '../features/event/domain/entities/event_entity.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../core/validators/form_validators.dart';
@@ -13,8 +12,12 @@ import '../core/utils/responsive_helper.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
+import '../core/widgets/glass_container.dart';
 import '../l10n/app_localizations.dart';
-import 'widgets/modern_loading_widget.dart';
+import 'widgets/app_gradient_container.dart';
+import 'widgets/event_cover_photo_picker.dart';
+import 'widgets/location_picker_dialog.dart';
+import '../core/utils/category_utils.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
@@ -170,11 +173,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
   File? coverPhotoFile;
   String? uploadedPhotoUrl;
   bool isUploading = false;
+  bool _isSubmitting = false; // Double submit engelleme için
   
   // Kategori seçimi için
-  final List<String> categories = [
-    'Müzik', 'Spor', 'Yemek', 'Sanat', 'Parti', 'Teknoloji', 'Doğa', 'Eğitim', 'Oyun', 'Diğer'
-  ];
+  final List<String> categories = CategoryUtils.categories;
   String selectedCategory = 'Diğer';
   LatLng? selectedLatLng;
   CameraPosition? initialCameraPosition;
@@ -185,9 +187,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadCategoryIcons();
-    });
+    // Icon'ları arka planda yükle (non-blocking)
+    // Sayfa hemen açılsın, icon'lar yüklenirken location picker default icon kullanacak
+    _loadCategoryIcons();
   }
 
   Future<void> _loadCategoryIcons() async {
@@ -204,110 +206,37 @@ class _CreateEventPageState extends State<CreateEventPage> {
       'Diğer': 'assets/icons/other.png',
     };
     final Map<String, BitmapDescriptor> loadedIcons = {};
-    for (final entry in iconFiles.entries) {
+    
+    // Paralel yükleme için Future.wait kullan (daha hızlı)
+    final futures = iconFiles.entries.map((entry) async {
       try {
         final bytes = await rootBundle.load(entry.value);
         final bitmap = BitmapDescriptor.bytes(bytes.buffer.asUint8List());
-        loadedIcons[entry.key] = bitmap;
-      } catch (_) {}
+        return <String, BitmapDescriptor>{entry.key: bitmap};
+      } catch (_) {
+        return <String, BitmapDescriptor>{};
+      }
+    }).toList();
+    
+    final results = await Future.wait(futures);
+    for (final result in results) {
+      loadedIcons.addAll(result);
     }
-    setState(() {
-      categoryIcons = loadedIcons;
-      iconsLoaded = true;
-    });
-  }
-
-  /// Kategori renk şemasını döndürür
-  Map<String, Color> _getCategoryColorScheme(String category) {
-    switch (category) {
-      case 'Müzik':
-        return {
-          'primary': const Color(0xFF7C3AED), // Deep purple
-          'secondary': const Color(0xFFA855F7), // Lighter purple
-        };
-      case 'Spor':
-        return {
-          'primary': const Color(0xFF2563EB), // Blue
-          'secondary': const Color(0xFF3B82F6), // Lighter blue
-        };
-      case 'Yemek':
-        return {
-          'primary': const Color(0xFFEA580C), // Orange
-          'secondary': const Color(0xFFFB923C), // Lighter orange
-        };
-      case 'Sanat':
-        return {
-          'primary': const Color(0xFFDC2626), // Red
-          'secondary': const Color(0xFFEF4444), // Lighter red
-        };
-      case 'Parti':
-        return {
-          'primary': const Color(0xFF059669), // Teal
-          'secondary': const Color(0xFF10B981), // Lighter teal
-        };
-      case 'Teknoloji':
-        return {
-          'primary': const Color(0xFF4F46E5), // Indigo
-          'secondary': const Color(0xFF6366F1), // Lighter indigo
-        };
-      case 'Doğa':
-        return {
-          'primary': const Color(0xFF16A34A), // Green
-          'secondary': const Color(0xFF22C55E), // Lighter green
-        };
-      case 'Eğitim':
-        return {
-          'primary': const Color(0xFF92400E), // Brown
-          'secondary': const Color(0xFFB45309), // Lighter brown
-        };
-      case 'Oyun':
-        return {
-          'primary': const Color(0xFF7C2D12), // Dark brown
-          'secondary': const Color(0xFF991B1B), // Lighter brown
-        };
-      default: // Diğer
-        return {
-          'primary': const Color(0xFF6B7280), // Gray
-          'secondary': Colors.grey.shade400,
-        };
-    }
-  }
-
-  BitmapDescriptor _getCategoryIcon(String category) {
-    if (iconsLoaded && categoryIcons.containsKey(category)) {
-      return categoryIcons[category]!;
-    }
-    // Yedek: renkli marker
-    switch (category) {
-      case 'Müzik':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
-      case 'Spor':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
-      case 'Yemek':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
-      case 'Sanat':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose);
-      case 'Parti':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueMagenta);
-      case 'Teknoloji':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
-      case 'Doğa':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
-      case 'Eğitim':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
-      case 'Oyun':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
-      default:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+    
+    if (mounted) {
+      setState(() {
+        categoryIcons = loadedIcons;
+        iconsLoaded = true;
+      });
     }
   }
 
   Future<void> _pickCoverPhoto() async {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     // Önce galeri veya kamera seçimi göster
     final source = await ModernDialog.showImageSource(
       context: context,
-      title: l10n.selectPhoto,
+      title: l10n?.selectPhoto ?? 'Select Photo',
     );
     
     if (source == null) return;
@@ -323,14 +252,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
         aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
         uiSettings: [
           AndroidUiSettings(
-            toolbarTitle: l10n.cropPhoto,
+            toolbarTitle: l10n?.cropPhoto ?? 'Crop Photo',
             toolbarColor: theme.colorScheme.primary,
             toolbarWidgetColor: theme.colorScheme.onPrimary,
             initAspectRatio: CropAspectRatioPreset.ratio16x9,
             lockAspectRatio: false, // Serbest kırpma
           ),
           IOSUiSettings(
-            title: l10n.cropPhoto,
+            title: l10n?.cropPhoto ?? 'Crop Photo',
             aspectRatioPresets: [CropAspectRatioPreset.ratio16x9],
           ),
         ],
@@ -349,145 +278,105 @@ class _CreateEventPageState extends State<CreateEventPage> {
     if (file == null) return;
     
     setState(() { isUploading = true; });
-    final fileName = 'event_cover_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final ref = FirebaseStorage.instance.ref().child('event_covers').child(fileName);
-    await ref.putFile(file);
-    final url = await ref.getDownloadURL();
-    setState(() {
-      uploadedPhotoUrl = url;
-      isUploading = false;
-    });
+    
+    try {
+      if (!mounted) return;
+      final eventViewModel = Provider.of<EventViewModel>(context, listen: false);
+      
+      // Clean Architecture: ViewModel üzerinden yükle
+      final url = await eventViewModel.uploadEventCoverPhoto(file.path);
+      
+      if (!mounted) return;
+      if (url != null) {
+        setState(() {
+          uploadedPhotoUrl = url;
+          isUploading = false;
+        });
+      } else {
+        setState(() { isUploading = false; });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fotoğraf yüklenemedi'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() { isUploading = false; });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fotoğraf yükleme hatası: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _pickCategory() async {
-    final theme = Theme.of(context);
-    await showModalBottomSheet(
+    final l10n = AppLocalizations.of(context);
+    await showDialog<String>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusRound),
-        ),
-      ),
       builder: (context) {
         String tempCategory = selectedCategory;
         return StatefulBuilder(
-          builder: (context, setModalState) => Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppTheme.radiusRound),
+          builder: (context, setModalState) => AlertDialog(
+            title: Text(l10n?.selectCategory ?? 'Select Category'),
+            content: SizedBox(
+              width: 300,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final category = categories[index];
+                  final categoryColors = CategoryUtils.getCategoryColorScheme(category);
+                  return ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: categoryColors['primary']!.withAlpha(AppTheme.alphaVeryLight),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.category,
+                        color: categoryColors['primary'],
+                      ),
+                    ),
+                    title: Text(category),
+                    selected: tempCategory == category,
+                    onTap: () {
+                      setModalState(() {
+                        tempCategory = category;
+                      });
+                    },
+                  );
+                },
               ),
             ),
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle bar
-                Container(
-                  margin: const EdgeInsets.only(top: AppTheme.spacingMd),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                // Title
-                Padding(
-                  padding: const EdgeInsets.all(AppTheme.spacingXl),
-                  child: Row(
-                    children: [
-                      Builder(
-                        builder: (ctx) {
-                          final l10n = AppLocalizations.of(ctx)!;
-                          return Text(
-                            l10n.selectCategory,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          );
-                        }
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                ),
-                // Categories Grid
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spacingXl,
-                  ),
-                  child: Wrap(
-                    spacing: AppTheme.spacingMd,
-                    runSpacing: AppTheme.spacingMd,
-                    children: categories.map((category) {
-                      final isSelected = tempCategory == category;
-                      final colorScheme = _getCategoryColorScheme(category);
-                      return GestureDetector(
-                        onTap: () {
-                          setModalState(() => tempCategory = category);
-                          setState(() => selectedCategory = category);
-                          Navigator.of(context).pop();
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppTheme.spacingLg,
-                            vertical: AppTheme.spacingMd,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: isSelected
-                                ? LinearGradient(
-                                    colors: [colorScheme['primary']!, colorScheme['secondary']!],
-                                  )
-                                : null,
-                            color: isSelected
-                                ? null
-                                : colorScheme['primary']!.withAlpha(AppTheme.alphaVeryLight),
-                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                            border: Border.all(
-                              color: isSelected
-                                  ? colorScheme['primary']!
-                                  : colorScheme['primary']!.withAlpha(AppTheme.alphaMedium),
-                              width: isSelected ? 2 : 1.5,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    AppTheme.shadowSoft(
-                                      color: colorScheme['primary']!.withAlpha(AppTheme.alphaMedium),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Text(
-                            category,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: isSelected
-                                  ? Colors.white
-                                  : colorScheme['primary']!,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: AppTheme.spacingXl),
-              ],
-            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n?.cancel ?? 'Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(tempCategory),
+                child: Text(l10n?.select ?? 'Select'),
+              ),
+            ],
           ),
         );
       },
-    );
+    ).then((category) {
+      if (category != null) {
+        setState(() {
+          selectedCategory = category;
+        });
+      }
+    });
   }
 
   Future<void> _pickDateTime() async {
@@ -522,122 +411,70 @@ class _CreateEventPageState extends State<CreateEventPage> {
       position = null;
     }
     setState(() { isLocating = false; });
-    LatLng startLatLng = position != null
+    final startLatLng = position != null
         ? LatLng(position.latitude, position.longitude)
-        : LatLng(39.925533, 32.866287); // Ankara default
-    LatLng tempLatLng = selectedLatLng ?? startLatLng;
-    String tempCategory = selectedCategory;
-    if (mounted) {
-      await showDialog<void>(
-        context: context,
-        builder: (context) {
-          return StatefulBuilder(
-          builder: (context, setModalState) {
-            final l10n = AppLocalizations.of(context)!;
-            return AlertDialog(
-              title: Text(l10n.selectLocationAndCategory),
-              content: SizedBox(
-                width: 320,
-                height: 420,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: !iconsLoaded
-                          ? Center(child: ModernLoadingWidget(message: l10n.loading))
-                          : Builder(
-                              builder: (context) {
-                                final theme = Theme.of(context);
-                                final isDark = theme.brightness == Brightness.dark;
-                                // map_view.dart'taki dark map style'ı kullan
-                                final darkMapStyle = _CreateEventPageState._darkMapStyle;
-                                
-                                return GoogleMap(
-                                  initialCameraPosition: CameraPosition(target: tempLatLng, zoom: 14),
-                                  style: isDark ? darkMapStyle : null,
-                                  markers: {
-                                    Marker(
-                                      markerId: const MarkerId('selected'),
-                                      position: tempLatLng,
-                                      draggable: true,
-                                      icon: _getCategoryIcon(tempCategory),
-                                      onDragEnd: (newPos) {
-                                        setModalState(() { tempLatLng = newPos; });
-                                      },
-                                    ),
-                                  },
-                                  onTap: (latLng) {
-                                    setModalState(() { tempLatLng = latLng; });
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: tempCategory,
-                      decoration: const InputDecoration(labelText: 'Kategori'),
-                      items: categories.map((cat) => DropdownMenuItem(
-                        value: cat,
-                        child: Text(cat),
-                      )).toList(),
-                      onChanged: (val) {
-                        if (val != null) setModalState(() { tempCategory = val; });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    if (mounted) Navigator.of(context).pop();
-                  },
-                  child: Text(l10n.cancel),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    setState(() {
-                      selectedLatLng = tempLatLng;
-                      selectedCategory = tempCategory;
-                    });
-                    if (mounted) Navigator.of(context).pop();
-                  },
-                  child: Text(l10n.select),
-                ),
-              ],
-            );
-          },
-        );
-      },
+        : const LatLng(39.925533, 32.866287); // Ankara default
+    final initialLatLng = selectedLatLng ?? startLatLng;
+    
+    if (!mounted) return;
+    
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => LocationPickerDialog(
+        initialLatLng: initialLatLng,
+        initialCategory: selectedCategory,
+        categories: categories,
+        iconsLoaded: iconsLoaded,
+        categoryIcons: categoryIcons,
+        darkMapStyle: _darkMapStyle,
+      ),
     );
+    
+    if (result != null && mounted) {
+      setState(() {
+        selectedLatLng = result['latLng'] as LatLng;
+        selectedCategory = result['category'] as String;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final eventViewModel = Provider.of<EventViewModel>(context);
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    final brightness = theme.brightness;
-    final mediaQuery = MediaQuery.of(context);
-    final keyboardHeight = mediaQuery.viewInsets.bottom;
-    final isKeyboardOpen = keyboardHeight > 0;
+    // Safety checks
+    if (!mounted) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     
-    return Scaffold(
-      // Keyboard açıldığında layout kaymasını engelle
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        // Bottom inset'i manuel yönet (keyboard için)
-        bottom: false,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: AppColorConfig.getGradientPrimary(brightness),
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+    // Consumer ile eventViewModel.isLoading değişikliklerini dinle
+    return Consumer<EventViewModel>(
+      builder: (context, eventViewModel, _) {
+        try {
+          final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+          final theme = Theme.of(context);
+          
+          // Try to get localization, but don't block if it fails
+          AppLocalizations? l10n;
+          try {
+            l10n = AppLocalizations.of(context);
+          } catch (e) {
+            // Continue without localization - use fallback strings
+          }
+          final mediaQuery = MediaQuery.of(context);
+          final keyboardHeight = mediaQuery.viewInsets.bottom;
+          final isKeyboardOpen = keyboardHeight > 0;
+        
+        return AppGradientContainer(
+      backgroundImagePath: 'assets/backgrounds/background_2.png',
+      backgroundOpacity: 0.7,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        extendBodyBehindAppBar: true,
+        // Keyboard açıldığında layout kaymasını engelle
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          // Bottom inset'i manuel yönet (keyboard için)
+          bottom: false,
           child: Stack(
           children: [
             // Keyboard-aware scroll view
@@ -660,166 +497,24 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   children: [
                     const SizedBox(height: 56), // Geri butonu için boşluk
                 // Modern Photo Upload Card
-                Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                    child: Stack(
-                      children: [
-                        // Photo or Placeholder
-                        GestureDetector(
-                          onTap: isUploading ? null : _pickCoverPhoto,
-                          child: Container(
-                            height: 200,
-                            width: double.infinity,
-                            decoration: uploadedPhotoUrl != null
-                                ? null
-                                : BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
-                                        AppColorConfig.secondaryColor.withAlpha(AppTheme.alphaVeryLight),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                  ),
-                            child: uploadedPhotoUrl != null
-                                ? Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      Image.network(
-                                        uploadedPhotoUrl!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Container(
-                                          color: theme.colorScheme.surfaceContainerHighest,
-                                          child: const Icon(Icons.broken_image, size: 64, color: Colors.grey),
-                                        ),
-                                      ),
-                                      // Overlay for change button
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.black.withAlpha(AppTheme.alphaMedium),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(AppTheme.spacingLg),
-                                          decoration: BoxDecoration(
-                                            color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaLight),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.add_photo_alternate_outlined,
-                                            size: 48,
-                                            color: AppColorConfig.primaryColor,
-                                          ),
-                                        ),
-                                        const SizedBox(height: AppTheme.spacingMd),
-                                        Text(
-                                          l10n.addCoverPhoto,
-                                          style: theme.textTheme.titleMedium?.copyWith(
-                                            color: AppColorConfig.primaryColor,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: AppTheme.spacingXs),
-                                        Text(
-                                          l10n.selectFromGalleryOrCamera,
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: theme.colorScheme.onSurface.withAlpha(AppTheme.alphaMedium),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        // Upload Progress Overlay
-                        if (isUploading)
-                          Container(
-                            height: 200,
-                            color: Colors.black.withAlpha(AppTheme.alphaMedium),
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColorConfig.primaryColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppTheme.spacingMd),
-                                  Text(
-                                    l10n.uploadingPhoto,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onPrimary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        // Change Photo Button (when photo is uploaded)
-                        if (uploadedPhotoUrl != null && !isUploading)
-                          Positioned(
-                            bottom: AppTheme.spacingMd,
-                            right: AppTheme.spacingMd,
-                            child: FilledButton.icon(
-                              onPressed: _pickCoverPhoto,
-                              icon: const Icon(Icons.edit, size: 18),
-                              label: Text(l10n.change),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: theme.colorScheme.surface.withAlpha(AppTheme.alphaAlmostOpaque),
-                                foregroundColor: theme.colorScheme.primary,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppTheme.spacingMd,
-                                  vertical: AppTheme.spacingSm,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+                EventCoverPhotoPicker(
+                  uploadedPhotoUrl: uploadedPhotoUrl,
+                  isUploading: isUploading,
+                  onPickPhoto: _pickCoverPhoto,
                 ),
                 const SizedBox(height: AppTheme.spacingXl),
-                // Form Fields - Modern Card Style
-                Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    side: BorderSide(
-                      color: theme.colorScheme.outline.withAlpha(AppTheme.alphaVeryLight),
-                      width: 1,
-                    ),
+                // Form Fields - Glass Style
+                GlassContainer(
+                  borderRadius: AppTheme.radiusLg,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingMd,
+                    vertical: AppTheme.spacingLg, // Üst padding artırıldı
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppTheme.spacingMd),
-                    child: Column(
+                  child: Column(
                       children: [
                         ModernInputField(
                           controller: titleController,
-                          label: l10n.eventTitle,
+                          label: l10n?.eventTitle ?? 'Event Title',
                           textInputAction: TextInputAction.next,
                           validator: FormValidators.title,
                           prefixIcon: Icon(Icons.title, color: AppColorConfig.primaryColor),
@@ -827,7 +522,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         const SizedBox(height: AppTheme.spacingMd),
                         ModernInputField(
                           controller: descController,
-                          label: l10n.eventDescription,
+                          label: l10n?.eventDescription ?? 'Description',
                           textInputAction: TextInputAction.next,
                           maxLines: 3,
                           validator: FormValidators.description,
@@ -836,7 +531,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         const SizedBox(height: AppTheme.spacingMd),
                         ModernInputField(
                           controller: addressController,
-                          label: l10n.eventAddress,
+                          label: l10n?.eventAddress ?? 'Address',
                           textInputAction: TextInputAction.next,
                           validator: FormValidators.address,
                           prefixIcon: Icon(Icons.location_on, color: AppColorConfig.tertiaryColor),
@@ -844,7 +539,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         const SizedBox(height: AppTheme.spacingMd),
                         ModernInputField(
                           controller: quotaController,
-                          label: l10n.eventQuota,
+                          label: l10n?.eventQuota ?? 'Quota',
                           textInputAction: TextInputAction.next,
                           keyboardType: TextInputType.number,
                           validator: FormValidators.quota,
@@ -852,26 +547,17 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         ),
                       ],
                     ),
-                  ),
                 ),
                 const SizedBox(height: AppTheme.spacingMd),
-                // Kategori ve Tarih - Modern Card Style
-                Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    side: BorderSide(
-                      color: theme.colorScheme.outline.withAlpha(AppTheme.alphaVeryLight),
-                      width: 1,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppTheme.spacingMd),
-                    child: Column(
+                // Kategori ve Tarih - Glass Style
+                GlassContainer(
+                  borderRadius: AppTheme.radiusLg,
+                  padding: const EdgeInsets.all(AppTheme.spacingMd),
+                  child: Column(
                       children: [
                         Builder(
                           builder: (context) {
-                            final categoryColors = _getCategoryColorScheme(selectedCategory);
+                            final categoryColors = CategoryUtils.getCategoryColorScheme(selectedCategory);
                             return OutlinedButton.icon(
                               onPressed: _pickCategory,
                               icon: Icon(
@@ -910,7 +596,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                           label: Builder(
                             builder: (context) {
                               final dt = selectedDateTime;
-                              if (dt == null) return Text(l10n.selectDateTime);
+                              if (dt == null) return Text(l10n?.selectDateTime ?? 'Select Date & Time');
                               return Text('${dt.day}.${dt.month}.${dt.year} - ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}');
                             },
                           ),
@@ -927,7 +613,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         ),
                       ],
                     ),
-                  ),
                 ),
                 const SizedBox(height: AppTheme.spacingMd),
                 // Konum seçme butonu
@@ -937,8 +622,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   label: Builder(
                     builder: (context) {
                       final loc = selectedLatLng;
-                      if (loc == null) return Text(l10n.selectLocation);
-                      return Text('${l10n.locationSelected}: (${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)})');
+                      if (loc == null) return Text(l10n?.selectLocation ?? 'Select Location');
+                      return Text('${l10n?.locationSelected ?? 'Location Selected'}: (${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)})');
                     },
                   ),
                   style: FilledButton.styleFrom(
@@ -957,15 +642,18 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 const SizedBox(height: AppTheme.spacingXl),
                 // Etkinlik Oluştur butonu
                 FilledButton.icon(
-                  onPressed: eventViewModel.isLoading
+                  onPressed: (eventViewModel.isLoading || _isSubmitting)
                       ? null
                       : () async {
+                          // Double submit engelleme
+                          if (_isSubmitting) return;
+                          
                           final navigator = Navigator.of(context);
                           // Form validasyonu
                           if (_formKey.currentState?.validate() != true) {
                             ModernSnackbar.showError(
                               context,
-                              l10n.fillAllFields,
+                              l10n?.fillAllFields ?? 'Please fill all fields',
                             );
                             return;
                           }
@@ -974,7 +662,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                           if (dateTime == null) {
                             ModernSnackbar.showError(
                               context,
-                              l10n.selectEventDateTime,
+                              l10n?.selectEventDateTime ?? 'Please select date and time',
                             );
                             return;
                           }
@@ -983,29 +671,52 @@ class _CreateEventPageState extends State<CreateEventPage> {
                           if (latLng == null) {
                             ModernSnackbar.showError(
                               context,
-                              l10n.selectEventLocation,
+                              l10n?.selectEventLocation ?? 'Please select location',
                             );
                             return;
                           }
-                          final event = EventModel(
-                            id: '',
-                            title: titleController.text.trim(),
-                            description: descController.text.trim(),
-                            location: GeoPoint(latLng.latitude, latLng.longitude),
-                            address: addressController.text.trim(),
-                            datetime: dateTime,
-                            quota: int.tryParse(quotaController.text.trim()) ?? 0,
-                            createdBy: authViewModel.user?.uid ?? '',
-                            participants: [authViewModel.user?.uid ?? ''],
-                            coverPhotoUrl: uploadedPhotoUrl,
-                            category: selectedCategory,
-                          );
-                          await eventViewModel.addEvent(event);
-                          if (!mounted) return;
-                          navigator.pop();
+                          
+                          // Submit başlat - buton disabled olacak
+                          setState(() { _isSubmitting = true; });
+                          
+                          try {
+                            // Clean Architecture: EventEntity kullan
+                            final locationEntity = LocationEntity(
+                              latitude: latLng.latitude,
+                              longitude: latLng.longitude,
+                            );
+                            
+                            final event = EventEntity(
+                              id: '',
+                              title: titleController.text.trim(),
+                              description: descController.text.trim(),
+                              location: locationEntity,
+                              address: addressController.text.trim(),
+                              datetime: dateTime,
+                              quota: int.tryParse(quotaController.text.trim()) ?? 0,
+                              createdBy: authViewModel.user?.uid ?? '',
+                              participants: [authViewModel.user?.uid ?? ''],
+                              coverPhotoUrl: uploadedPhotoUrl,
+                              category: selectedCategory,
+                            );
+                            await eventViewModel.addEvent(event);
+                            if (!mounted) return;
+                            navigator.pop();
+                          } catch (e) {
+                            if (!mounted) return;
+                            setState(() { _isSubmitting = false; });
+                            final currentContext = context;
+                            ModernSnackbar.showError(currentContext, e.toString());
+                          }
                         },
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.createEvent),
+                  icon: _isSubmitting 
+                      ? const SizedBox(
+                          width: 20, 
+                          height: 20, 
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.add),
+                  label: Text(_isSubmitting ? (l10n?.loading ?? 'Loading...') : (l10n?.createEvent ?? 'Create Event')),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColorConfig.tertiaryColor,
                     foregroundColor: theme.colorScheme.onTertiary,
@@ -1044,6 +755,26 @@ class _CreateEventPageState extends State<CreateEventPage> {
         ),
         ),
       ),
+    );
+        } catch (e) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error loading page: $e'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      },
     );
   }
 } 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -18,6 +17,8 @@ import 'views/auth_page.dart';
 import 'views/complete_profile_page.dart';
 import 'services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:go_router/go_router.dart';
+import 'core/navigation/app_router.dart';
 
 // Arka plan bildirimleri için handler (üst düzey bir fonksiyon olmalı)
 @pragma('vm:entry-point')
@@ -33,13 +34,45 @@ void main() async {
   );
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   
-  runApp(const MyApp());
+  // Tema ve dil servislerini oluştur ve ayarları yükle
+  final languageService = LanguageService();
+  final themeService = ThemeService();
+  final settingsService = SettingsService();
+  
+  // Kaydedilen ayarları yükle (uygulama başlamadan önce)
+  await Future.wait([
+    languageService.loadSavedLanguage(),
+    themeService.loadSavedTheme(),
+    settingsService.loadSettings(),
+  ]);
+  
+  runApp(MyApp(
+    languageService: languageService,
+    themeService: themeService,
+    settingsService: settingsService,
+  ));
 }
 
 
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  final LanguageService languageService;
+  final ThemeService themeService;
+  final SettingsService settingsService;
+  
+  const MyApp({
+    super.key,
+    required this.languageService,
+    required this.themeService,
+    required this.settingsService,
+  });
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  GoRouter? _router;
 
   @override
   Widget build(BuildContext context) {
@@ -47,11 +80,21 @@ class MyApp extends StatelessWidget {
       providers: [
         ...AppProviders.getFutureProviders(),
         ...AppProviders.getProxyProviders(),
-        ...AppProviders.getProviders(),
+        // Önceden yüklenmiş servisleri kullan
+        ...AppProviders.getProviders(
+          languageService: widget.languageService,
+          themeService: widget.themeService,
+          settingsService: widget.settingsService,
+        ),
       ],
-      child: Consumer2<LanguageService, ThemeService>(
-        builder: (context, languageService, themeService, _) {
-          return MaterialApp(
+      child: Consumer3<LanguageService, ThemeService, AuthViewModel?>(
+        builder: (context, languageService, themeService, authViewModel, _) {
+          // Router'ı sadece ilk kez oluştur
+          // Router'ı her build'de yeniden oluşturmak router state'ini kaybettirir
+          // refreshListenable zaten router içinde ayarlanıyor, bu yüzden router'ı yeniden oluşturmaya gerek yok
+          _router ??= AppRouter.createRouter(authViewModel);
+          
+          return MaterialApp.router(
             title: 'Thunder',
             localizationsDelegates: [
               AppLocalizations.delegate,
@@ -68,7 +111,7 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeService.themeMode, // Dinamik tema
             debugShowCheckedModeBanner: false,
-            home: const RootPage(),
+            routerConfig: _router ?? AppRouter.router,
           );
         },
       ),
@@ -90,17 +133,8 @@ class _RootPageState extends State<RootPage> {
   @override
   void initState() {
     super.initState();
-    // Uygulama başlatıldığında kaydedilen ayarları yükle
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final languageService = Provider.of<LanguageService>(context, listen: false);
-      languageService.loadSavedLanguage();
-      
-      final themeService = Provider.of<ThemeService>(context, listen: false);
-      themeService.loadSavedTheme();
-      
-      final settingsService = Provider.of<SettingsService>(context, listen: false);
-      settingsService.loadSettings();
-    });
+    // Not: Tema, dil ve ayarlar artık main()'de yükleniyor
+    // Burada sadece diğer servisleri başlatıyoruz
   }
 
   /// Servisleri asenkron olarak başlatır (build metodunu bloklamaz)
@@ -185,9 +219,6 @@ class _RootPageState extends State<RootPage> {
               await Future.delayed(const Duration(milliseconds: 300));
             } catch (e) {
               // Hata durumunda sessizce devam et (hata zaten ViewModel'de gösterilir)
-              if (kDebugMode) {
-                debugPrint('Profil tamamlama hatası: $e');
-              }
             }
           },
         );

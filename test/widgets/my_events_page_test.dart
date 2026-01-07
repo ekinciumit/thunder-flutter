@@ -8,7 +8,9 @@ import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dar
 import 'package:thunder/features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
 import 'package:thunder/features/event/domain/repositories/event_repository.dart';
-import 'package:thunder/models/user_model.dart';
+import 'package:thunder/features/user/data/models/user_model.dart';
+import 'package:thunder/features/user/domain/entities/user_entity.dart';
+import 'package:thunder/features/user/data/mappers/user_mapper.dart';
 
 import 'my_events_page_test.mocks.dart';
 
@@ -19,13 +21,13 @@ void main() {
     late MockEventRepository mockEventRepository;
     late AuthViewModel authViewModel;
     late EventViewModel eventViewModel;
-    late UserModel testUser;
+    late UserEntity testUser;
 
     setUp(() {
       mockAuthRepository = MockAuthRepository();
       mockEventRepository = MockEventRepository();
       
-      testUser = UserModel(
+      final testUserModel = UserModel(
         uid: 'user-1',
         email: 'test@example.com',
         displayName: 'Test User',
@@ -34,6 +36,7 @@ void main() {
         pendingFollowRequests: [],
         sentFollowRequests: [],
       );
+      testUser = UserMapper.toEntity(testUserModel);
 
       // Mock repository setup - AuthViewModel constructor'ı getCurrentUser çağırıyor
       when(mockAuthRepository.getCurrentUser()).thenReturn(testUser);

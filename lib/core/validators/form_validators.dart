@@ -2,19 +2,13 @@
 // 
 // Merkezi form validasyon servisi
 // Tüm form alanları için validator fonksiyonları
+// 
+// Bu sınıf ValidationLogic'i kullanarak error message döndürür
+// Clean Architecture: Validation logic ayrı, form validators UI için error message döndürür
+
+import 'validation_logic.dart';
 
 class FormValidators {
-  /// Email format kontrolü için regex pattern
-  static final RegExp _emailRegex = RegExp(
-    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-  );
-
-  /// Şifre güçlülük kontrolü için regex pattern
-  /// En az 6 karakter, en az bir harf ve bir rakam
-  static final RegExp _passwordRegex = RegExp(
-    r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$',
-  );
-
   /// İsim format kontrolü için regex pattern
   /// Sadece harf, boşluk ve Türkçe karakterler
   static final RegExp _nameRegex = RegExp(
@@ -31,7 +25,7 @@ class FormValidators {
       return 'E-posta adresi zorunludur';
     }
 
-    if (!_emailRegex.hasMatch(value.trim())) {
+    if (!ValidationLogic.isValidEmail(value.trim())) {
       return 'Geçerli bir e-posta adresi giriniz';
     }
 
@@ -49,11 +43,11 @@ class FormValidators {
       return 'Şifre zorunludur';
     }
 
-    if (value.length < 6) {
+    if (!ValidationLogic.isValidPasswordLength(value)) {
       return 'Şifre en az 6 karakter olmalıdır';
     }
 
-    if (!_passwordRegex.hasMatch(value)) {
+    if (!ValidationLogic.isStrongPassword(value)) {
       return 'Şifre en az bir harf ve bir rakam içermelidir';
     }
 
@@ -198,7 +192,7 @@ class FormValidators {
   /// 
   /// Herhangi bir alan için basit boş kontrolü
   static String? required(String? value, {String fieldName = 'Bu alan'}) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null || !ValidationLogic.isNotEmpty(value)) {
       return '$fieldName zorunludur';
     }
     return null;
@@ -212,7 +206,7 @@ class FormValidators {
       return '$fieldName zorunludur';
     }
 
-    if (value.trim().length < minLength) {
+    if (!ValidationLogic.hasMinLength(value.trim(), minLength)) {
       return '$fieldName en az $minLength karakter olmalıdır';
     }
 
@@ -227,7 +221,7 @@ class FormValidators {
       return null; // Boş değerler için max length kontrolü yapılmaz
     }
 
-    if (value.length > maxLength) {
+    if (!ValidationLogic.hasMaxLength(value, maxLength)) {
       return '$fieldName en fazla $maxLength karakter olabilir';
     }
 

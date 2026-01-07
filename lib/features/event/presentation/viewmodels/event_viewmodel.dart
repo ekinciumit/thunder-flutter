@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'dart:math';
-import '../../../../models/event_model.dart';
+import '../../domain/entities/event_entity.dart';
 import '../../domain/repositories/event_repository.dart';
 import '../../domain/usecases/add_event_usecase.dart';
 import '../../domain/usecases/get_events_usecase.dart';
@@ -15,18 +15,20 @@ import '../../domain/usecases/approve_join_request_usecase.dart';
 import '../../domain/usecases/reject_join_request_usecase.dart';
 import '../../domain/usecases/cancel_join_request_usecase.dart';
 import '../../domain/usecases/fetch_next_events_usecase.dart';
+import '../../domain/usecases/remove_participant_usecase.dart';
+import '../../domain/usecases/cancel_event_usecase.dart';
 
 /// EventViewModel - Clean Architecture Implementation
 /// 
 /// Presentation Layer - State Management
 /// Bu ViewModel Clean Architecture'ın presentation katmanında yer alır.
 class EventViewModel extends ChangeNotifier {
-  List<EventModel> events = [];
+  List<EventEntity> events = [];
   bool isLoading = false;
   bool isLoadingMore = false;
   bool canLoadMore = true;
   String? error;
-  StreamSubscription<List<EventModel>>? _eventsSub;
+  StreamSubscription<List<EventEntity>>? _eventsSub;
   bool _isListening = false;
 
   // ==================== FİLTRE STATE'LERİ ====================
@@ -41,7 +43,7 @@ class EventViewModel extends ChangeNotifier {
   List<String> _followingIds = [];
   
   // Memoization için cache
-  List<EventModel>? _cachedFilteredEvents;
+  List<EventEntity>? _cachedFilteredEvents;
   String? _lastFilterKey;
 
   // Getters
@@ -68,6 +70,8 @@ class EventViewModel extends ChangeNotifier {
   late final RejectJoinRequestUseCase _rejectJoinRequestUseCase;
   late final CancelJoinRequestUseCase _cancelJoinRequestUseCase;
   late final FetchNextEventsUseCase _fetchNextEventsUseCase;
+  late final RemoveParticipantUseCase _removeParticipantUseCase;
+  late final CancelEventUseCase _cancelEventUseCase;
 
   EventViewModel({
     required EventRepository eventRepository,
@@ -100,6 +104,8 @@ class EventViewModel extends ChangeNotifier {
     _rejectJoinRequestUseCase = RejectJoinRequestUseCase(_eventRepository);
     _cancelJoinRequestUseCase = CancelJoinRequestUseCase(_eventRepository);
     _fetchNextEventsUseCase = FetchNextEventsUseCase(_eventRepository);
+    _removeParticipantUseCase = RemoveParticipantUseCase(_eventRepository);
+    _cancelEventUseCase = CancelEventUseCase(_eventRepository);
   }
 
   void listenEvents() {
@@ -118,7 +124,7 @@ class EventViewModel extends ChangeNotifier {
   }
 
   /// Kullanıcının etkinliklerini stream olarak getir
-  Stream<List<EventModel>> getUserEventsStream(String userId) {
+  Stream<List<EventEntity>> getUserEventsStream(String userId) {
     return _eventRepository.getUserEventsStream(userId);
   }
 
@@ -152,7 +158,7 @@ class EventViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addEvent(EventModel event) async {
+  Future<void> addEvent(EventEntity event) async {
     isLoading = true;
     error = null;
     notifyListeners();
@@ -173,7 +179,7 @@ class EventViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> joinEvent(EventModel event, String userId) async {
+  Future<void> joinEvent(EventEntity event, String userId) async {
     try {
       final result = await _joinEventUseCase(event.id, userId);
       result.fold(
@@ -191,7 +197,7 @@ class EventViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> sendJoinRequest(EventModel event, String userId) async {
+  Future<void> sendJoinRequest(EventEntity event, String userId) async {
     try {
       final result = await _sendJoinRequestUseCase(event.id, userId);
       result.fold(
@@ -210,7 +216,7 @@ class EventViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> leaveEvent(EventModel event, String userId) async {
+  Future<void> leaveEvent(EventEntity event, String userId) async {
     try {
       final result = await _leaveEventUseCase(event.id, userId);
       result.fold(
@@ -229,7 +235,7 @@ class EventViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> updateEvent(EventModel event) async {
+  Future<void> updateEvent(EventEntity event) async {
     isLoading = true;
     error = null;
     notifyListeners();
@@ -271,7 +277,7 @@ class EventViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> approveJoinRequest(EventModel event, String userId) async {
+  Future<void> approveJoinRequest(EventEntity event, String userId) async {
     try {
       final result = await _approveJoinRequestUseCase(event.id, userId);
       result.fold(
@@ -290,7 +296,7 @@ class EventViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> rejectJoinRequest(EventModel event, String userId) async {
+  Future<void> rejectJoinRequest(EventEntity event, String userId) async {
     try {
       final result = await _rejectJoinRequestUseCase(event.id, userId);
       result.fold(
@@ -309,7 +315,7 @@ class EventViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> cancelJoinRequest(EventModel event, String userId) async {
+  Future<void> cancelJoinRequest(EventEntity event, String userId) async {
     try {
       final result = await _cancelJoinRequestUseCase(event.id, userId);
       result.fold(
@@ -326,6 +332,48 @@ class EventViewModel extends ChangeNotifier {
       error = e.toString();
       notifyListeners();
     }
+  }
+
+  /// Katılımcıyı çıkar (sadece event sahibi)
+  Future<void> removeParticipant(EventEntity event, String userId) async {
+    try {
+      final result = await _removeParticipantUseCase(event.id, userId);
+      result.fold(
+        (failure) {
+          error = failure.message;
+          notifyListeners();
+        },
+        (_) {
+          // Başarılı
+          notifyListeners();
+        },
+      );
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Event'i iptal et (sadece event sahibi)
+  Future<void> cancelEvent(String eventId, String cancellationReason) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    try {
+      final result = await _cancelEventUseCase(eventId, cancellationReason);
+      result.fold(
+        (failure) {
+          error = failure.message;
+        },
+        (_) {
+          // Başarılı
+        },
+      );
+    } catch (e) {
+      error = e.toString();
+    }
+    isLoading = false;
+    notifyListeners();
   }
 
   // ==================== FİLTRE METODLARI ====================
@@ -421,7 +469,7 @@ class EventViewModel extends ChangeNotifier {
   }
 
   /// Filtrelenmiş etkinlikleri getir (memoization ile)
-  List<EventModel> getFilteredEvents() {
+  List<EventEntity> getFilteredEvents() {
     final currentKey = _getFilterKey();
     
     // Cache geçerliyse döndür
@@ -507,7 +555,7 @@ class EventViewModel extends ChangeNotifier {
   }
 
   /// Belirli bir etkinlik için mesafe hesapla
-  double? getDistanceForEvent(EventModel event) {
+  double? getDistanceForEvent(EventEntity event) {
     if (_userLatitude == null || _userLongitude == null ||
         event.location.latitude == 0 || event.location.longitude == 0) {
       return null;
@@ -517,6 +565,89 @@ class EventViewModel extends ChangeNotifier {
       _userLongitude!,
       event.location.latitude,
       event.location.longitude,
+    );
+  }
+
+  /// Event cover fotoğrafını yükle ve URL'ini döndür
+  Future<String?> uploadEventCoverPhoto(String photoFilePath, {String? eventId}) async {
+    try {
+      isLoading = true;
+      error = null;
+      notifyListeners();
+
+      final result = await _eventRepository.uploadEventCoverPhoto(photoFilePath, eventId: eventId);
+      return result.fold(
+        (failure) {
+          error = failure.message;
+          isLoading = false;
+          notifyListeners();
+          return null;
+        },
+        (url) {
+          isLoading = false;
+          notifyListeners();
+          return url;
+        },
+      );
+    } catch (e) {
+      error = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Event fotoğrafını yükle ve URL'ini döndür
+  Future<String?> uploadEventPhoto(String photoFilePath, String eventId) async {
+    try {
+      isLoading = true;
+      error = null;
+      notifyListeners();
+
+      final result = await _eventRepository.uploadEventPhoto(photoFilePath, eventId);
+      return result.fold(
+        (failure) {
+          error = failure.message;
+          isLoading = false;
+          notifyListeners();
+          return null;
+        },
+        (url) {
+          isLoading = false;
+          notifyListeners();
+          return url;
+        },
+      );
+    } catch (e) {
+      error = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Tek bir event'i stream olarak getir
+  Stream<EventEntity?> getEventStream(String eventId) {
+    return _eventRepository.getEventStream(eventId);
+  }
+
+  /// Event comments stream
+  Stream<List<Map<String, dynamic>>> getEventCommentsStream(String eventId) {
+    return _eventRepository.getEventCommentsStream(eventId);
+  }
+
+  /// Event comment ekle
+  Future<void> addEventComment(String eventId, String text, String userId, String userName) async {
+    final result = await _eventRepository.addEventComment(eventId, text, userId, userName);
+    result.fold(
+      (failure) {
+        error = failure.message;
+        notifyListeners();
+        throw Exception(failure.message);
+      },
+      (_) {
+        // Başarılı
+      },
     );
   }
 

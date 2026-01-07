@@ -72,7 +72,12 @@ class ModernSnackbar {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
-        margin: const EdgeInsets.all(AppTheme.spacingLg),
+        margin: EdgeInsets.only(
+          left: AppTheme.spacingLg,
+          right: AppTheme.spacingLg,
+          top: AppTheme.spacingLg,
+          bottom: 100.0 + AppTheme.spacingLg, // Bottom nav bar için alan bırak (yaklaşık 92px + padding)
+        ),
         duration: const Duration(seconds: 3),
         elevation: 4,
       ),
@@ -809,10 +814,18 @@ class _ModernInputFieldState extends State<ModernInputField> {
               width: 2,
             ),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingLg,
-            vertical: AppTheme.spacingLg,
+          // Label kesilmesini önlemek için - label her zaman input içinde kalır
+          floatingLabelBehavior: FloatingLabelBehavior.never,
+          // Label'ın kesilmemesi için yeterli padding - prefix icon varsa daha fazla padding
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: widget.prefixIcon != null ? 16 : AppTheme.spacingLg,
+            vertical: widget.maxLines != null && widget.maxLines! > 1 
+                ? 20 
+                : 20, // Label için yeterli boşluk
           ),
+          isDense: false,
+          // Label'ın üstte görünmesi için hint text kullan
+          alignLabelWithHint: true,
         ),
       ),
     );

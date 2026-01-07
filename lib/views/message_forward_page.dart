@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/chat_model.dart';
-import '../models/message_model.dart';
+import '../features/chat/domain/entities/chat_entity.dart';
+import '../features/chat/domain/entities/message_entity.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 
 class MessageForwardPage extends StatefulWidget {
-  final MessageModel message;
+  final MessageEntity message;
 
   const MessageForwardPage({
     super.key,
@@ -20,7 +20,7 @@ class MessageForwardPage extends StatefulWidget {
 }
 
 class _MessageForwardPageState extends State<MessageForwardPage> {
-  List<ChatModel> _chats = [];
+  List<ChatEntity> _chats = [];
   bool _isLoading = true;
   bool _isForwarding = false;
 
@@ -61,7 +61,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
     }
   }
 
-  Future<void> _forwardMessage(ChatModel targetChat) async {
+  Future<void> _forwardMessage(ChatEntity targetChat) async {
     setState(() {
       _isForwarding = true;
     });
@@ -73,6 +73,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
       if (currentUser == null) return;
 
       final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      // ViewModel zaten Entity bekliyor
       await chatViewModel.forwardMessage(
         originalMessage: widget.message,
         targetChatId: targetChat.id,
@@ -102,7 +103,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
     }
   }
 
-  String _getChatDisplayName(ChatModel chat, String currentUserId) {
+  String _getChatDisplayName(ChatEntity chat, String currentUserId) {
     if (chat.type == ChatType.private) {
       // Özel sohbet için diğer kullanıcının adını bul
       final otherParticipant = chat.participants.firstWhere(
@@ -114,7 +115,7 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
     return chat.name;
   }
 
-  String? _getChatPhotoUrl(ChatModel chat, String currentUserId) {
+  String? _getChatPhotoUrl(ChatEntity chat, String currentUserId) {
     if (chat.type == ChatType.private) {
       // Özel sohbet için diğer kullanıcının fotoğrafını bul
       final otherParticipant = chat.participants.firstWhere(

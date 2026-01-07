@@ -3,28 +3,80 @@ rules_version = '2';
 // Firebase Storage Security Rules
 service firebase.storage {
   match /b/{bucket}/o {
+    
+    // Helper: Dosya boyutu kontrolü (max 10MB)
+    function isValidSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // Helper: Image contentType kontrolü
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Helper: Audio contentType kontrolü
+    function isValidAudioType() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+    
+    // Helper: Video contentType kontrolü
+    function isValidVideoType() {
+      return request.resource.contentType.matches('video/.*');
+    }
+    
     // Profil fotoğrafları - sadece kendi fotoğrafını yükleyebilir
-    match /profile_photos/{fileName} {
+    match /profile_photos/{userId}/{fileId} {
       allow read: if true; // Herkes okuyabilir
-      allow write: if request.auth != null; // Giriş yapmış kullanıcılar
+      allow write: if request.auth != null && 
+        request.auth.uid == userId && // Sadece kendi klasörüne yazabilir
+        isValidSize() && // Max 10MB
+        isValidImageType(); // Sadece image dosyaları
     }
     
     // Etkinlik kapak fotoğrafları - sadece etkinlik sahibi yükleyebilir
-    match /event_covers/{fileName} {
+    // NOT: Event owner kontrolü Firestore'dan yapılmalı (Cloud Function veya client-side)
+    // Burada sadece path bazlı kontrol yapıyoruz
+    match /event_covers/{eventId}/{fileId} {
       allow read: if true; // Herkes okuyabilir
-      allow write: if request.auth != null; // Giriş yapmış kullanıcılar
+      allow write: if request.auth != null && 
+        isValidSize() && // Max 10MB
+        isValidImageType(); // Sadece image dosyaları
+      // NOT: Event owner kontrolü için Cloud Function veya client-side validation gerekli
     }
     
     // Sohbet medya dosyaları - sadece etkinlik katılımcıları
-    match /chat_media/{eventId}/{fileName} {
+    // NOT: Event participant kontrolü Firestore'dan yapılmalı
+    match /chat_media/{eventId}/{fileId} {
       allow read: if request.auth != null; // Giriş yapmış kullanıcılar
-      allow write: if request.auth != null; // Giriş yapmış kullanıcılar
+      allow write: if request.auth != null && 
+        isValidSize() && // Max 10MB
+        (isValidImageType() || isValidVideoType()); // Sadece image/video dosyaları
+      // NOT: Event participant kontrolü için Cloud Function veya client-side validation gerekli
     }
     
-    // Genel dosya erişimi - güvenlik için kısıtlı
+    // Sesli mesajlar - sadece kendi chat klasörüne yazabilir
+    match /voice_messages/{chatId}/{senderId}/{fileId} {
+      allow read: if request.auth != null; // Giriş yapmış kullanıcılar
+      allow write: if request.auth != null && 
+        request.auth.uid == senderId && // Sadece kendi klasörüne yazabilir
+        isValidSize() && // Max 10MB
+        isValidAudioType(); // Sadece audio dosyaları
+    }
+    
+    // Chat dosyaları - sadece kendi chat klasörüne yazabilir
+    match /chat_files/{chatId}/{senderId}/{fileId} {
+      allow read: if request.auth != null; // Giriş yapmış kullanıcılar
+      allow write: if request.auth != null && 
+        request.auth.uid == senderId && // Sadece kendi klasörüne yazabilir
+        isValidSize(); // Max 10MB
+      // NOT: contentType kontrolü yok çünkü farklı dosya tipleri olabilir
+    }
+    
+    // Genel dosya erişimi - güvenlik için KAPALI
+    // Sadece yukarıdaki özel path'ler kullanılmalı
     match /{allPaths=**} {
       allow read: if request.auth != null; // Sadece giriş yapmış kullanıcılar
-      allow write: if request.auth != null; // Sadece giriş yapmış kullanıcılar
+      allow write: if false; // ❌ YAZMA KAPALI - Güvenlik için
     }
   }
 }

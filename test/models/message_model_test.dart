@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/data/models/message_model.dart';
 
 void main() {
   group('MessageModel', () {

@@ -1,4 +1,4 @@
-import '../../../../models/event_model.dart';
+import '../entities/event_entity.dart';
 import '../repositories/event_repository.dart';
 
 /// Get Events Use Case
@@ -12,8 +12,8 @@ class GetEventsUseCase {
 
   /// Etkinlikleri stream olarak getir
   /// 
-  /// Returns: ``Stream<List<EventModel>>``
-  Stream<List<EventModel>> call() {
+  /// Returns: ``Stream<List<EventEntity>>``
+  Stream<List<EventEntity>> call() {
     return _repository.getEventsStream();
   }
 }

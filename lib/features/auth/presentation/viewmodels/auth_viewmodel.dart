@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../../../../models/user_model.dart';
+import '../../../user/domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/sign_in_usecase.dart';
 import '../../domain/usecases/sign_up_usecase.dart';
@@ -12,7 +12,7 @@ import '../../domain/usecases/save_user_profile_usecase.dart';
 /// Presentation Layer - State Management
 /// Bu ViewModel Clean Architecture'ın presentation katmanında yer alır.
 class AuthViewModel extends ChangeNotifier {
-  UserModel? user;
+  UserEntity? user;
   bool isLoading = false;
   String? error;
   bool needsProfileCompletion = false;
@@ -126,7 +126,7 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> completeProfile({required String displayName, String? bio, String? photoUrl}) async {
     if (user == null) return;
     
-    user = UserModel(
+    user = UserEntity(
       uid: user!.uid,
       email: user!.email,
       displayName: displayName,
@@ -158,6 +158,10 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    
     try {
       // Clean Architecture: Use Case kullan
       final result = await _signOutUseCase();
@@ -165,19 +169,24 @@ class AuthViewModel extends ChangeNotifier {
       if (result.isRight) {
         // ✅ Use Case başarılı
         user = null;
-        notifyListeners();
+        needsProfileCompletion = false;
+        justSignedUp = false;
       } else {
         // ❌ Use Case hata verdi
         final failure = result.left;
         error = failure.message;
-        notifyListeners();
         throw Exception(failure.message);
       }
     } catch (e) {
       // Hata durumunda da user'ı temizle
       user = null;
-      notifyListeners();
+      needsProfileCompletion = false;
+      justSignedUp = false;
+      error = e.toString();
       rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -232,9 +241,6 @@ class AuthViewModel extends ChangeNotifier {
       }
     } catch (e) {
       // Sessizce devam et - kritik değil
-      if (kDebugMode) {
-        debugPrint('⚠️ Profil yenileme hatası: $e');
-      }
     }
   }
 
@@ -242,7 +248,7 @@ class AuthViewModel extends ChangeNotifier {
   /// 
   /// Bu metod view'lerde başka kullanıcıların profilini görmek için kullanılır.
   /// Clean Architecture: Use Case kullanır.
-  Future<UserModel?> fetchUserProfile(String uid) async {
+  Future<UserEntity?> fetchUserProfile(String uid) async {
     try {
       final result = await _fetchUserProfileUseCase(uid);
       return result.fold(
@@ -250,6 +256,9 @@ class AuthViewModel extends ChangeNotifier {
         (user) => user, // Başarılı durumda user'ı döndür (null olabilir)
       );
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [AUTH_VM] fetchUserProfile hatası: $e');
+      }
       return null;
     }
   }
@@ -264,9 +273,6 @@ class AuthViewModel extends ChangeNotifier {
       result.fold(
         (failure) {
           // Hata durumunda sessizce devam et (kritik değil)
-          if (kDebugMode) {
-            debugPrint('⚠️ Token kaydedilemedi: ${failure.message}');
-          }
         },
         (_) {
           // Başarılı
@@ -274,9 +280,6 @@ class AuthViewModel extends ChangeNotifier {
       );
     } catch (e) {
       // Hata durumunda sessizce devam et (kritik değil)
-      if (kDebugMode) {
-        debugPrint('⚠️ Token kaydedilemedi: $e');
-      }
     }
   }
 
@@ -297,6 +300,71 @@ class AuthViewModel extends ChangeNotifier {
       showOnlineStatus: showOnlineStatus ?? user!.showOnlineStatus,
     );
     notifyListeners();
+  }
+
+  /// Tüm kullanıcıları stream olarak getir
+  Stream<List<UserEntity>> getAllUsersStream() {
+    return _authRepository.getAllUsersStream();
+  }
+
+  /// Şifre sıfırlama email'i gönder
+  Future<bool> sendPasswordResetEmail(String email) async {
+    try {
+      isLoading = true;
+      error = null;
+      notifyListeners();
+
+      final result = await _authRepository.sendPasswordResetEmail(email);
+      return result.fold(
+        (failure) {
+          error = failure.message;
+          isLoading = false;
+          notifyListeners();
+          return false;
+        },
+        (_) {
+          isLoading = false;
+          notifyListeners();
+          return true;
+        },
+      );
+    } catch (e) {
+      error = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Profil fotoğrafını yükle ve URL'ini döndür
+  Future<String?> uploadProfilePhoto(String photoFilePath) async {
+    if (user == null) return null;
+    
+    try {
+      isLoading = true;
+      error = null;
+      notifyListeners();
+
+      final result = await _authRepository.uploadProfilePhoto(photoFilePath, user!.uid);
+      return result.fold(
+        (failure) {
+          error = failure.message;
+          isLoading = false;
+          notifyListeners();
+          return null;
+        },
+        (url) {
+          isLoading = false;
+          notifyListeners();
+          return url;
+        },
+      );
+    } catch (e) {
+      error = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return null;
+    }
   }
 }
 

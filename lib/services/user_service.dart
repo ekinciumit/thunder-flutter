@@ -370,6 +370,24 @@ class UserService {
         .map((snapshot) => snapshot.docs.length);
   }
 
+  /// Bildirimleri stream olarak getir
+  Stream<List<Map<String, dynamic>>> getNotificationsStream(String userId) {
+    return _notificationsRef
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .limit(50)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) {
+                  final data = doc.data();
+                  return {
+                    ...data,
+                    'id': doc.id,
+                  };
+                })
+            .toList());
+  }
+
   // Advanced notifications with dedup
   
   Future<void> sendNotificationWithDedup({

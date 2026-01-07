@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/widgets/glass_container.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_color_config.dart';
-import '../../models/message_model.dart';
+import '../../features/chat/domain/entities/message_entity.dart';
 import 'message_reactions.dart';
 
 /// Message Bubble Widget
@@ -10,7 +10,7 @@ import 'message_reactions.dart';
 /// Text mesajları için reusable bubble widget
 /// Dark mode'da otomatik glassmorphism uygular
 class MessageBubble extends StatelessWidget {
-  final MessageModel message;
+  final MessageEntity message;
   final bool isMe;
   final String displayName;
   final VoidCallback? onLongPress;
@@ -58,7 +58,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(MessageModel message, bool isDark, ThemeData theme) {
+  Widget _buildAvatar(MessageEntity message, bool isDark, ThemeData theme) {
     return CircleAvatar(
       radius: 16,
       backgroundColor: isDark
@@ -100,7 +100,7 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildBubbleContent(
-    MessageModel message,
+    MessageEntity message,
     bool isMe,
     bool isDark,
     ThemeData theme,
@@ -160,7 +160,7 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildMessageContent(
-    MessageModel message,
+    MessageEntity message,
     bool isMe,
     bool isDark,
     ThemeData theme,

@@ -4,11 +4,13 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i3;
+import 'dart:io' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:thunder/features/event/data/datasources/event_remote_data_source.dart'
     as _i2;
-import 'package:thunder/models/event_model.dart' as _i4;
+import 'package:thunder/features/event/data/models/event_model.dart' as _i4;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -141,6 +143,107 @@ class MockEventRemoteDataSource extends _i1.Mock
   _i3.Future<void> cancelJoinRequest(String? eventId, String? userId) =>
       (super.noSuchMethod(
             Invocation.method(#cancelJoinRequest, [eventId, userId]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> removeParticipant(String? eventId, String? userId) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeParticipant, [eventId, userId]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> cancelEvent(String? eventId, String? cancellationReason) =>
+      (super.noSuchMethod(
+            Invocation.method(#cancelEvent, [eventId, cancellationReason]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<String> uploadEventCoverPhoto(
+    _i5.File? photoFile, {
+    String? eventId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #uploadEventCoverPhoto,
+              [photoFile],
+              {#eventId: eventId},
+            ),
+            returnValue: _i3.Future<String>.value(
+              _i6.dummyValue<String>(
+                this,
+                Invocation.method(
+                  #uploadEventCoverPhoto,
+                  [photoFile],
+                  {#eventId: eventId},
+                ),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
+
+  @override
+  _i3.Future<String> uploadEventPhoto(_i5.File? photoFile, String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#uploadEventPhoto, [photoFile, eventId]),
+            returnValue: _i3.Future<String>.value(
+              _i6.dummyValue<String>(
+                this,
+                Invocation.method(#uploadEventPhoto, [photoFile, eventId]),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
+
+  @override
+  _i3.Stream<_i4.EventModel?> getEventStream(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getEventStream, [eventId]),
+            returnValue: _i3.Stream<_i4.EventModel?>.empty(),
+          )
+          as _i3.Stream<_i4.EventModel?>);
+
+  @override
+  _i3.Stream<List<Map<String, dynamic>>> getEventCommentsStream(
+    String? eventId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getEventCommentsStream, [eventId]),
+            returnValue: _i3.Stream<List<Map<String, dynamic>>>.empty(),
+          )
+          as _i3.Stream<List<Map<String, dynamic>>>);
+
+  @override
+  _i3.Future<void> addEventComment(
+    String? eventId,
+    String? text,
+    String? userId,
+    String? userName,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#addEventComment, [
+              eventId,
+              text,
+              userId,
+              userName,
+            ]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> deleteEventComments(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteEventComments, [eventId]),
             returnValue: _i3.Future<void>.value(),
             returnValueForMissingStub: _i3.Future<void>.value(),
           )

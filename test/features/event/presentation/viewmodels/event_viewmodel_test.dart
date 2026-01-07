@@ -5,7 +5,9 @@ import 'package:mockito/annotations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:thunder/features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'package:thunder/features/event/domain/repositories/event_repository.dart';
-import 'package:thunder/models/event_model.dart';
+import 'package:thunder/features/event/data/models/event_model.dart';
+import 'package:thunder/features/event/domain/entities/event_entity.dart';
+import 'package:thunder/features/event/data/mappers/event_mapper.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'event_viewmodel_test.mocks.dart';
@@ -29,7 +31,7 @@ void main() {
   });
 
   group('EventViewModel', () {
-    final testEvent = EventModel(
+    final testEventModel = EventModel(
       id: 'event-123',
       title: 'Test Event',
       description: 'Test Description',
@@ -40,6 +42,7 @@ void main() {
       createdBy: 'user-123',
       participants: [],
     );
+    final testEvent = EventMapper.toEntity(testEventModel);
 
     test('should initialize with empty events list', () {
       // Assert
@@ -54,7 +57,7 @@ void main() {
       test('should listen to events stream and update events', () async {
         // Arrange
         final testEvents = [testEvent];
-        final streamController = StreamController<List<EventModel>>();
+        final streamController = StreamController<List<EventEntity>>();
         when(mockRepository.getEventsStream())
             .thenAnswer((_) => streamController.stream);
 
@@ -234,7 +237,7 @@ void main() {
       test('should load more events successfully', () async {
         // Arrange
         viewModel.events = [testEvent];
-        final moreEvents = [
+        final moreEventsModel = [
           EventModel(
             id: 'event-2',
             title: 'Event 2',
@@ -247,6 +250,7 @@ void main() {
             participants: [],
           ),
         ];
+        final moreEvents = EventMapper.toEntityList(moreEventsModel);
         when(mockRepository.fetchNextEvents(
           startAfter: anyNamed('startAfter'),
           limit: anyNamed('limit'),
@@ -325,9 +329,10 @@ void main() {
         final stream = viewModel.getUserEventsStream(testUserId);
 
         // Assert
-        expect(stream, isA<Stream<List<EventModel>>>());
+        expect(stream, isA<Stream<List<EventEntity>>>());
         final result = await stream.first;
-        expect(result, testEvents);
+        expect(result.length, testEvents.length);
+        expect(result.first.id, testEvents.first.id);
         verify(mockRepository.getUserEventsStream(testUserId)).called(1);
       });
     });

@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
-import '../models/user_model.dart';
-import '../models/event_model.dart';
-import 'private_chat_page.dart';
-import 'followers_following_page.dart';
-import 'event_detail_page.dart';
+import '../features/user/domain/entities/user_entity.dart';
+import '../features/event/domain/entities/event_entity.dart';
 import 'widgets/user_suggestions_widget.dart';
 import 'widgets/app_gradient_container.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
+import '../core/widgets/skeleton_widgets.dart';
 import '../l10n/app_localizations.dart';
+import '../core/navigation/app_navigation.dart';
 import '../services/user_service.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class UserProfilePage extends StatefulWidget {
-  final UserModel user;
+  final UserEntity user;
   final String currentUserId;
   const UserProfilePage({super.key, required this.user, required this.currentUserId});
 
@@ -34,9 +35,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
   int followingCount = 0;
   int eventsCount = 0;
   bool isKesfetVisible = true; // Keşfet bölümü görünürlüğü (başlangıçta görünür)
-  UserModel? _currentUser;
-  StreamSubscription<DocumentSnapshot>? _userStreamSubscription;
-  StreamSubscription<DocumentSnapshot>? _currentUserStreamSubscription;
+  UserEntity? _currentUser;
+  StreamSubscription<UserEntity?>? _userStreamSubscription;
+  StreamSubscription<UserEntity?>? _currentUserStreamSubscription;
 
   @override
   void initState() {
@@ -45,52 +46,64 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   Future<void> _loadUserData() async {
-    final currentUserDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.currentUserId)
-        .get();
+    // Clean Architecture: AuthViewModel üzerinden user işlemleri
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final eventViewModel = Provider.of<EventViewModel>(context, listen: false);
     
-    if (currentUserDoc.exists) {
-      _currentUser = UserModel.fromMap(currentUserDoc.data()!, currentUserDoc.id);
+    // Mevcut kullanıcıyı getir
+    final userEntity = await authViewModel.fetchUserProfile(widget.currentUserId);
+    // UI direkt Entity kullanıyor (Clean Architecture)
+    _currentUser = userEntity;
+    if (_currentUser != null && mounted) {
+      setState(() {});
     }
 
-    // Kullanıcı verilerini stream ile dinle
-    _userStreamSubscription = FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.user.uid)
-        .snapshots()
-        .listen((snapshot) {
-      if (snapshot.exists && mounted) {
-        final userData = UserModel.fromMap(snapshot.data()!, snapshot.id);
-        _updateFollowStatus(userData);
+    // Kullanıcı verilerini stream ile dinle (AuthViewModel üzerinden)
+    // Not: AuthViewModel'de user stream yok, bu yüzden getAllUsersStream kullanıp filtreleyeceğiz
+    // ViewModel Entity döndürüyor, UI Model kullanıyor - dönüşüm yapıyoruz
+    _userStreamSubscription = authViewModel.getAllUsersStream()
+        .map((userEntities) {
+          return userEntities.firstWhere(
+            (u) => u.uid == widget.user.uid,
+            orElse: () => widget.user,
+          );
+        })
+        .listen((user) {
+      if (mounted) {
+        _updateFollowStatus(user);
       }
     });
 
     // Mevcut kullanıcı verilerini de dinle
-    _currentUserStreamSubscription = FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.currentUserId)
-        .snapshots()
-        .listen((snapshot) {
-      if (snapshot.exists && mounted) {
-        _currentUser = UserModel.fromMap(snapshot.data()!, snapshot.id);
+    _currentUserStreamSubscription = authViewModel.getAllUsersStream()
+        .map((userEntities) {
+          try {
+            return userEntities.firstWhere((u) => u.uid == widget.currentUserId);
+          } catch (_) {
+            return _currentUser;
+          }
+        })
+        .where((user) => user != null)
+        .cast<UserEntity?>()
+        .listen((user) {
+      if (mounted) {
+        _currentUser = user;
         _updateFollowStatus(widget.user);
       }
     });
 
-    // Etkinlik sayısını al
-    final eventsSnapshot = await FirebaseFirestore.instance
-        .collection('events')
-        .where('createdBy', isEqualTo: widget.user.uid)
-        .get();
-    if (mounted) {
-      setState(() {
-        eventsCount = eventsSnapshot.docs.length;
-      });
-    }
+    // Etkinlik sayısını al (EventViewModel üzerinden)
+    final userEventsStream = eventViewModel.getUserEventsStream(widget.user.uid);
+    userEventsStream.first.then((events) {
+      if (mounted) {
+        setState(() {
+          eventsCount = events.length;
+        });
+      }
+    });
   }
 
-  void _updateFollowStatus(UserModel targetUser) {
+  void _updateFollowStatus(UserEntity targetUser) {
     if (_currentUser == null) return;
 
     final isCurrentFollowingTarget = _currentUser!.following.contains(targetUser.uid);
@@ -133,16 +146,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  Stream<List<EventModel>> _userEventsStream() {
-    return FirebaseFirestore.instance
-        .collection('events')
-        .where('createdBy', isEqualTo: widget.user.uid)
-        .orderBy('datetime', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
-              final data = doc.data();
-              return EventModel.fromMap(data, doc.id);
-            }).toList());
+  Stream<List<EventEntity>> _userEventsStream() {
+    // Clean Architecture: EventViewModel üzerinden user events stream
+    final eventViewModel = Provider.of<EventViewModel>(context, listen: false);
+    // ViewModel Entity döndürüyor, UI direkt Entity kullanıyor (Clean Architecture)
+    return eventViewModel.getUserEventsStream(widget.user.uid);
   }
 
   @override
@@ -251,9 +259,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       const SizedBox(width: AppTheme.spacingLg),
                       // İstatistikler
                       Expanded(
-                        child: StreamBuilder<List<EventModel>>(
+                        child: StreamBuilder<List<EventEntity>>(
                           stream: _userEventsStream(),
                           builder: (context, snapshot) {
+                            if (!mounted) {
+                              return const SizedBox.shrink();
+                            }
                             final eventsCount = snapshot.hasData ? snapshot.data!.length : 0;
                             return Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -269,14 +280,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                   followersCount,
                                   theme,
                                   () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => FollowersFollowingPage(
-                                          userId: widget.user.uid,
-                                          showFollowers: true,
-                                        ),
-                                      ),
-                                    );
+                                    AppNavigation.toFollowers(context: context, userId: widget.user.uid);
                                   },
                                 ),
                                 _buildStatColumn(
@@ -284,14 +288,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                   followingCount,
                                   theme,
                                   () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => FollowersFollowingPage(
-                                          userId: widget.user.uid,
-                                          showFollowers: false,
-                                        ),
-                                      ),
-                                    );
+                                    AppNavigation.toFollowing(context: context, userId: widget.user.uid);
                                   },
                                 ),
                               ],
@@ -336,15 +333,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => PrivateChatPage(
-                                  currentUserId: widget.currentUserId,
-                                  currentUserName: _currentUser?.displayName ?? 'Kullanıcı',
-                                  otherUserId: widget.user.uid,
-                                  otherUserName: widget.user.displayName ?? 'Kullanıcı',
-                                ),
-                              ),
+                            AppNavigation.toChat(
+                              context: context,
+                              currentUserId: widget.currentUserId,
+                              currentUserName: _currentUser?.displayName ?? 'Kullanıcı',
+                              otherUserId: widget.user.uid,
+                              otherUserName: widget.user.displayName ?? 'Kullanıcı',
                             );
                           },
                           icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
@@ -475,15 +469,17 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ] else
                   const SizedBox(height: AppTheme.spacingLg),
                 // Etkinliklerim - Dikey Liste
-                StreamBuilder<List<EventModel>>(
+                StreamBuilder<List<EventEntity>>(
                   stream: _userEventsStream(),
                   builder: (context, snapshot) {
+                    if (!mounted) {
+                      return const SizedBox.shrink();
+                    }
+                    
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(AppTheme.spacingXl),
-                          child: CircularProgressIndicator(),
-                        ),
+                      return const SizedBox(
+                        height: 200,
+                        child: EventListSkeleton(itemCount: 2),
                       );
                     }
 
@@ -522,11 +518,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         final event = events[index];
                         return GestureDetector(
                           onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => EventDetailPage(event: event),
-                              ),
-                            );
+                            AppNavigation.toEventDetail(context: context, event: event);
                           },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(AppTheme.radiusXl),

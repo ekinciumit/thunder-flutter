@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/auth/domain/usecases/save_user_profile_usecase.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
-import 'package:thunder/models/user_model.dart';
+import 'package:thunder/features/user/domain/entities/user_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'save_user_profile_usecase_test.mocks.dart';
@@ -20,7 +20,7 @@ void main() {
   });
 
   group('SaveUserProfileUseCase', () {
-    final testUser = UserModel(
+    final testUser = UserEntity(
       uid: 'test-uid-123',
       email: 'test@example.com',
       displayName: 'Test User',
@@ -44,7 +44,7 @@ void main() {
 
     test('should return Left(ValidationFailure) when uid is empty', () async {
       // Arrange
-      final invalidUser = UserModel(
+      final invalidUser = UserEntity(
         uid: '', // Boş uid
         email: 'test@example.com',
       );
@@ -61,7 +61,7 @@ void main() {
 
     test('should return Left(ValidationFailure) when email is empty', () async {
       // Arrange
-      final invalidUser = UserModel(
+      final invalidUser = UserEntity(
         uid: 'test-uid-123',
         email: '', // Boş email
       );

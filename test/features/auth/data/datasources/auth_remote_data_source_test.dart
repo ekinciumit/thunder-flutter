@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/auth/data/datasources/auth_remote_data_source.dart';
-import 'package:thunder/models/user_model.dart';
+import 'package:thunder/features/user/data/models/user_model.dart';
 import 'package:thunder/core/errors/exceptions.dart';
 
 import 'auth_remote_data_source_test.mocks.dart';

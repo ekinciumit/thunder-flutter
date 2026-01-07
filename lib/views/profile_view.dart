@@ -1,28 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
-import 'user_search_page.dart';
-import 'followers_following_page.dart';
-import 'settings_page.dart';
 import 'widgets/user_suggestions_widget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/user_model.dart';
-import '../models/event_model.dart';
-import 'event_detail_page.dart';
+import '../features/event/domain/entities/event_entity.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/app_gradient_container.dart';
-import 'widgets/modern_loading_widget.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
+import '../core/widgets/skeleton_widgets.dart';
 import '../l10n/app_localizations.dart';
-import 'package:flutter/services.dart';
+import '../core/navigation/app_navigation.dart';
 import 'dart:ui' as ui;
 // Removed seed data service as test data seeding is no longer needed.
+
+/// Helper class for Selector optimization
+class _AuthViewModelState {
+  final dynamic user;
+  final bool isLoading;
+  
+  _AuthViewModelState({
+    required this.user,
+    required this.isLoading,
+  });
+}
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -63,18 +69,6 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     super.dispose();
   }
 
-  // Resim boyutunu küçült ve sıkıştır
-  Future<Uint8List> _compressImage(String imagePath) async {
-    final imageBytes = await File(imagePath).readAsBytes();
-    final codec = await ui.instantiateImageCodec(
-      imageBytes,
-      targetWidth: 300, // Profil fotoğrafı için 300x300 yeterli
-      targetHeight: 300,
-    );
-    final frame = await codec.getNextFrame();
-    final byteData = await frame.image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
-  }
 
   Future<void> _changePhoto(AuthViewModel authViewModel) async {
     if (!mounted) return;
@@ -159,39 +153,20 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         ),
       );
       
+      // Context'i async öncesi sakla
+      if (!mounted) return;
+      final currentContext = context;
+      
       try {
-        // Resmi sıkıştır (kırpılmış dosyayı kullan)
-        final compressedBytes = await _compressImage(croppedFileObj.path);
-        
-        if (!mounted) {
-          // ignore: use_build_context_synchronously
-          final currentContext = context;
-          Navigator.of(currentContext).pop(); // Progress dialog'u kapat
+        if (authViewModel.user == null) {
+          Navigator.of(currentContext).pop();
           return;
         }
         
-        final fileName = 'profile_${authViewModel.user!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final ref = FirebaseStorage.instance.ref().child('profile_photos').child(fileName);
-        
-        // Sıkıştırılmış resmi yükle
-        final uploadTask = ref.putData(compressedBytes);
-        
-        // Upload progress göster
-        uploadTask.snapshotEvents.listen((snapshot) {
-          final progress = snapshot.bytesTransferred / snapshot.totalBytes;
-          if (mounted) {
-            setState(() {
-              uploadProgress = progress;
-            });
-          }
-        });
-        
-        await uploadTask;
-        final url = await ref.getDownloadURL();
+        // Clean Architecture: ViewModel üzerinden yükle
+        final url = await authViewModel.uploadProfilePhoto(croppedFileObj.path);
         
         if (!mounted) {
-          // ignore: use_build_context_synchronously
-          final currentContext = context;
           Navigator.of(currentContext).pop(); // Progress dialog'u kapat
           return;
         }
@@ -299,13 +274,12 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
   }
 
   Future<void> _refreshUser(AuthViewModel authViewModel) async {
-    final doc = await FirebaseFirestore.instance.collection('users').doc(authViewModel.user!.uid).get();
-    if (doc.exists) {
-      final updatedUser = UserModel.fromMap(doc.data()!, doc.id);
+    // Clean Architecture: AuthViewModel üzerinden user refresh
+    await authViewModel.refreshUserProfile();
+    if (authViewModel.user != null) {
       setState(() {
-        authViewModel.user = updatedUser;
-        nameController.text = updatedUser.displayName ?? '';
-        bioController.text = updatedUser.bio ?? '';
+        nameController.text = authViewModel.user!.displayName ?? '';
+        bioController.text = authViewModel.user!.bio ?? '';
         isKesfetVisible = true; // Refresh'te Keşfet bölümünü tekrar göster
       });
     }
@@ -313,37 +287,53 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
 
   // Removed seeding UI and logic.
 
-  Stream<List<EventModel>> _getUserEventsStream(String userId) {
-    return FirebaseFirestore.instance
-        .collection('events')
-        .where('createdBy', isEqualTo: userId)
-        .orderBy('datetime', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
-              final data = doc.data();
-              return EventModel.fromMap(data, doc.id);
-            }).toList());
+  Stream<List<EventEntity>> _getUserEventsStream(String userId) {
+    // Clean Architecture: EventViewModel üzerinden user events stream
+    final eventViewModel = Provider.of<EventViewModel>(context, listen: false);
+    // ViewModel Entity döndürüyor
+    return eventViewModel.getUserEventsStream(userId);
   }
 
   @override
   Widget build(BuildContext context) {
-    final authViewModel = Provider.of<AuthViewModel>(context);
-    final user = authViewModel.user;
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    
+    try {
+      // Selector kullanarak sadece user ve isLoading değiştiğinde rebuild yap
+      return Selector<AuthViewModel, _AuthViewModelState>(
+      selector: (_, vm) => _AuthViewModelState(
+        user: vm.user,
+        isLoading: vm.isLoading,
+      ),
+      shouldRebuild: (previous, next) {
+        // Sadece user veya isLoading değiştiğinde rebuild yap
+        return previous.user?.uid != next.user?.uid ||
+               previous.isLoading != next.isLoading;
+      },
+      builder: (context, authState, _) {
+        if (kDebugMode) {
+          debugPrint('🔵 [PROFILEVIEW] Building ProfileView - User: ${authState.user?.uid}, isLoading: ${authState.isLoading}');
+        }
 
-    if (authViewModel.isLoading) {
-      return Center(child: ModernLoadingWidget(message: l10n.loading));
-    }
-    if (user == null) {
-      return Center(child: ModernLoadingWidget(message: l10n.loading));
-    }
+        if (authState.isLoading || authState.user == null) {
+          if (kDebugMode) {
+            debugPrint('🔵 [PROFILEVIEW] Showing skeleton');
+          }
+          return const ProfileSkeleton();
+        }
 
-    return AppGradientContainer(
-      backgroundImagePath: 'assets/backgrounds/background_2.png',
-      backgroundOpacity: 0.7,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+        if (kDebugMode) {
+          debugPrint('✅ [PROFILEVIEW] Building full ProfileView');
+        }
+        
+        final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+        final user = authState.user;
+
+        return AppGradientContainer(
+          backgroundImagePath: 'assets/backgrounds/background_2.png',
+          backgroundOpacity: 0.7,
+          child: Scaffold(
         body: SafeArea(
           top: false,
           bottom: false,
@@ -368,6 +358,10 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                         // Profil Fotoğrafı
                     GestureDetector(
                       onTap: isUploading ? null : () => _showPhotoDialog(user.photoUrl, authViewModel),
+                      onLongPress: () {
+                        // Uzun basınca profil sayfasına geç
+                        AppNavigation.toUserProfile(context: context, userId: user.uid);
+                      },
                       child: Stack(
                         alignment: Alignment.bottomRight,
                         children: [
@@ -450,7 +444,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                         const SizedBox(width: AppTheme.spacingLg),
                         // İstatistikler
                         Expanded(
-                          child: StreamBuilder<List<EventModel>>(
+                          child: StreamBuilder<List<EventEntity>>(
                             stream: _getUserEventsStream(user.uid),
                             builder: (context, snapshot) {
                               final eventsCount = snapshot.hasData ? snapshot.data!.length : 0;
@@ -468,14 +462,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                     user.followers.length,
                                     theme,
                                     () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => FollowersFollowingPage(
-                                            userId: user.uid,
-                                            showFollowers: true,
-                                          ),
-                                        ),
-                                      );
+                                      AppNavigation.toFollowers(context: context, userId: user.uid);
                                     },
                                   ),
                                   _buildStatColumn(
@@ -483,14 +470,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                     user.following.length,
                                     theme,
                                     () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => FollowersFollowingPage(
-                                            userId: user.uid,
-                                            showFollowers: false,
-                                          ),
-                                        ),
-                                      );
+                                      AppNavigation.toFollowing(context: context, userId: user.uid);
                                     },
                                   ),
                                 ],
@@ -511,11 +491,17 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                     if (isEditing)
                       _buildEditableTextField(nameController, l10n.name)
                     else
-                      Text(
-                        user.displayName ?? l10n.name,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                              color: AppColorConfig.cardColor,
+                      GestureDetector(
+                        onTap: () {
+                          // Kendi profil sayfasına geç
+                          AppNavigation.toUserProfile(context: context, userId: user.uid);
+                        },
+                        child: Text(
+                          user.displayName ?? l10n.name,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColorConfig.cardColor,
+                          ),
                         ),
                       ),
                         const SizedBox(height: AppTheme.spacingXs),
@@ -547,13 +533,12 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                 photoUrl: user.photoUrl,
                               );
                               await _refreshUser(authViewModel);
-                                if (!mounted) return;
-                                // ignore: use_build_context_synchronously
-                                final currentContext = context;
-                                ModernSnackbar.showSuccess(
-                                  currentContext,
-                                  'Profil başarıyla güncellendi!',
-                                );
+                              if (!mounted) return;
+                              final currentContext = context;
+                              ModernSnackbar.showSuccess(
+                                currentContext,
+                                'Profil başarıyla güncellendi!',
+                              );
                             }
                             setState(() => isEditing = !isEditing);
                           },
@@ -572,9 +557,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const UserSearchPage()),
-                              );
+                              AppNavigation.toUserSearch(context);
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColorConfig.cardColor,
@@ -590,10 +573,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                         const SizedBox(width: AppTheme.spacingXs),
                         OutlinedButton(
                           onPressed: () {
-                            // TODO: Ayarlar sayfasına yönlendir
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const SettingsPage()),
-                            );
+                            AppNavigation.toSettings(context);
                           },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColorConfig.cardColor,
@@ -684,7 +664,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                   ] else
                     const SizedBox(height: AppTheme.spacingLg),
                   // Etkinliklerim - Dikey Liste
-                  StreamBuilder<List<EventModel>>(
+                  StreamBuilder<List<EventEntity>>(
                     stream: _getUserEventsStream(user.uid),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -731,11 +711,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                           final event = events[index];
                           return GestureDetector(
                             onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => EventDetailPage(event: event),
-                                ),
-                              );
+                              AppNavigation.toEventDetail(context: context, event: event);
                             },
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(AppTheme.radiusXl),
@@ -841,6 +817,27 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         ),
       ),
     );
+      },
+    );
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('❌ [PROFILEVIEW] Build error: $e');
+        debugPrint('❌ [PROFILEVIEW] Stack trace: $stackTrace');
+      }
+      return Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Error: $e'),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
 

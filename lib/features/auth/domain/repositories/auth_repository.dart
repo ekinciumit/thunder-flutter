@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/user_model.dart';
+import '../../../user/domain/entities/user_entity.dart';
 
 /// Authentication Repository Interface
 /// 
@@ -11,13 +11,13 @@ import '../../../../models/user_model.dart';
 abstract class AuthRepository {
   /// Email/password ile giriş yap
   /// 
-  /// Returns: Either with Failure (Left) or UserModel (Right)
-  Future<Either<Failure, UserModel>> signIn(String email, String password);
+  /// Returns: Either with Failure (Left) or UserEntity (Right)
+  Future<Either<Failure, UserEntity>> signIn(String email, String password);
   
   /// Email/password ile kayıt ol
   /// 
-  /// Returns: Either with Failure (Left) or UserModel (Right)
-  Future<Either<Failure, UserModel>> signUp(String email, String password);
+  /// Returns: Either with Failure (Left) or UserEntity (Right)
+  Future<Either<Failure, UserEntity>> signUp(String email, String password);
   
   /// Çıkış yap
   /// 
@@ -27,12 +27,12 @@ abstract class AuthRepository {
   /// Kullanıcı profilini kaydet
   /// 
   /// Returns: Either with Failure (Left) or void (Right)
-  Future<Either<Failure, void>> saveUserProfile(UserModel user);
+  Future<Either<Failure, void>> saveUserProfile(UserEntity user);
   
   /// Kullanıcı profilini getir
   /// 
-  /// Returns: Either with Failure (Left) or UserModel? (Right)
-  Future<Either<Failure, UserModel?>> fetchUserProfile(String uid);
+  /// Returns: Either with Failure (Left) or UserEntity? (Right)
+  Future<Either<Failure, UserEntity?>> fetchUserProfile(String uid);
   
   /// FCM token'ını kaydet
   /// 
@@ -41,8 +41,17 @@ abstract class AuthRepository {
   
   /// Mevcut kullanıcıyı getir
   /// 
-  /// Returns: UserModel if logged in, null otherwise
+  /// Returns: UserEntity if logged in, null otherwise
   /// (Synchronous operation, no Either needed)
-  UserModel? getCurrentUser();
+  UserEntity? getCurrentUser();
+  
+  /// Profil fotoğrafını yükler ve download URL'ini döndürür
+  Future<Either<Failure, String>> uploadProfilePhoto(String photoFilePath, String userId);
+  
+  /// Tüm kullanıcıları stream olarak getir
+  Stream<List<UserEntity>> getAllUsersStream();
+
+  /// Şifre sıfırlama email'i gönder
+  Future<Either<Failure, void>> sendPasswordResetEmail(String email);
 }
 

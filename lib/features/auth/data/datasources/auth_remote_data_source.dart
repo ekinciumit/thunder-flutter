@@ -1,6 +1,9 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../models/user_model.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import '../../../user/data/models/user_model.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/error_mapper.dart';
 
@@ -47,6 +50,15 @@ abstract class AuthRemoteDataSource {
   /// 
   /// Returns: UserModel if logged in, null otherwise
   UserModel? getCurrentUser();
+  
+  /// Profil fotoğrafını yükler ve download URL'ini döndürür
+  Future<String> uploadProfilePhoto(File photoFile, String userId);
+  
+  /// Tüm kullanıcıları stream olarak getir
+  Stream<List<UserModel>> getAllUsersStream();
+
+  /// Şifre sıfırlama email'i gönder
+  Future<void> sendPasswordResetEmail(String email);
 }
 
 /// Firebase implementation of AuthRemoteDataSource
@@ -56,12 +68,15 @@ abstract class AuthRemoteDataSource {
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
   
   AuthRemoteDataSourceImpl({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
   }) : _auth = auth ?? FirebaseAuth.instance,
-       _firestore = firestore ?? FirebaseFirestore.instance;
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance;
 
   @override
   Future<UserModel> signIn(String email, String password) async {
@@ -134,7 +149,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return null;
     } catch (e) {
       // Mevcut kodda null döndürülüyor, aynı mantığı koruyoruz
-      // Ama exception da fırlatabiliriz, şimdilik null döndürelim
+      // Ama hatayı logla
+      if (kDebugMode) {
+        debugPrint('❌ [AUTH_DS] fetchUserProfile hatası: $e');
+      }
       return null;
     }
   }
@@ -165,7 +183,57 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       return null;
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [AUTH_DS] getCachedToken hatası: $e');
+      }
       return null;
+    }
+  }
+
+  @override
+  Future<String> uploadProfilePhoto(File photoFile, String userId) async {
+    try {
+      if (!await photoFile.exists()) {
+        throw ServerException('Fotoğraf dosyası bulunamadı');
+      }
+
+      // Güvenlik: UID bazlı path yapısı - sadece kendi klasörüne yazabilir
+      final fileId = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef = _storage.ref().child('profile_photos').child(userId).child(fileId);
+
+      final uploadTask = storageRef.putFile(photoFile);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Profil fotoğrafı yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Stream<List<UserModel>> getAllUsersStream() {
+    try {
+      return _firestore
+          .collection('users')
+          .snapshots()
+          .map((snapshot) => snapshot.docs
+              .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+              .toList());
+    } catch (e) {
+      throw ServerException('Kullanıcılar getirilirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw ServerException(ErrorMapper.mapFirebaseAuthException(e));
+    } catch (e) {
+      throw ServerException('Şifre sıfırlama emaili gönderilirken hata oluştu: ${e.toString()}');
     }
   }
 }

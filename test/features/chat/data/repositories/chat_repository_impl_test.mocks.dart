@@ -4,13 +4,14 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i6;
+import 'dart:io' as _i7;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i5;
 import 'package:thunder/features/chat/data/datasources/chat_remote_data_source.dart'
     as _i4;
-import 'package:thunder/models/chat_model.dart' as _i2;
-import 'package:thunder/models/message_model.dart' as _i3;
+import 'package:thunder/features/chat/data/models/chat_model.dart' as _i2;
+import 'package:thunder/features/chat/data/models/message_model.dart' as _i3;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -421,4 +422,81 @@ class MockChatRemoteDataSource extends _i1.Mock
             ),
           )
           as _i6.Future<List<_i3.MessageModel>>);
+
+  @override
+  _i6.Future<String> uploadVoiceMessage(
+    _i7.File? audioFile, {
+    required String? chatId,
+    required String? senderId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #uploadVoiceMessage,
+              [audioFile],
+              {#chatId: chatId, #senderId: senderId},
+            ),
+            returnValue: _i6.Future<String>.value(
+              _i5.dummyValue<String>(
+                this,
+                Invocation.method(
+                  #uploadVoiceMessage,
+                  [audioFile],
+                  {#chatId: chatId, #senderId: senderId},
+                ),
+              ),
+            ),
+          )
+          as _i6.Future<String>);
+
+  @override
+  _i6.Future<String> uploadFileMessage(
+    _i7.File? file,
+    String? fileName, {
+    required String? chatId,
+    required String? senderId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #uploadFileMessage,
+              [file, fileName],
+              {#chatId: chatId, #senderId: senderId},
+            ),
+            returnValue: _i6.Future<String>.value(
+              _i5.dummyValue<String>(
+                this,
+                Invocation.method(
+                  #uploadFileMessage,
+                  [file, fileName],
+                  {#chatId: chatId, #senderId: senderId},
+                ),
+              ),
+            ),
+          )
+          as _i6.Future<String>);
+
+  @override
+  _i6.Future<String> uploadChatMedia(
+    _i7.File? file,
+    String? storagePath, {
+    String? contentType,
+    void Function(double)? onProgress,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #uploadChatMedia,
+              [file, storagePath],
+              {#contentType: contentType, #onProgress: onProgress},
+            ),
+            returnValue: _i6.Future<String>.value(
+              _i5.dummyValue<String>(
+                this,
+                Invocation.method(
+                  #uploadChatMedia,
+                  [file, storagePath],
+                  {#contentType: contentType, #onProgress: onProgress},
+                ),
+              ),
+            ),
+          )
+          as _i6.Future<String>);
 }

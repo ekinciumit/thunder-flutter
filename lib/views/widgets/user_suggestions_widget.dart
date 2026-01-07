@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import '../../models/user_model.dart';
+import '../../features/user/domain/entities/user_entity.dart';
 import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../services/user_service.dart';
-import '../user_profile_page.dart';
 import '../../core/widgets/modern_components.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/widgets/glass_container.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/app_color_config.dart';
@@ -25,28 +24,27 @@ class UserSuggestionsWidget extends StatelessWidget {
     this.isExpanded = true,
   });
 
-  Future<List<UserModel>> _getSuggestions() async {
-    final usersRef = FirebaseFirestore.instance.collection('users');
-    final suggestions = <UserModel>[];
+  Future<List<UserEntity>> _getSuggestions(BuildContext context) async {
+    // Clean Architecture: AuthViewModel üzerinden user işlemleri
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final suggestions = <UserEntity>[];
     final seenIds = <String>{currentUserId, ...followingIds};
 
     // 1. Takip edilenlerin takip ettikleri (en iyi öneriler)
     if (followingIds.isNotEmpty) {
       final followingUsers = await Future.wait(
-        followingIds.take(5).map((id) => usersRef.doc(id).get()),
+        followingIds.take(5).map((id) => authViewModel.fetchUserProfile(id)),
       );
 
-      for (final doc in followingUsers) {
-        if (!doc.exists) continue;
-        final userData = doc.data()!;
-        final userFollowing = List<String>.from(userData['following'] ?? []);
+      for (final user in followingUsers) {
+        if (user == null) continue;
         
-        for (final suggestedId in userFollowing.take(10)) {
+        for (final suggestedId in user.following.take(10)) {
           if (!seenIds.contains(suggestedId)) {
             seenIds.add(suggestedId);
-            final suggestedDoc = await usersRef.doc(suggestedId).get();
-            if (suggestedDoc.exists) {
-              suggestions.add(UserModel.fromMap(suggestedDoc.data()!, suggestedDoc.id));
+            final suggestedUser = await authViewModel.fetchUserProfile(suggestedId);
+            if (suggestedUser != null) {
+              suggestions.add(suggestedUser);
               if (suggestions.length >= 5) break;
             }
           }
@@ -58,20 +56,18 @@ class UserSuggestionsWidget extends StatelessWidget {
     // 2. Ortak takipçiler
     if (suggestions.length < 5 && followersIds.isNotEmpty) {
       final followersUsers = await Future.wait(
-        followersIds.take(10).map((id) => usersRef.doc(id).get()),
+        followersIds.take(10).map((id) => authViewModel.fetchUserProfile(id)),
       );
 
-      for (final doc in followersUsers) {
-        if (!doc.exists) continue;
-        final userData = doc.data()!;
-        final userFollowing = List<String>.from(userData['following'] ?? []);
+      for (final user in followersUsers) {
+        if (user == null) continue;
         
-        for (final suggestedId in userFollowing) {
+        for (final suggestedId in user.following) {
           if (!seenIds.contains(suggestedId)) {
             seenIds.add(suggestedId);
-            final suggestedDoc = await usersRef.doc(suggestedId).get();
-            if (suggestedDoc.exists) {
-              suggestions.add(UserModel.fromMap(suggestedDoc.data()!, suggestedDoc.id));
+            final suggestedUser = await authViewModel.fetchUserProfile(suggestedId);
+            if (suggestedUser != null) {
+              suggestions.add(suggestedUser);
               if (suggestions.length >= 5) break;
             }
           }
@@ -82,12 +78,13 @@ class UserSuggestionsWidget extends StatelessWidget {
 
     // 3. Popüler kullanıcılar (rastgele seçilen aktif kullanıcılar)
     if (suggestions.length < 5) {
-      final allUsers = await usersRef.limit(50).get();
-      final candidates = <UserModel>[];
+      // Clean Architecture: getAllUsersStream kullan
+      final allUsersStream = authViewModel.getAllUsersStream();
+      final allUserEntities = await allUsersStream.first;
+      final candidates = <UserEntity>[];
 
-      for (final doc in allUsers.docs) {
-        if (!seenIds.contains(doc.id)) {
-          final user = UserModel.fromMap(doc.data(), doc.id);
+      for (final user in allUserEntities) {
+        if (!seenIds.contains(user.uid)) {
           // En az 1 takipçisi olan kullanıcıları önceliklendir
           if (user.followers.isNotEmpty) {
             candidates.add(user);
@@ -108,8 +105,8 @@ class UserSuggestionsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return FutureBuilder<List<UserModel>>(
-      future: _getSuggestions(),
+    return FutureBuilder<List<UserEntity>>(
+      future: _getSuggestions(context),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox.shrink();
@@ -154,7 +151,7 @@ class UserSuggestionsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildSuggestionItem(BuildContext context, UserModel user, ThemeData theme, double itemWidth) {
+  Widget _buildSuggestionItem(BuildContext context, UserEntity user, ThemeData theme, double itemWidth) {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final currentUser = authViewModel.user;
     // Karşılıklı takip kontrolü
@@ -175,14 +172,7 @@ class UserSuggestionsWidget extends StatelessWidget {
           GestureDetector(
             onTap: () {
               if (currentUser != null) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => UserProfilePage(
-                      user: user,
-                      currentUserId: currentUser.uid,
-                    ),
-                  ),
-                );
+                AppNavigation.toUserProfile(context: context, userId: user.uid);
               }
             },
             child: CircleAvatar(

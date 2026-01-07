@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/widgets/modern_components.dart';
 import '../services/user_service.dart';
-import '../models/user_model.dart';
+import '../features/user/domain/entities/user_entity.dart';
 import '../l10n/app_localizations.dart';
+import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class BlockedUsersPage extends StatefulWidget {
   final String currentUserId;
@@ -17,7 +18,7 @@ class BlockedUsersPage extends StatefulWidget {
 
 class _BlockedUsersPageState extends State<BlockedUsersPage> {
   final UserService _userService = UserService();
-  List<UserModel> _blockedUsers = [];
+  List<UserEntity> _blockedUsers = [];
   bool _isLoading = true;
 
   @override
@@ -30,18 +31,30 @@ class _BlockedUsersPageState extends State<BlockedUsersPage> {
     setState(() => _isLoading = true);
     try {
       final blockedIds = await _userService.getBlockedUsers(widget.currentUserId);
-      final users = <UserModel>[];
+      final users = <UserEntity>[];
+      
+      // Clean Architecture: AuthViewModel üzerinden user bilgilerini çek
+      // Context'i async öncesi sakla
+      if (!mounted) return;
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       for (final userId in blockedIds) {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-        if (doc.exists) users.add(UserModel.fromMap(doc.data()!, doc.id));
+        final userEntity = await authViewModel.fetchUserProfile(userId);
+        if (userEntity != null) {
+          users.add(userEntity);
+        }
       }
-      setState(() { _blockedUsers = users; _isLoading = false; });
+      
+      if (mounted) {
+        setState(() { _blockedUsers = users; _isLoading = false; });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  Future<void> _unblockUser(UserModel user) async {
+  Future<void> _unblockUser(UserEntity user) async {
     final l10n = AppLocalizations.of(context)!;
     await _userService.unblockUser(widget.currentUserId, user.uid);
     setState(() => _blockedUsers.removeWhere((u) => u.uid == user.uid));

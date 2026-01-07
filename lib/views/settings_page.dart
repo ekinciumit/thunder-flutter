@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
@@ -13,7 +13,8 @@ import '../services/settings_service.dart';
 import '../services/feedback_service.dart';
 import '../services/user_service.dart';
 import '../l10n/app_localizations.dart';
-import 'blocked_users_page.dart';
+import '../core/navigation/app_navigation.dart';
+import 'widgets/app_gradient_container.dart';
 
 /// Ayarlar Sayfası
 /// 
@@ -27,14 +28,22 @@ class SettingsPage extends StatelessWidget {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settings),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
-      ),
-      body: ListView(
-        children: [
+    return AppGradientContainer(
+      backgroundImagePath: 'assets/backgrounds/background_2.png',
+      backgroundOpacity: 0.7,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(l10n.settings),
+          backgroundColor: Colors.transparent,
+          foregroundColor: theme.colorScheme.onSurface,
+          elevation: 0,
+        ),
+        body: SafeArea(
+          child: ListView(
+            children: [
           const SizedBox(height: AppTheme.spacingMd),
           
           // Hesap Bölümü
@@ -45,7 +54,7 @@ class SettingsPage extends StatelessWidget {
             title: l10n.editProfile,
             subtitle: l10n.editProfileSubtitle,
             onTap: () {
-              Navigator.pop(context);
+              AppNavigation.toEditProfile(context);
             },
           ),
           _buildSettingsTile(
@@ -54,22 +63,20 @@ class SettingsPage extends StatelessWidget {
             title: l10n.changePassword,
             subtitle: l10n.accountSecurity,
             onTap: () async {
-              final user = FirebaseAuth.instance.currentUser;
-              if (user?.email != null) {
-                try {
-                  await FirebaseAuth.instance.sendPasswordResetEmail(
-                    email: user!.email!,
-                  );
-                  if (context.mounted) {
+              final user = authViewModel.user;
+              if (user?.email != null && user!.email.isNotEmpty) {
+                final success = await authViewModel.sendPasswordResetEmail(user.email);
+                if (context.mounted) {
+                  if (success) {
                     ModernSnackbar.showSuccess(context, l10n.passwordResetSent);
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ModernSnackbar.showError(context, '${l10n.error}: $e');
+                  } else {
+                    ModernSnackbar.showError(context, authViewModel.error ?? l10n.error);
                   }
                 }
               } else {
-                ModernSnackbar.showError(context, l10n.emailNotFound);
+                if (context.mounted) {
+                  ModernSnackbar.showError(context, l10n.emailNotFound);
+                }
               }
             },
           ),
@@ -147,14 +154,9 @@ class SettingsPage extends StatelessWidget {
             title: l10n.blockedUsers,
             subtitle: l10n.manageBlockList,
             onTap: () {
-              final user = FirebaseAuth.instance.currentUser;
+              final user = authViewModel.user;
               if (user != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => BlockedUsersPage(currentUserId: user.uid),
-                  ),
-                );
+                AppNavigation.toBlockedUsers(context);
               }
             },
           ),
@@ -250,8 +252,27 @@ class SettingsPage extends StatelessWidget {
                   ),
                 );
                 
-                if (confirm == true) {
-                  await authViewModel.signOut();
+                if (confirm == true && context.mounted) {
+                  try {
+                    await authViewModel.signOut();
+                    // SignOut başarılı olduğunda auth sayfasına yönlendir
+                    if (context.mounted) {
+                      // GoRouter kullanarak auth sayfasına git
+                      // Router redirect mantığı zaten /auth'a yönlendirecek ama
+                      // manuel navigation daha güvenilir
+                      context.go('/auth');
+                    }
+                  } catch (e) {
+                    // Hata durumunda kullanıcıya bilgi ver
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Çıkış yapılırken bir hata oluştu: ${e.toString()}'),
+                          backgroundColor: AppColorConfig.errorColor,
+                        ),
+                      );
+                    }
+                  }
                 }
               },
               icon: const Icon(Icons.logout),
@@ -264,8 +285,10 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           
-          const SizedBox(height: AppTheme.spacingXl),
-        ],
+              const SizedBox(height: AppTheme.spacingXl),
+            ],
+          ),
+        ),
       ),
     );
   }

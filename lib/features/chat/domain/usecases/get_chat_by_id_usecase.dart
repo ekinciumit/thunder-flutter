@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/chat_model.dart';
+import '../entities/chat_entity.dart';
 import '../repositories/chat_repository.dart';
 
 /// Get Chat By Id Use Case
@@ -13,8 +13,8 @@ class GetChatByIdUseCase {
 
   /// Chat ID'ye göre chat getir
   /// 
-  /// Returns: `Either<Failure, ChatModel?>`
-  Future<Either<Failure, ChatModel?>> call(String chatId) async {
+  /// Returns: `Either<Failure, ChatEntity?>`
+  Future<Either<Failure, ChatEntity?>> call(String chatId) async {
     // Business logic: Validation
     if (chatId.isEmpty) {
       return Either.left(ValidationFailure('Chat ID boş olamaz'));

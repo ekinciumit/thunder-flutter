@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/event_model.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
-import 'event_detail_page.dart';
+import '../features/event/domain/entities/event_entity.dart';
 import 'dart:async';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
@@ -13,6 +12,7 @@ import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../l10n/app_localizations.dart';
+import '../core/navigation/app_navigation.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -160,7 +160,7 @@ class _MapViewState extends State<MapView> {
   ]
   ''';
 
-  List<Marker> _buildClusteredMarkers(List<EventModel> events) {
+  List<Marker> _buildClusteredMarkers(List<EventEntity> events) {
     if (events.isEmpty) return [];
     // Basit grid tabanlı yaklaştırma: zoom seviyesine göre hücre boyutu
     double grid;
@@ -176,7 +176,7 @@ class _MapViewState extends State<MapView> {
       grid = 0.1; // ~10km
     }
 
-    final Map<String, List<EventModel>> cellToEvents = {};
+    final Map<String, List<EventEntity>> cellToEvents = {};
     for (final e in events) {
       if (e.location.latitude == 0 || e.location.longitude == 0) continue;
       final cellLat = (e.location.latitude / grid).floor();
@@ -248,7 +248,11 @@ class _MapViewState extends State<MapView> {
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
       setState(() { userPosition = pos; });
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ [MAP_VIEW] Konum alınırken hata: $e');
+      }
+    }
   }
 
   Future<void> _loadCategoryIcons() async {
@@ -264,7 +268,8 @@ class _MapViewState extends State<MapView> {
     // Web platformunda etkinlik listesi göster
     if (kIsWeb) {
       final eventViewModel = Provider.of<EventViewModel>(context);
-      final events = eventViewModel.events;
+      // ViewModel Entity döndürüyor, UI direkt Entity kullanıyor (Clean Architecture)
+      final eventEntities = eventViewModel.events;
       
       return Scaffold(
         appBar: AppBar(
@@ -272,7 +277,7 @@ class _MapViewState extends State<MapView> {
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
         ),
-        body: events.isEmpty
+        body: eventEntities.isEmpty
             ? EmptyStateWidget(
                 icon: Icons.map_outlined,
                 title: l10n.noData,
@@ -280,9 +285,9 @@ class _MapViewState extends State<MapView> {
               )
             : ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: events.length,
+                itemCount: eventEntities.length,
                 itemBuilder: (context, index) {
-                  final event = events[index];
+                  final event = eventEntities[index];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
@@ -297,11 +302,9 @@ class _MapViewState extends State<MapView> {
                       subtitle: Text(event.category),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EventDetailPage(event: event),
-                          ),
+                        AppNavigation.toEventDetail(
+                          context: context,
+                          event: event,
                         );
                       },
                     ),
@@ -312,8 +315,9 @@ class _MapViewState extends State<MapView> {
     }
 
     final eventViewModel = Provider.of<EventViewModel>(context);
-    final events = eventViewModel.events;
-    final markers = _buildClusteredMarkers(events);
+    // ViewModel Entity döndürüyor, UI direkt Entity kullanıyor (Clean Architecture)
+    final eventEntities = eventViewModel.events;
+    final markers = _buildClusteredMarkers(eventEntities);
 
     // Kullanıcı konumu markerı
     if (userPosition != null) {
@@ -410,7 +414,7 @@ class _MapViewState extends State<MapView> {
     );
   }
 
-  void _showEventSheet(EventModel event) {
+  void _showEventSheet(EventEntity event) {
     final theme = Theme.of(context);
     GlassModalBottomSheet.show(
       context: context,
@@ -484,11 +488,7 @@ class _MapViewState extends State<MapView> {
                   child: FilledButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => EventDetailPage(event: event),
-                        ),
-                    );
+                    AppNavigation.toEventDetail(context: context, event: event);
                   },
                   icon: const Icon(Icons.open_in_new),
                   label: const Text('Etkinlik Detayına Git'),

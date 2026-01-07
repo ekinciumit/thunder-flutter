@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/user_model.dart';
+import '../../../user/domain/entities/user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 /// Sign In Use Case
@@ -19,10 +19,10 @@ class SignInUseCase {
 
   /// Email/password ile giriş yap
   /// 
-  /// Returns: Either`<Failure, UserModel>`
+  /// Returns: Either`<Failure, UserEntity>`
   /// - Left: Failure if authentication fails
-  /// - Right: UserModel if successful
-  Future<Either<Failure, UserModel>> call(String email, String password) async {
+  /// - Right: UserEntity if successful
+  Future<Either<Failure, UserEntity>> call(String email, String password) async {
     // Business logic: Email ve password validation
     if (email.isEmpty || password.isEmpty) {
       return Either.left(ValidationFailure('E-posta ve şifre boş olamaz'));

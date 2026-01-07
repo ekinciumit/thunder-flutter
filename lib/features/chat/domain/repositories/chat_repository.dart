@@ -1,6 +1,6 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/chat_model.dart';
-import '../../../../models/message_model.dart';
+import '../entities/chat_entity.dart';
+import '../entities/message_entity.dart';
 
 /// Chat Repository Interface
 /// 
@@ -11,13 +11,13 @@ abstract class ChatRepository {
   String getChatId(String userA, String userB);
   
   /// Chat'i ID'ye göre getir
-  Future<Either<Failure, ChatModel?>> getChatById(String chatId);
+  Future<Either<Failure, ChatEntity?>> getChatById(String chatId);
   
   /// Özel sohbet oluştur veya getir
-  Future<Either<Failure, ChatModel>> getOrCreatePrivateChat(String userA, String userB);
+  Future<Either<Failure, ChatEntity>> getOrCreatePrivateChat(String userA, String userB);
   
   /// Grup sohbeti oluştur
-  Future<Either<Failure, ChatModel>> createGroupChat({
+  Future<Either<Failure, ChatEntity>> createGroupChat({
     required String name,
     required String createdBy,
     required List<String> participants,
@@ -26,7 +26,7 @@ abstract class ChatRepository {
   });
   
   /// Mesaj gönder
-  Future<Either<Failure, MessageModel>> sendMessage({
+  Future<Either<Failure, MessageEntity>> sendMessage({
     required String chatId,
     required String senderId,
     required String senderName,
@@ -47,17 +47,17 @@ abstract class ChatRepository {
   });
   
   /// Mesajları stream olarak getir
-  Stream<List<MessageModel>> getMessagesStream(String chatId, {int limit = 50});
+  Stream<List<MessageEntity>> getMessagesStream(String chatId, {int limit = 50});
   
   /// Daha eski mesajları yükle (pagination)
-  Future<Either<Failure, List<MessageModel>>> loadOlderMessages(
+  Future<Either<Failure, List<MessageEntity>>> loadOlderMessages(
     String chatId,
     DateTime lastMessageTime, {
     int limit = 20,
   });
   
   /// Kullanıcının sohbetlerini getir
-  Stream<List<ChatModel>> getUserChats(String userId);
+  Stream<List<ChatEntity>> getUserChats(String userId);
   
   /// Mesajı okundu olarak işaretle
   Future<Either<Failure, void>> markMessageAsRead(String messageId, String userId);
@@ -78,7 +78,7 @@ abstract class ChatRepository {
   Future<Either<Failure, void>> removeReaction(String messageId, String userId, String emoji);
   
   /// Sesli mesaj gönder
-  Future<Either<Failure, MessageModel>> sendVoiceMessage({
+  Future<Either<Failure, MessageEntity>> sendVoiceMessage({
     required String chatId,
     required String senderId,
     required String senderName,
@@ -88,7 +88,7 @@ abstract class ChatRepository {
   });
   
   /// Dosya mesajı gönder
-  Future<Either<Failure, MessageModel>> sendFileMessage({
+  Future<Either<Failure, MessageEntity>> sendFileMessage({
     required String chatId,
     required String senderId,
     required String senderName,
@@ -100,8 +100,8 @@ abstract class ChatRepository {
   });
   
   /// Mesaj ilet
-  Future<Either<Failure, MessageModel>> forwardMessage({
-    required MessageModel originalMessage,
+  Future<Either<Failure, MessageEntity>> forwardMessage({
+    required MessageEntity originalMessage,
     required String targetChatId,
     required String senderId,
     required String senderName,
@@ -109,17 +109,27 @@ abstract class ChatRepository {
   });
   
   /// Mesajlarda arama yap
-  Future<Either<Failure, List<MessageModel>>> searchMessages(
+  Future<Either<Failure, List<MessageEntity>>> searchMessages(
     String chatId,
     String query, {
     int limit = 50,
   });
   
   /// Tüm sohbetlerde arama yap
-  Future<Either<Failure, List<MessageModel>>> searchAllMessages(
+  Future<Either<Failure, List<MessageEntity>>> searchAllMessages(
     String userId,
     String query, {
     int limit = 100,
   });
+  
+  /// Ses dosyasını Firebase Storage'a yükler ve download URL'ini döndürür
+  Future<Either<Failure, String>> uploadVoiceMessage(String audioFilePath, {required String chatId, required String senderId});
+  
+  /// Dosyayı Firebase Storage'a yükler ve download URL'ini döndürür
+  Future<Either<Failure, String>> uploadFileMessage(String filePath, String fileName, {required String chatId, required String senderId});
+  
+  /// Chat medya (image/video) dosyasını Firebase Storage'a yükler
+  /// Progress callback ile progress güncellemesi yapılabilir
+  Future<Either<Failure, String>> uploadChatMedia(String filePath, String storagePath, {String? contentType, void Function(double progress)? onProgress});
 }
 

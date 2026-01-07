@@ -56,20 +56,54 @@ service cloud.firestore {
 
       // Mesajlar (sohbet) alt koleksiyonu için kural
       match /messages/{messageId} {
-        allow read, write: if request.auth != null && (
-          resource.data.createdBy == request.auth.uid ||
-          get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid])
+        // Helper: Event katılımcısı mı?
+        function isEventParticipant() {
+          return exists(/databases/$(database)/documents/events/$(eventId)) && (
+            get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
+            get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
+            get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])
+          );
+        }
+        
+        // Okuma: Event katılımcıları okuyabilir
+        allow read: if request.auth != null && isEventParticipant();
+        
+        // Oluşturma: Sadece event katılımcıları ve senderId kendi ID'si olmalı
+        allow create: if request.auth != null && 
+          isEventParticipant() &&
+          request.resource.data.senderId == request.auth.uid;
+        
+        // Güncelleme: Sadece mesajı gönderen
+        allow update: if request.auth != null && 
+          resource.data.senderId == request.auth.uid;
+        
+        // Silme: Sadece mesajı gönderen (veya event owner - batch delete için)
+        allow delete: if request.auth != null && (
+          resource.data.senderId == request.auth.uid ||
+          (exists(/databases/$(database)/documents/events/$(eventId)) &&
+           get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid)
         );
       }
 
       // Yorumlar (comments) alt koleksiyonu için kural
       match /comments/{commentId} {
+        // Helper: Event sahibi mi?
+        function isEventOwner() {
+          return exists(/databases/$(database)/documents/events/$(eventId)) &&
+                 get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid;
+        }
+        
+        // Helper: Event katılımcısı mı?
+        function isEventParticipant() {
+          return exists(/databases/$(database)/documents/events/$(eventId)) && (
+            get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
+            get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
+            get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])
+          );
+        }
+        
         // Okuma: Etkinlik sahibi, onaylanmış katılımcılar ve normal katılımcılar okuyabilir
-        allow read: if request.auth != null && (
-          get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
-          get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
-          get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])
-        );
+        allow read: if request.auth != null && isEventParticipant();
 
         // Yazma: Etkinlik sahibi, onaylanmış katılımcılar ve normal katılımcılar yazabilir
         // Sistem mesajları için özel kontrol (type: 'system' ve userId: 'system')
@@ -77,25 +111,23 @@ service cloud.firestore {
           // Sistem mesajı ise (sadece katılımcılar oluşturabilir)
           (request.resource.data.type == 'system' && 
            request.resource.data.userId == 'system' &&
-           (get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
-            get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
-            get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid]))) ||
+           isEventParticipant()) ||
           // Normal mesaj ise (type field'ı yoksa veya type != 'system' ise ve userId kullanıcının kendi ID'si olmalı)
           ((!('type' in request.resource.data) || request.resource.data.type != 'system') &&
            request.resource.data.userId == request.auth.uid &&
-           (get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
-            get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
-            get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])))
+           isEventParticipant())
         );
 
         // Güncelleme/Silme: 
         // 1. Yorumu yazan kullanıcı silebilir
-        // 2. Event sahibi tüm yorumları silebilir (event silme işlemi için)
+        // 2. Event sahibi tüm yorumları silebilir (event silme işlemi için - batch delete için önemli)
         // Sistem mesajları silinemez/güncellenemez
         allow update, delete: if request.auth != null && (
+          // Yorumu yazan kullanıcı silebilir (sistem mesajı değilse)
           (resource.data.userId == request.auth.uid &&
            (!('type' in resource.data) || resource.data.type != 'system')) ||
-          (get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid &&
+          // Event sahibi tüm yorumları silebilir (batch delete için - sistem mesajı değilse)
+          (isEventOwner() &&
            (!('type' in resource.data) || resource.data.type != 'system'))
         );
       }
@@ -170,10 +202,10 @@ service cloud.firestore {
         resource.data.senderId == request.auth.uid
       );
 
-      // Mesaj güncelleme: Gönderen VEYA chat participant'ı (okundu işaretleme için)
+      // Mesaj güncelleme: Sadece gönderen (güvenlik için)
+      // NOT: Okundu işaretleme için ayrı bir field-level validation eklenebilir
       allow update: if request.auth != null && 
-        (request.auth.uid == resource.data.senderId ||
-         chatIdContainsUser(resource.data.chatId));
+        request.auth.uid == resource.data.senderId;
 
       // Mesaj silme: Sadece gönderen
       allow delete: if request.auth != null && 

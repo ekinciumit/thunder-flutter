@@ -1,8 +1,11 @@
+import 'dart:io';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
-import '../../../../models/chat_model.dart';
-import '../../../../models/message_model.dart';
 import '../../domain/repositories/chat_repository.dart';
+import '../../domain/entities/chat_entity.dart';
+import '../../domain/entities/message_entity.dart';
+import '../mappers/chat_mapper.dart';
+import '../mappers/message_mapper.dart';
 import '../datasources/chat_remote_data_source.dart';
 
 /// Chat Repository Implementation
@@ -23,10 +26,15 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, ChatModel?>> getChatById(String chatId) async {
+  Future<Either<Failure, ChatEntity?>> getChatById(String chatId) async {
     try {
-      final chat = await _remoteDataSource.getChatById(chatId);
-      return Either.right(chat);
+      final chatModel = await _remoteDataSource.getChatById(chatId);
+      if (chatModel == null) {
+        return Either.right(null);
+      }
+      // Model -> Entity dönüşümü
+      final chatEntity = ChatMapper.toEntity(chatModel);
+      return Either.right(chatEntity);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -35,10 +43,12 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, ChatModel>> getOrCreatePrivateChat(String userA, String userB) async {
+  Future<Either<Failure, ChatEntity>> getOrCreatePrivateChat(String userA, String userB) async {
     try {
-      final chat = await _remoteDataSource.getOrCreatePrivateChat(userA, userB);
-      return Either.right(chat);
+      final chatModel = await _remoteDataSource.getOrCreatePrivateChat(userA, userB);
+      // Model -> Entity dönüşümü
+      final chatEntity = ChatMapper.toEntity(chatModel);
+      return Either.right(chatEntity);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -47,7 +57,7 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, ChatModel>> createGroupChat({
+  Future<Either<Failure, ChatEntity>> createGroupChat({
     required String name,
     required String createdBy,
     required List<String> participants,
@@ -55,14 +65,16 @@ class ChatRepositoryImpl implements ChatRepository {
     String? photoUrl,
   }) async {
     try {
-      final chat = await _remoteDataSource.createGroupChat(
+      final chatModel = await _remoteDataSource.createGroupChat(
         name: name,
         createdBy: createdBy,
         participants: participants,
         description: description,
         photoUrl: photoUrl,
       );
-      return Either.right(chat);
+      // Model -> Entity dönüşümü
+      final chatEntity = ChatMapper.toEntity(chatModel);
+      return Either.right(chatEntity);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -71,7 +83,7 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, MessageModel>> sendMessage({
+  Future<Either<Failure, MessageEntity>> sendMessage({
     required String chatId,
     required String senderId,
     required String senderName,
@@ -91,13 +103,15 @@ class ChatRepositoryImpl implements ChatRepository {
     String? replyToMessageId,
   }) async {
     try {
-      final message = await _remoteDataSource.sendMessage(
+      // Entity enum'u -> Model enum'a çevir
+      final modelType = MessageMapper.messageTypeToModel(type);
+      final messageModel = await _remoteDataSource.sendMessage(
         chatId: chatId,
         senderId: senderId,
         senderName: senderName,
         senderPhotoUrl: senderPhotoUrl,
         text: text,
-        type: type,
+        type: modelType,
         imageUrl: imageUrl,
         videoUrl: videoUrl,
         audioUrl: audioUrl,
@@ -110,7 +124,8 @@ class ChatRepositoryImpl implements ChatRepository {
         contact: contact,
         replyToMessageId: replyToMessageId,
       );
-      return Either.right(message);
+      // DTO -> Entity dönüşümü
+      return Either.right(MessageMapper.toEntity(messageModel));
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -119,24 +134,28 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Stream<List<MessageModel>> getMessagesStream(String chatId, {int limit = 50}) {
+  Stream<List<MessageEntity>> getMessagesStream(String chatId, {int limit = 50}) {
     try {
-      return _remoteDataSource.getMessagesStream(chatId, limit: limit);
+      // DTO stream'i -> Entity stream'e çevir
+      return _remoteDataSource.getMessagesStream(chatId, limit: limit).map((messageModels) {
+        return MessageMapper.toEntityList(messageModels);
+      });
     } catch (e) {
       // Stream'ler için hata durumunda boş stream döndür
-      return Stream.value(<MessageModel>[]);
+      return Stream.value(<MessageEntity>[]);
     }
   }
 
   @override
-  Future<Either<Failure, List<MessageModel>>> loadOlderMessages(
+  Future<Either<Failure, List<MessageEntity>>> loadOlderMessages(
     String chatId,
     DateTime lastMessageTime, {
     int limit = 20,
   }) async {
     try {
-      final messages = await _remoteDataSource.loadOlderMessages(chatId, lastMessageTime, limit: limit);
-      return Either.right(messages);
+      final messageModels = await _remoteDataSource.loadOlderMessages(chatId, lastMessageTime, limit: limit);
+      // DTO -> Entity dönüşümü
+      return Either.right(MessageMapper.toEntityList(messageModels));
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -145,12 +164,15 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Stream<List<ChatModel>> getUserChats(String userId) {
+  Stream<List<ChatEntity>> getUserChats(String userId) {
     try {
-      return _remoteDataSource.getUserChats(userId);
+      // DTO stream'i -> Entity stream'e çevir
+      return _remoteDataSource.getUserChats(userId).map((chatModels) {
+        return ChatMapper.toEntityList(chatModels);
+      });
     } catch (e) {
       // Stream'ler için hata durumunda boş stream döndür
-      return Stream.value(<ChatModel>[]);
+      return Stream.value(<ChatEntity>[]);
     }
   }
 
@@ -227,7 +249,7 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, MessageModel>> sendVoiceMessage({
+  Future<Either<Failure, MessageEntity>> sendVoiceMessage({
     required String chatId,
     required String senderId,
     required String senderName,
@@ -236,7 +258,7 @@ class ChatRepositoryImpl implements ChatRepository {
     required Duration duration,
   }) async {
     try {
-      final message = await _remoteDataSource.sendVoiceMessage(
+      final messageModel = await _remoteDataSource.sendVoiceMessage(
         chatId: chatId,
         senderId: senderId,
         senderName: senderName,
@@ -244,7 +266,8 @@ class ChatRepositoryImpl implements ChatRepository {
         audioUrl: audioUrl,
         duration: duration,
       );
-      return Either.right(message);
+      // DTO -> Entity dönüşümü
+      return Either.right(MessageMapper.toEntity(messageModel));
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -253,7 +276,7 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, MessageModel>> sendFileMessage({
+  Future<Either<Failure, MessageEntity>> sendFileMessage({
     required String chatId,
     required String senderId,
     required String senderName,
@@ -264,7 +287,7 @@ class ChatRepositoryImpl implements ChatRepository {
     String? fileExtension,
   }) async {
     try {
-      final message = await _remoteDataSource.sendFileMessage(
+      final messageModel = await _remoteDataSource.sendFileMessage(
         chatId: chatId,
         senderId: senderId,
         senderName: senderName,
@@ -274,7 +297,8 @@ class ChatRepositoryImpl implements ChatRepository {
         fileSize: fileSize,
         fileExtension: fileExtension,
       );
-      return Either.right(message);
+      // DTO -> Entity dönüşümü
+      return Either.right(MessageMapper.toEntity(messageModel));
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -283,22 +307,25 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, MessageModel>> forwardMessage({
-    required MessageModel originalMessage,
+  Future<Either<Failure, MessageEntity>> forwardMessage({
+    required MessageEntity originalMessage,
     required String targetChatId,
     required String senderId,
     required String senderName,
     String? senderPhotoUrl,
   }) async {
     try {
-      final message = await _remoteDataSource.forwardMessage(
-        originalMessage: originalMessage,
+      // Entity -> DTO dönüşümü
+      final originalMessageModel = MessageMapper.toModel(originalMessage);
+      final messageModel = await _remoteDataSource.forwardMessage(
+        originalMessage: originalMessageModel,
         targetChatId: targetChatId,
         senderId: senderId,
         senderName: senderName,
         senderPhotoUrl: senderPhotoUrl,
       );
-      return Either.right(message);
+      // DTO -> Entity dönüşümü
+      return Either.right(MessageMapper.toEntity(messageModel));
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -307,14 +334,15 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, List<MessageModel>>> searchMessages(
+  Future<Either<Failure, List<MessageEntity>>> searchMessages(
     String chatId,
     String query, {
     int limit = 50,
   }) async {
     try {
-      final messages = await _remoteDataSource.searchMessages(chatId, query, limit: limit);
-      return Either.right(messages);
+      final messageModels = await _remoteDataSource.searchMessages(chatId, query, limit: limit);
+      // DTO -> Entity dönüşümü
+      return Either.right(MessageMapper.toEntityList(messageModels));
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -323,18 +351,58 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<Either<Failure, List<MessageModel>>> searchAllMessages(
+  Future<Either<Failure, List<MessageEntity>>> searchAllMessages(
     String userId,
     String query, {
     int limit = 100,
   }) async {
     try {
-      final messages = await _remoteDataSource.searchAllMessages(userId, query, limit: limit);
-      return Either.right(messages);
+      final messageModels = await _remoteDataSource.searchAllMessages(userId, query, limit: limit);
+      // DTO -> Entity dönüşümü
+      return Either.right(MessageMapper.toEntityList(messageModels));
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
       return Either.left(UnknownFailure('Tüm mesajlar aranırken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadVoiceMessage(String audioFilePath, {required String chatId, required String senderId}) async {
+    try {
+      final file = File(audioFilePath);
+      final url = await _remoteDataSource.uploadVoiceMessage(file, chatId: chatId, senderId: senderId);
+      return Either.right(url);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Ses dosyası yüklenirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadFileMessage(String filePath, String fileName, {required String chatId, required String senderId}) async {
+    try {
+      final file = File(filePath);
+      final url = await _remoteDataSource.uploadFileMessage(file, fileName, chatId: chatId, senderId: senderId);
+      return Either.right(url);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Dosya yüklenirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadChatMedia(String filePath, String storagePath, {String? contentType, void Function(double progress)? onProgress}) async {
+    try {
+      final file = File(filePath);
+      final url = await _remoteDataSource.uploadChatMedia(file, storagePath, contentType: contentType, onProgress: onProgress);
+      return Either.right(url);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Medya dosyası yüklenirken bir hata oluştu: ${e.toString()}'));
     }
   }
 }

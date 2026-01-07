@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/message_model.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
-import 'private_chat_page.dart';
+import '../features/chat/domain/entities/message_entity.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/widgets/glass_container.dart';
 import '../core/theme/app_theme.dart';
+import '../core/navigation/app_navigation.dart';
 
 class MessageSearchPage extends StatefulWidget {
   final String? chatId; // null ise tüm sohbetlerde ara
@@ -27,7 +27,7 @@ class MessageSearchPage extends StatefulWidget {
 class _MessageSearchPageState extends State<MessageSearchPage> {
   final TextEditingController _searchController = TextEditingController();
   
-  List<MessageModel> _searchResults = [];
+  List<MessageEntity> _searchResults = [];
   bool _isSearching = false;
   String _currentQuery = '';
 
@@ -58,18 +58,19 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
       if (currentUser == null) return;
 
       final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
-      List<MessageModel> results;
+      List<MessageEntity> messageEntities;
       
       if (widget.chatId != null) {
         // Belirli bir sohbet içinde ara
-        results = await chatViewModel.searchMessages(widget.chatId!, query);
+        messageEntities = await chatViewModel.searchMessages(widget.chatId!, query);
       } else {
         // Tüm sohbetlerde ara
-        results = await chatViewModel.searchAllMessages(currentUser.uid, query);
+        messageEntities = await chatViewModel.searchAllMessages(currentUser.uid, query);
       }
 
+      // Entity'leri direkt kullan (Clean Architecture: UI Entity görmeli)
       setState(() {
-        _searchResults = results;
+        _searchResults = messageEntities;
         _isSearching = false;
       });
     } catch (e) {
@@ -96,7 +97,7 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
     }
   }
 
-  Widget _buildSearchResult(MessageModel message, BuildContext context) {
+  Widget _buildSearchResult(MessageEntity message, BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final currentUser = authViewModel.user;
     final isMe = message.senderId == currentUser?.uid;
@@ -162,20 +163,20 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
         ),
         onTap: () {
           // Mesajın bulunduğu sohbete git
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-            builder: (context) => PrivateChatPage(
-              currentUserId: currentUser?.uid ?? '',
-              currentUserName: currentUser?.displayName ?? '',
-              otherUserId: isMe 
-                  ? message.chatId.split('_').firstWhere((id) => id != currentUser?.uid)
-                  : message.senderId,
-                otherUserName: isMe 
-                    ? 'Bilinmeyen'
-                    : message.senderName,
-              ),
-            ),
+          final otherUserId = isMe 
+              ? message.chatId.split('_').firstWhere((id) => id != currentUser?.uid)
+              : message.senderId;
+          final otherUserName = isMe 
+              ? 'Bilinmeyen'
+              : message.senderName;
+          
+          AppNavigation.toChat(
+            context: context,
+            chatId: message.chatId,
+            currentUserId: currentUser?.uid ?? '',
+            currentUserName: currentUser?.displayName ?? '',
+            otherUserId: otherUserId,
+            otherUserName: otherUserName,
           );
         },
       ),

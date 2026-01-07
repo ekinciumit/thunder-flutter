@@ -235,5 +235,9 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
     } else {
       await authViewModel.signUp(email, password);
     }
+    
+    // Hata varsa form'u temizleme, kullanıcı hatayı görebilsin
+    // Başarılı giriş/kayıt sonrası router refreshListenable sayesinde
+    // otomatik olarak redirect yapacak (AuthViewModel notifyListeners() çağırdığında)
   }
 } 

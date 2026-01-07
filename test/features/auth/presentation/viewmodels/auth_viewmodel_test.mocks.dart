@@ -9,7 +9,7 @@ import 'package:mockito/mockito.dart' as _i1;
 import 'package:thunder/core/errors/failures.dart' as _i2;
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart'
     as _i3;
-import 'package:thunder/models/user_model.dart' as _i5;
+import 'package:thunder/features/user/domain/entities/user_entity.dart' as _i5;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -39,38 +39,38 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
   }
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>> signIn(
+  _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>> signIn(
     String? email,
     String? password,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#signIn, [email, password]),
             returnValue:
-                _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>>.value(
-                  _FakeEither_0<_i2.Failure, _i5.UserModel>(
+                _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i5.UserEntity>(
                     this,
                     Invocation.method(#signIn, [email, password]),
                   ),
                 ),
           )
-          as _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>>);
+          as _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>>);
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>> signUp(
+  _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>> signUp(
     String? email,
     String? password,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#signUp, [email, password]),
             returnValue:
-                _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>>.value(
-                  _FakeEither_0<_i2.Failure, _i5.UserModel>(
+                _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i5.UserEntity>(
                     this,
                     Invocation.method(#signUp, [email, password]),
                   ),
                 ),
           )
-          as _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel>>);
+          as _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>>);
 
   @override
   _i4.Future<_i2.Either<_i2.Failure, void>> signOut() =>
@@ -87,7 +87,7 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
 
   @override
   _i4.Future<_i2.Either<_i2.Failure, void>> saveUserProfile(
-    _i5.UserModel? user,
+    _i5.UserEntity? user,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#saveUserProfile, [user]),
@@ -101,20 +101,20 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel?>> fetchUserProfile(
+  _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity?>> fetchUserProfile(
     String? uid,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#fetchUserProfile, [uid]),
             returnValue:
-                _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel?>>.value(
-                  _FakeEither_0<_i2.Failure, _i5.UserModel?>(
+                _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity?>>.value(
+                  _FakeEither_0<_i2.Failure, _i5.UserEntity?>(
                     this,
                     Invocation.method(#fetchUserProfile, [uid]),
                   ),
                 ),
           )
-          as _i4.Future<_i2.Either<_i2.Failure, _i5.UserModel?>>);
+          as _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity?>>);
 
   @override
   _i4.Future<_i2.Either<_i2.Failure, void>> saveUserToken(String? token) =>
@@ -124,6 +124,45 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
               _FakeEither_0<_i2.Failure, void>(
                 this,
                 Invocation.method(#saveUserToken, [token]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, String>> uploadProfilePhoto(
+    String? photoFilePath,
+    String? userId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#uploadProfilePhoto, [photoFilePath, userId]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+              _FakeEither_0<_i2.Failure, String>(
+                this,
+                Invocation.method(#uploadProfilePhoto, [photoFilePath, userId]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, String>>);
+
+  @override
+  _i4.Stream<List<_i5.UserEntity>> getAllUsersStream() =>
+      (super.noSuchMethod(
+            Invocation.method(#getAllUsersStream, []),
+            returnValue: _i4.Stream<List<_i5.UserEntity>>.empty(),
+          )
+          as _i4.Stream<List<_i5.UserEntity>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> sendPasswordResetEmail(
+    String? email,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendPasswordResetEmail, [email]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#sendPasswordResetEmail, [email]),
               ),
             ),
           )

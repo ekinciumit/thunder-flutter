@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:thunder/features/event/data/datasources/event_remote_data_source.dart';
-import 'package:thunder/models/event_model.dart';
+import 'package:thunder/features/event/data/models/event_model.dart';
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;

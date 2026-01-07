@@ -914,6 +914,78 @@ abstract class AppLocalizations {
   /// **'Yükleniyor...'**
   String get uploading;
 
+  /// No description provided for @compressingImage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Resim sıkıştırılıyor...'**
+  String get compressingImage;
+
+  /// No description provided for @preparingVideo.
+  ///
+  /// In tr, this message translates to:
+  /// **'Video hazırlanıyor...'**
+  String get preparingVideo;
+
+  /// No description provided for @uploadError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yükleme hatası'**
+  String get uploadError;
+
+  /// No description provided for @videoUpload.
+  ///
+  /// In tr, this message translates to:
+  /// **'Video Yükleme'**
+  String get videoUpload;
+
+  /// No description provided for @photoUpload.
+  ///
+  /// In tr, this message translates to:
+  /// **'Fotoğraf Yükleme'**
+  String get photoUpload;
+
+  /// No description provided for @videoSent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Video gönderildi'**
+  String get videoSent;
+
+  /// No description provided for @photoSent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Fotoğraf gönderildi'**
+  String get photoSent;
+
+  /// No description provided for @uploadCancelled.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yükleme iptal edildi'**
+  String get uploadCancelled;
+
+  /// No description provided for @voiceRecordingCancelled.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ses kaydı iptal edildi'**
+  String get voiceRecordingCancelled;
+
+  /// No description provided for @slideToCancel.
+  ///
+  /// In tr, this message translates to:
+  /// **'◀ Kaydır iptal'**
+  String get slideToCancel;
+
+  /// No description provided for @releaseToCancel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bırak ve iptal et'**
+  String get releaseToCancel;
+
+  /// No description provided for @releaseToSend.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bırak → Gönder'**
+  String get releaseToSend;
+
   /// No description provided for @editEvent.
   ///
   /// In tr, this message translates to:
@@ -1729,6 +1801,54 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Dosya açma özelliği yakında eklenecek'**
   String get fileOpenSoon;
+
+  /// No description provided for @deleteEvent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Etkinliği Sil'**
+  String get deleteEvent;
+
+  /// No description provided for @deleteEventConfirm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu etkinliği silmek istediğinize emin misiniz?'**
+  String get deleteEventConfirm;
+
+  /// No description provided for @deleteEventWarning.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu işlem geri alınamaz. Etkinliğe ait tüm mesajlar ve medyalar silinecektir.'**
+  String get deleteEventWarning;
+
+  /// No description provided for @eventDeleted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Etkinlik başarıyla silindi'**
+  String get eventDeleted;
+
+  /// Katılımcı çıkarma dialog başlığı
+  ///
+  /// In tr, this message translates to:
+  /// **'Katılımcıyı Çıkar'**
+  String get removeParticipant;
+
+  /// Çıkar butonu
+  ///
+  /// In tr, this message translates to:
+  /// **'Çıkar'**
+  String get remove;
+
+  /// Katılımcı çıkarıldı mesajı
+  ///
+  /// In tr, this message translates to:
+  /// **'Katılımcı çıkarıldı'**
+  String get participantRemoved;
+
+  /// Katılımcı yönetimi başlığı
+  ///
+  /// In tr, this message translates to:
+  /// **'Katılımcı Yönetimi'**
+  String get participantManagement;
 }
 
 class _AppLocalizationsDelegate

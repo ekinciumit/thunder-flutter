@@ -7,9 +7,10 @@ import 'dart:async' as _i4;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:thunder/core/errors/failures.dart' as _i2;
+import 'package:thunder/features/event/domain/entities/event_entity.dart'
+    as _i5;
 import 'package:thunder/features/event/domain/repositories/event_repository.dart'
     as _i3;
-import 'package:thunder/models/event_model.dart' as _i5;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -39,7 +40,7 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
   }
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, void>> addEvent(_i5.EventModel? event) =>
+  _i4.Future<_i2.Either<_i2.Failure, void>> addEvent(_i5.EventEntity? event) =>
       (super.noSuchMethod(
             Invocation.method(#addEvent, [event]),
             returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
@@ -52,23 +53,23 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
   @override
-  _i4.Stream<List<_i5.EventModel>> getEventsStream() =>
+  _i4.Stream<List<_i5.EventEntity>> getEventsStream() =>
       (super.noSuchMethod(
             Invocation.method(#getEventsStream, []),
-            returnValue: _i4.Stream<List<_i5.EventModel>>.empty(),
+            returnValue: _i4.Stream<List<_i5.EventEntity>>.empty(),
           )
-          as _i4.Stream<List<_i5.EventModel>>);
+          as _i4.Stream<List<_i5.EventEntity>>);
 
   @override
-  _i4.Stream<List<_i5.EventModel>> getUserEventsStream(String? userId) =>
+  _i4.Stream<List<_i5.EventEntity>> getUserEventsStream(String? userId) =>
       (super.noSuchMethod(
             Invocation.method(#getUserEventsStream, [userId]),
-            returnValue: _i4.Stream<List<_i5.EventModel>>.empty(),
+            returnValue: _i4.Stream<List<_i5.EventEntity>>.empty(),
           )
-          as _i4.Stream<List<_i5.EventModel>>);
+          as _i4.Stream<List<_i5.EventEntity>>);
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventModel>>> fetchNextEvents({
+  _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventEntity>>> fetchNextEvents({
     DateTime? startAfter,
     int? limit = 50,
   }) =>
@@ -78,8 +79,10 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
               #limit: limit,
             }),
             returnValue:
-                _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventModel>>>.value(
-                  _FakeEither_0<_i2.Failure, List<_i5.EventModel>>(
+                _i4.Future<
+                  _i2.Either<_i2.Failure, List<_i5.EventEntity>>
+                >.value(
+                  _FakeEither_0<_i2.Failure, List<_i5.EventEntity>>(
                     this,
                     Invocation.method(#fetchNextEvents, [], {
                       #startAfter: startAfter,
@@ -88,11 +91,11 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
                   ),
                 ),
           )
-          as _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventModel>>>);
+          as _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventEntity>>>);
 
   @override
   _i4.Future<_i2.Either<_i2.Failure, void>> updateEvent(
-    _i5.EventModel? event,
+    _i5.EventEntity? event,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#updateEvent, [event]),
@@ -209,6 +212,139 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
               _FakeEither_0<_i2.Failure, void>(
                 this,
                 Invocation.method(#cancelJoinRequest, [eventId, userId]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> removeParticipant(
+    String? eventId,
+    String? userId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeParticipant, [eventId, userId]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#removeParticipant, [eventId, userId]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> cancelEvent(
+    String? eventId,
+    String? cancellationReason,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#cancelEvent, [eventId, cancellationReason]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#cancelEvent, [eventId, cancellationReason]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, String>> uploadEventCoverPhoto(
+    String? photoFilePath, {
+    String? eventId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #uploadEventCoverPhoto,
+              [photoFilePath],
+              {#eventId: eventId},
+            ),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+              _FakeEither_0<_i2.Failure, String>(
+                this,
+                Invocation.method(
+                  #uploadEventCoverPhoto,
+                  [photoFilePath],
+                  {#eventId: eventId},
+                ),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, String>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, String>> uploadEventPhoto(
+    String? photoFilePath,
+    String? eventId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#uploadEventPhoto, [photoFilePath, eventId]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+              _FakeEither_0<_i2.Failure, String>(
+                this,
+                Invocation.method(#uploadEventPhoto, [photoFilePath, eventId]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, String>>);
+
+  @override
+  _i4.Stream<_i5.EventEntity?> getEventStream(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getEventStream, [eventId]),
+            returnValue: _i4.Stream<_i5.EventEntity?>.empty(),
+          )
+          as _i4.Stream<_i5.EventEntity?>);
+
+  @override
+  _i4.Stream<List<Map<String, dynamic>>> getEventCommentsStream(
+    String? eventId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getEventCommentsStream, [eventId]),
+            returnValue: _i4.Stream<List<Map<String, dynamic>>>.empty(),
+          )
+          as _i4.Stream<List<Map<String, dynamic>>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> addEventComment(
+    String? eventId,
+    String? text,
+    String? userId,
+    String? userName,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#addEventComment, [
+              eventId,
+              text,
+              userId,
+              userName,
+            ]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#addEventComment, [
+                  eventId,
+                  text,
+                  userId,
+                  userName,
+                ]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> deleteEventComments(
+    String? eventId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteEventComments, [eventId]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#deleteEventComments, [eventId]),
               ),
             ),
           )

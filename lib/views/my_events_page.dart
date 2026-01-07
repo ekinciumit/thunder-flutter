@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/event_model.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
-import 'event_detail_page.dart';
+import '../features/event/domain/entities/event_entity.dart';
+import '../features/user/data/mappers/user_mapper.dart';
+import '../features/user/domain/entities/user_entity.dart';
 import 'widgets/app_gradient_container.dart';
 import 'widgets/modern_loading_widget.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/theme/app_theme.dart';
+import '../core/navigation/app_navigation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class MyEventsPage extends StatefulWidget {
@@ -66,7 +67,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
               ),
               // Events List
               Expanded(
-                child: StreamBuilder<List<EventModel>>(
+                child: StreamBuilder<List<EventEntity>>(
                   stream: eventViewModel.getUserEventsStream(currentUser.uid),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -87,9 +88,10 @@ class _MyEventsPageState extends State<MyEventsPage> {
                       );
                     }
 
-                    final events = snapshot.data ?? [];
+                    final eventEntities = snapshot.data ?? [];
+                    // UI direkt Entity kullanıyor (Clean Architecture)
 
-                    if (events.isEmpty) {
+                    if (eventEntities.isEmpty) {
                       return EmptyStateWidget(
                         icon: Icons.event_note_rounded,
                         title: 'Henüz etkinlik oluşturmadınız',
@@ -110,10 +112,10 @@ class _MyEventsPageState extends State<MyEventsPage> {
                           horizontal: AppTheme.spacingMd,
                           vertical: AppTheme.spacingSm,
                         ),
-                        itemCount: events.length,
+                        itemCount: eventEntities.length,
                         itemBuilder: (context, index) {
-                          final event = events[index];
-                          return _buildEventCard(event, eventViewModel, theme);
+                          final event = eventEntities[index];
+                          return _buildEventCard(event, eventViewModel, authViewModel, theme);
                         },
                       ),
                     );
@@ -127,7 +129,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
     );
   }
 
-  Widget _buildEventCard(EventModel event, EventViewModel eventViewModel, ThemeData theme) {
+  Widget _buildEventCard(EventEntity event, EventViewModel eventViewModel, AuthViewModel authViewModel, ThemeData theme) {
     final hasPendingRequests = event.pendingRequests.isNotEmpty;
     final isPast = event.datetime.isBefore(DateTime.now());
 
@@ -139,12 +141,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EventDetailPage(event: event),
-            ),
-          );
+          AppNavigation.toEventDetail(context: context, event: event);
         },
         borderRadius: BorderRadius.circular(AppTheme.radiusXl),
         child: Column(
@@ -398,11 +395,9 @@ class _MyEventsPageState extends State<MyEventsPage> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => EventDetailPage(event: event),
-                              ),
+                            AppNavigation.toEventDetail(
+                              context: context,
+                              event: event,
                             );
                           },
                           icon: const Icon(Icons.visibility),
@@ -419,7 +414,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                       const SizedBox(width: AppTheme.spacingSm),
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: () => _showManageDialog(event, eventViewModel),
+                          onPressed: () => _showManageDialog(event, eventViewModel, authViewModel),
                           icon: const Icon(Icons.settings),
                           label: const Text('Yönet'),
                           style: FilledButton.styleFrom(
@@ -444,7 +439,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
     );
   }
 
-  void _showManageDialog(EventModel event, EventViewModel eventViewModel) {
+  void _showManageDialog(EventEntity event, EventViewModel eventViewModel, AuthViewModel authViewModel) {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
@@ -526,13 +521,10 @@ class _MyEventsPageState extends State<MyEventsPage> {
                   itemCount: event.pendingRequests.length,
                   itemBuilder: (context, index) {
                     final userId = event.pendingRequests[index];
-                    return FutureBuilder<DocumentSnapshot>(
-                      future: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(userId)
-                          .get(),
+                    return FutureBuilder<UserEntity?>(
+                      future: authViewModel.fetchUserProfile(userId),
                       builder: (context, snapshot) {
-                        if (!snapshot.hasData || !snapshot.data!.exists) {
+                        if (!snapshot.hasData || snapshot.data == null) {
                           return ListTile(
                             title: Text('Kullanıcı: ${userId.substring(0, 8)}...'),
                             trailing: Row(
@@ -541,6 +533,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                 IconButton(
                                   icon: const Icon(Icons.check, color: Colors.green),
                                   onPressed: () async {
+                                    // Event zaten Entity (Clean Architecture)
                                     await eventViewModel.approveJoinRequest(event, userId);
                                     if (!context.mounted) return;
                                     Navigator.pop(context);
@@ -553,6 +546,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                 IconButton(
                                   icon: const Icon(Icons.close, color: Colors.red),
                                   onPressed: () async {
+                                    // Event zaten Entity (Clean Architecture)
                                     await eventViewModel.rejectJoinRequest(event, userId);
                                     if (!context.mounted) return;
                                     Navigator.pop(context);
@@ -566,23 +560,22 @@ class _MyEventsPageState extends State<MyEventsPage> {
                             ),
                           );
                         }
-                        final userData = snapshot.data!.data() as Map<String, dynamic>;
-                        final displayName = userData['displayName'] ?? 'Kullanıcı';
-                        final photoUrl = userData['photoUrl'];
-                        final email = userData['email'] ?? '';
+                        final userEntity = snapshot.data!;
+                        // Entity -> Model dönüşümü (UI katmanı hala Model kullanıyor)
+                        final user = UserMapper.toModel(userEntity);
 
                         return ListTile(
-                          leading: photoUrl != null && photoUrl.isNotEmpty
+                          leading: user.photoUrl != null && user.photoUrl!.isNotEmpty
                               ? CircleAvatar(
-                                  backgroundImage: NetworkImage(photoUrl),
+                                  backgroundImage: NetworkImage(user.photoUrl!),
                                 )
                               : CircleAvatar(
-                                  child: Text(displayName.isNotEmpty
-                                      ? displayName[0].toUpperCase()
+                                  child: Text((user.displayName ?? '').isNotEmpty
+                                      ? (user.displayName ?? '?')[0].toUpperCase()
                                       : '?'),
                                 ),
-                          title: Text(displayName),
-                          subtitle: Text(email),
+                          title: Text(user.displayName ?? 'Kullanıcı'),
+                          subtitle: Text(user.email),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -590,6 +583,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                 icon: const Icon(Icons.check, color: Colors.green),
                                 tooltip: 'Kabul Et',
                                 onPressed: () async {
+                                  // Event zaten Entity (Clean Architecture)
                                   await eventViewModel.approveJoinRequest(event, userId);
                                   if (!context.mounted) return;
                                   Navigator.pop(context);
@@ -603,6 +597,7 @@ class _MyEventsPageState extends State<MyEventsPage> {
                                 icon: const Icon(Icons.close, color: Colors.red),
                                 tooltip: 'Reddet',
                                 onPressed: () async {
+                                  // Event zaten Entity (Clean Architecture)
                                   await eventViewModel.rejectJoinRequest(event, userId);
                                   if (!context.mounted) return;
                                   Navigator.pop(context);
@@ -676,21 +671,18 @@ class _MyEventsPageState extends State<MyEventsPage> {
     );
   }
 
-  void _showEditDialog(EventModel event, EventViewModel eventViewModel) {
+  void _showEditDialog(EventEntity event, EventViewModel eventViewModel) {
     // EventDetailPage'deki düzenleme dialog'unu kullanabiliriz
     // Veya burada basit bir dialog gösterebiliriz
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EventDetailPage(event: event),
-      ),
-    ).then((_) {
-      // Sayfa geri döndüğünde refresh yapılabilir
-      setState(() {});
-    });
+    AppNavigation.toEventDetail(
+      context: context,
+      event: event,
+    );
+    // Sayfa geri döndüğünde refresh yapılabilir
+    // go_router ile context.pop() kullanıldığında otomatik refresh yapılır
   }
 
-  void _showDeleteDialog(EventModel event, EventViewModel eventViewModel) {
+  void _showDeleteDialog(EventEntity event, EventViewModel eventViewModel) {
     ModernDialog.showConfirmation(
       context: context,
       title: 'Etkinliği Sil',

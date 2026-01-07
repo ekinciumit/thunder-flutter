@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
-import '../../../../models/chat_model.dart';
-import '../../../../models/message_model.dart';
+import '../models/chat_model.dart';
+import '../models/message_model.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../services/cache_service.dart';
 
@@ -75,6 +77,16 @@ abstract class ChatRemoteDataSource {
   });
   Future<List<MessageModel>> searchMessages(String chatId, String query, {int limit = 50});
   Future<List<MessageModel>> searchAllMessages(String userId, String query, {int limit = 100});
+  
+  /// Ses dosyasını Firebase Storage'a yükler ve download URL'ini döndürür
+  Future<String> uploadVoiceMessage(File audioFile, {required String chatId, required String senderId});
+  
+  /// Dosyayı Firebase Storage'a yükler ve download URL'ini döndürür
+  Future<String> uploadFileMessage(File file, String fileName, {required String chatId, required String senderId});
+  
+  /// Chat medya (image/video) dosyasını Firebase Storage'a yükler
+  /// Progress callback ile progress güncellemesi yapılabilir
+  Future<String> uploadChatMedia(File file, String storagePath, {String? contentType, void Function(double progress)? onProgress});
 }
 
 /// Chat Remote Data Source Implementation
@@ -83,11 +95,15 @@ abstract class ChatRemoteDataSource {
 /// Firebase Firestore işlemlerini yapar.
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
   final CollectionReference<Map<String, dynamic>> _chatsRef;
   final CollectionReference<Map<String, dynamic>> _messagesRef;
 
-  ChatRemoteDataSourceImpl({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
+  ChatRemoteDataSourceImpl({
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _storage = storage ?? FirebaseStorage.instance,
         _chatsRef = (firestore ?? FirebaseFirestore.instance).collection('chats'),
         _messagesRef = (firestore ?? FirebaseFirestore.instance).collection('messages');
 
@@ -285,10 +301,17 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Stream<List<MessageModel>> getMessagesStream(String chatId, {int limit = 50}) {
     try {
+      // Performance: Server-side orderBy + limit (Firestore maliyetini düşürür)
+      // En yeni mesajları al (descending: true), UI'da ters çevireceğiz
       return _messagesRef
           .where('chatId', isEqualTo: chatId)
+          .orderBy('timestamp', descending: true) // ✅ Server-side sorting
+          .limit(limit) // ✅ Server-side limit
           .snapshots()
           .handleError((error) {
+            if (kDebugMode) {
+              debugPrint('❌ [CHAT_DS] getMessagesStream error: $error');
+            }
             return <MessageModel>[]; // Hata durumunda boş liste döndür
           })
           .map((snapshot) {
@@ -306,22 +329,21 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
             return message;
           } catch (e) {
             // Parse hatası olan mesajları atla
+            if (kDebugMode) {
+              debugPrint('⚠️ [CHAT_DS] Message parse error: $e');
+            }
             return null;
           }
         }).whereType<MessageModel>().toList();
 
-        // Client-side sıralama (timestamp'e göre - en eski üstte, en yeni altta)
+        // Server'dan en yeni mesajlar geldi (descending: true)
+        // UI'da en eski üstte gösterilmeli, bu yüzden ters çevir
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-        // Limit uygula (en son N mesaj)
-        final limitedMessages = messages.length > limit
-            ? messages.sublist(messages.length - limit)
-            : messages;
-
         // Cache'e kaydet (async olarak)
-        CacheService.cacheMessages(chatId, limitedMessages);
+        CacheService.cacheMessages(chatId, messages);
 
-        return limitedMessages;
+        return messages;
       });
     } catch (e) {
       throw ServerException('Mesajlar getirilirken hata oluştu: ${e.toString()}');
@@ -333,21 +355,39 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       String chatId, DateTime lastMessageTime,
       {int limit = 20}) async {
     try {
+      // Performance: Server-side pagination (endBefore ile)
+      // En eski mesajları al (ascending: true, lastMessageTime'dan önceki)
+      // NOT: Index gerekiyor: chatId (ASC) + timestamp (ASC)
       final querySnapshot = await _messagesRef
           .where('chatId', isEqualTo: chatId)
-          .limit(limit * 2) // Daha fazla al, sonra filtrele
+          .orderBy('timestamp', descending: false) // En eski üstte
+          .endBefore([Timestamp.fromDate(lastMessageTime)]) // lastMessageTime'dan önceki mesajlar
+          .limit(limit) // ✅ Server-side limit
           .get();
 
       final messages = querySnapshot.docs.map((doc) {
-        return MessageModel.fromMap(doc.data(), doc.id);
-      }).toList();
+        try {
+          final message = MessageModel.fromMap(doc.data(), doc.id);
+          // Silinen mesajları filtrele
+          if (message.isDeleted) {
+            return null;
+          }
+          return message;
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('⚠️ [CHAT_DS] loadOlderMessages parse error: $e');
+          }
+          return null;
+        }
+      }).whereType<MessageModel>().toList();
 
-      // Timestamp'e göre filtrele ve sırala
-      messages.removeWhere((msg) => msg.timestamp.isAfter(lastMessageTime));
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-      return messages.take(limit).toList();
+      // Server'dan zaten ascending sırada geldi (en eski üstte)
+      // UI'da da aynı sırada gösterilmeli, sıralama gerekmez
+      return messages;
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [CHAT_DS] loadOlderMessages error: $e');
+      }
       throw ServerException('Eski mesajlar yüklenirken hata oluştu: ${e.toString()}');
     }
   }
@@ -751,6 +791,110 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       return allResults.take(limit).toList();
     } catch (e) {
       throw ServerException('Tüm mesajlar aranırken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> uploadVoiceMessage(File audioFile, {required String chatId, required String senderId}) async {
+    try {
+      // Dosya kontrolü
+      if (!await audioFile.exists()) {
+        throw ServerException('Ses dosyası bulunamadı');
+      }
+
+      // Güvenlik: chatId ve senderId bazlı path yapısı
+      final fileId = '${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final storageRef = _storage
+          .ref()
+          .child('voice_messages')
+          .child(chatId)
+          .child(senderId)
+          .child(fileId);
+
+      // Dosyayı yükle
+      final uploadTask = storageRef.putFile(audioFile);
+      
+      // Upload tamamlanana kadar bekle
+      final snapshot = await uploadTask;
+      
+      // Download URL'ini al
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Ses dosyası yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> uploadFileMessage(File file, String fileName, {required String chatId, required String senderId}) async {
+    try {
+      // Dosya kontrolü
+      if (!await file.exists()) {
+        throw ServerException('Dosya bulunamadı');
+      }
+
+      // Güvenlik: chatId ve senderId bazlı path yapısı
+      final fileId = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final storageRef = _storage
+          .ref()
+          .child('chat_files')
+          .child(chatId)
+          .child(senderId)
+          .child(fileId);
+
+      // Dosyayı yükle
+      final uploadTask = storageRef.putFile(file);
+      
+      // Upload tamamlanana kadar bekle
+      final snapshot = await uploadTask;
+      
+      // Download URL'ini al
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Dosya yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> uploadChatMedia(File file, String storagePath, {String? contentType, void Function(double progress)? onProgress}) async {
+    try {
+      // Dosya kontrolü
+      if (!await file.exists()) {
+        throw ServerException('Medya dosyası bulunamadı');
+      }
+
+      // Firebase Storage path'i oluştur
+      final storageRef = _storage.ref().child(storagePath);
+
+      // Metadata oluştur
+      final metadata = SettableMetadata(
+        contentType: contentType ?? (file.path.endsWith('.mp4') || file.path.endsWith('.mov') ? 'video/mp4' : 'image/jpeg'),
+      );
+
+      // Dosyayı yükle (byte data olarak)
+      final fileBytes = await file.readAsBytes();
+      final uploadTask = storageRef.putData(fileBytes, metadata);
+      
+      // Progress dinle (eğer callback verildiyse)
+      if (onProgress != null) {
+        uploadTask.snapshotEvents.listen((snapshot) {
+          final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          onProgress(progress);
+        });
+      }
+      
+      // Upload tamamlanana kadar bekle
+      final snapshot = await uploadTask;
+      
+      // Download URL'ini al
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Medya dosyası yüklenirken hata oluştu: ${e.toString()}');
     }
   }
 }

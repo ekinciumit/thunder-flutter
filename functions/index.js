@@ -193,6 +193,155 @@ exports.sendNewMessageNotification = onDocumentCreated('messages/{messageId}', a
   return null;
 });
 
+// Event katılma isteği geldiğinde event sahibine push bildirimi gönder
+exports.sendJoinRequestNotification = onDocumentCreated('events/{eventId}', async (event) => {
+  const eventData = event.data.data();
+  const previousData = event.data.previous?.data() || {};
+  
+  // pendingRequests değişimini kontrol et
+  const currentPending = Array.isArray(eventData.pendingRequests) ? eventData.pendingRequests : [];
+  const previousPending = Array.isArray(previousData.pendingRequests) ? previousData.pendingRequests : [];
+  
+  // Yeni eklenen istekleri bul
+  const newRequests = currentPending.filter(uid => !previousPending.includes(uid));
+  
+  if (newRequests.length === 0) {
+    return null;
+  }
+
+  // Event sahibinin bilgilerini al
+  const ownerId = eventData.createdBy;
+  if (!ownerId) {
+    logger.warn('Event has no owner:', event.params.eventId);
+    return null;
+  }
+
+  const ownerDoc = await admin.firestore().collection('users').doc(ownerId).get();
+  if (!ownerDoc.exists) {
+    logger.warn('Owner not found:', ownerId);
+    return null;
+  }
+
+  const ownerData = ownerDoc.data();
+  const tokens = Array.isArray(ownerData.fcmTokens) ? ownerData.fcmTokens : [];
+  
+  if (tokens.length === 0) {
+    logger.info('No FCM tokens for event owner:', ownerId);
+    return null;
+  }
+
+  // Her yeni istek için bildirim gönder
+  for (const requesterId of newRequests) {
+    const requesterDoc = await admin.firestore().collection('users').doc(requesterId).get();
+    const requesterName = requesterDoc.exists ? (requesterDoc.data().displayName || 'Birisi') : 'Birisi';
+
+    // Bildirim içeriği
+    const payload = {
+      notification: {
+        title: 'Katılma İsteği',
+        body: `${requesterName} "${eventData.title}" etkinliğine katılmak istiyor`,
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      },
+      data: {
+        type: 'join_request',
+        eventId: event.params.eventId,
+        requesterId: requesterId,
+      },
+    };
+
+    await admin.messaging().sendToDevice(tokens, payload);
+    
+    // Firestore'da bildirim kaydı oluştur
+    await admin.firestore().collection('notifications').add({
+      userId: ownerId,
+      type: 'join_request',
+      relatedUserId: requesterId,
+      relatedEventId: event.params.eventId,
+      title: 'Katılma İsteği',
+      body: `${requesterName} "${eventData.title}" etkinliğine katılmak istiyor`,
+      isRead: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+
+  logger.info('Join request notifications sent for event:', event.params.eventId);
+  return null;
+});
+
+// Event chat'ine mesaj geldiğinde katılımcılara push bildirimi gönder
+exports.sendEventChatNotification = onDocumentCreated('events/{eventId}/comments/{commentId}', async (event) => {
+  const comment = event.data.data();
+  const eventId = event.params.eventId;
+  
+  // Sistem mesajlarını atla
+  if (comment.type === 'system') {
+    return null;
+  }
+
+  const senderId = comment.userId;
+  const senderName = comment.userName || 'Birisi';
+  const text = comment.text || 'Yeni mesaj';
+
+  // Event bilgilerini al
+  const eventDoc = await admin.firestore().collection('events').doc(eventId).get();
+  if (!eventDoc.exists) {
+    logger.warn('Event not found for comment:', eventId);
+    return null;
+  }
+
+  const eventData = eventDoc.data();
+  const eventTitle = eventData.title || 'Etkinlik';
+  
+  // Tüm katılımcıları al (participants + approvedParticipants + createdBy)
+  const participants = new Set([
+    ...(eventData.participants || []),
+    ...(eventData.approvedParticipants || []),
+    eventData.createdBy,
+  ]);
+  
+  // Göndereni çıkar
+  participants.delete(senderId);
+
+  if (participants.size === 0) {
+    return null;
+  }
+
+  // Katılımcıların tokenlarını topla
+  const tokens = new Set();
+  for (const participantId of participants) {
+    const userDoc = await admin.firestore().collection('users').doc(participantId).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      if (Array.isArray(userData.fcmTokens)) {
+        userData.fcmTokens.forEach(t => tokens.add(t));
+      }
+    }
+  }
+
+  if (tokens.size === 0) {
+    logger.info('No tokens found for event chat notification');
+    return null;
+  }
+
+  // Bildirim içeriği
+  const payload = {
+    notification: {
+      title: `${eventTitle} - Yeni Mesaj`,
+      body: `${senderName}: ${text.substring(0, 60)}`,
+      click_action: 'FLUTTER_NOTIFICATION_CLICK',
+    },
+    data: {
+      type: 'event_chat',
+      eventId: eventId,
+      commentId: event.params.commentId,
+    },
+  };
+
+  const response = await admin.messaging().sendToDevice(Array.from(tokens), payload);
+  logger.info('Event chat notifications sent:', response.successCount);
+  return null;
+});
+
 // Takip bildirimi oluşturulduğunda push bildirimi gönder
 exports.sendFollowNotification = onDocumentCreated('notifications/{notificationId}', async (event) => {
   const notification = event.data.data();

@@ -8,9 +8,11 @@ import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dar
 import 'package:thunder/features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/user_model.dart';
-import 'package:thunder/models/message_model.dart';
-import 'package:thunder/models/chat_model.dart';
+import 'package:thunder/features/user/data/models/user_model.dart';
+import 'package:thunder/features/chat/domain/entities/chat_entity.dart';
+import 'package:thunder/features/user/domain/entities/user_entity.dart';
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
+import 'package:thunder/features/user/data/mappers/user_mapper.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'message_forward_page_test.mocks.dart';
@@ -22,21 +24,22 @@ void main() {
     late MockChatRepository mockChatRepository;
     late AuthViewModel authViewModel;
     late ChatViewModel chatViewModel;
-    late UserModel testUser;
-    late MessageModel testMessage;
-    late ChatModel testChat;
+    late UserEntity testUser;
+    late MessageEntity testMessage;
+    late ChatEntity testChat;
 
     setUp(() {
       mockAuthRepository = MockAuthRepository();
       mockChatRepository = MockChatRepository();
       
-      testUser = UserModel(
+      final testUserModel = UserModel(
         uid: 'user-1',
         email: 'test@example.com',
         displayName: 'Test User',
       );
+      testUser = UserMapper.toEntity(testUserModel);
 
-      testMessage = MessageModel(
+      testMessage = MessageEntity(
         id: 'msg-1',
         chatId: 'chat-1',
         senderId: 'user-1',
@@ -47,7 +50,7 @@ void main() {
         status: MessageStatus.sent,
       );
 
-      testChat = ChatModel(
+      testChat = ChatEntity(
         id: 'chat-2',
         name: 'Test Chat',
         type: ChatType.private,
@@ -66,7 +69,7 @@ void main() {
         senderId: anyNamed('senderId'),
         senderName: anyNamed('senderName'),
         senderPhotoUrl: anyNamed('senderPhotoUrl'),
-      )).thenAnswer((_) async => Either.right(testMessage));
+      )).thenAnswer((_) async => Either.right(testMessage)); // Repository Entity döndürüyor
       
       authViewModel = AuthViewModel(authRepository: mockAuthRepository);
       chatViewModel = ChatViewModel(chatRepository: mockChatRepository);

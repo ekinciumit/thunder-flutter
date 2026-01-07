@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/auth/data/datasources/auth_local_data_source.dart';
-import 'package:thunder/models/user_model.dart';
+import 'package:thunder/features/user/data/models/user_model.dart';
 import 'package:thunder/core/errors/exceptions.dart';
 import 'dart:convert';
 

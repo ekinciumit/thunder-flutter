@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/message_model.dart';
+import '../entities/message_entity.dart';
 import '../repositories/chat_repository.dart';
 
 /// Load Older Messages Use Case
@@ -13,8 +13,8 @@ class LoadOlderMessagesUseCase {
 
   /// Daha eski mesajları yükle
   /// 
-  /// Returns: ``Either<Failure, List<MessageModel>>``
-  Future<Either<Failure, List<MessageModel>>> call(
+  /// Returns: ``Either<Failure, List<MessageEntity>>``
+  Future<Either<Failure, List<MessageEntity>>> call(
     String chatId,
     DateTime lastMessageTime, {
     int limit = 20,

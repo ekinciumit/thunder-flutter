@@ -4,7 +4,8 @@ import 'package:mockito/annotations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:thunder/features/event/domain/usecases/fetch_next_events_usecase.dart';
 import 'package:thunder/features/event/domain/repositories/event_repository.dart';
-import 'package:thunder/models/event_model.dart';
+import 'package:thunder/features/event/data/models/event_model.dart';
+import 'package:thunder/features/event/data/mappers/event_mapper.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'fetch_next_events_usecase_test.mocks.dart';
@@ -21,7 +22,7 @@ void main() {
   });
 
   group('FetchNextEventsUseCase', () {
-    final testEvents = [
+    final testEventsModel = [
       EventModel(
         id: 'event-1',
         title: 'Event 1',
@@ -45,8 +46,9 @@ void main() {
         participants: [],
       ),
     ];
+    final testEvents = EventMapper.toEntityList(testEventsModel);
 
-    test('should return Right(List<EventModel>) when fetch is successful', () async {
+    test('should return Right(List<EventEntity>) when fetch is successful', () async {
       // Arrange
       when(mockRepository.fetchNextEvents(startAfter: anyNamed('startAfter'), limit: anyNamed('limit')))
           .thenAnswer((_) async => Either.right(testEvents));
@@ -57,7 +59,8 @@ void main() {
       // Assert
       expect(result.isRight, true);
       expect(result.isLeft, false);
-      expect(result.right, testEvents);
+      expect(result.right.length, testEvents.length);
+      expect(result.right.first.id, testEvents.first.id);
       verify(mockRepository.fetchNextEvents(startAfter: anyNamed('startAfter'), limit: 50)).called(1);
       verifyNoMoreInteractions(mockRepository);
     });

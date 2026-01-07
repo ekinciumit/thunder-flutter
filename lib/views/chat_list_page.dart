@@ -1,16 +1,15 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/chat_model.dart';
+import '../features/chat/domain/entities/chat_entity.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
-import 'private_chat_page.dart';
-import 'message_search_page.dart';
 import 'widgets/app_gradient_container.dart';
-import 'widgets/modern_loading_widget.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/skeleton_widgets.dart';
 import '../core/widgets/modern_components.dart';
 import '../l10n/app_localizations.dart';
+import '../core/navigation/app_navigation.dart';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -45,7 +44,7 @@ class _ChatListPageState extends State<ChatListPage> {
     }
   }
 
-  String _getChatDisplayName(ChatModel chat, String currentUserId, AppLocalizations l10n) {
+  String _getChatDisplayName(ChatEntity chat, String currentUserId, AppLocalizations l10n) {
     if (chat.type == ChatType.private) {
       final otherParticipant = chat.participants.firstWhere(
         (id) => id != currentUserId,
@@ -56,7 +55,7 @@ class _ChatListPageState extends State<ChatListPage> {
     return chat.name;
   }
 
-  String? _getChatPhotoUrl(ChatModel chat, String currentUserId) {
+  String? _getChatPhotoUrl(ChatEntity chat, String currentUserId) {
     if (chat.type == ChatType.private) {
       final otherParticipant = chat.participants.firstWhere(
         (id) => id != currentUserId,
@@ -122,12 +121,7 @@ class _ChatListPageState extends State<ChatListPage> {
               padding: const EdgeInsets.only(right: AppTheme.spacingMd),
               child: FilledButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MessageSearchPage(),
-                    ),
-                  );
+                  AppNavigation.toMessageSearch(context: context);
                 },
                 icon: const Icon(Icons.search_rounded, size: 20),
                 label: const Text('Ara'),
@@ -153,45 +147,11 @@ class _ChatListPageState extends State<ChatListPage> {
         ),
         body: Stack(
           children: [
-            StreamBuilder<List<ChatModel>>(
+            StreamBuilder<List<ChatEntity>>(
           stream: Provider.of<ChatViewModel>(context, listen: false).getUserChats(currentUser.uid),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              final isDark = brightness == Brightness.dark;
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: isDark 
-                            ? theme.colorScheme.surfaceContainerHighest.withAlpha(AppTheme.alphaLight)
-                            : theme.colorScheme.surface.withAlpha(AppTheme.alphaLight),
-                        shape: BoxShape.circle,
-                      ),
-                      child: ModernLoadingWidget(
-                        size: 24,
-                        color: isDark 
-                            ? theme.colorScheme.onSurface 
-                            : theme.colorScheme.primary,
-                        showMessage: false,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Sohbetler yükleniyor...',
-                      style: TextStyle(
-                        color: isDark 
-                            ? theme.colorScheme.onSurfaceVariant
-                            : theme.colorScheme.onSurface,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              );
+              return const ChatListSkeleton();
             }
 
             if (snapshot.hasError) {
@@ -337,7 +297,7 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 
   Widget _buildChatItem({
-    required ChatModel chat,
+    required ChatEntity chat,
     required currentUser,
     required String displayName,
     required String? photoUrl,
@@ -384,16 +344,12 @@ class _ChatListPageState extends State<ChatListPage> {
                             );
                             final otherParticipantName = chat.participantDetails[otherParticipant]?.name ?? displayName;
                             
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PrivateChatPage(
-                                  currentUserId: currentUser.uid,
-                                  currentUserName: currentUser.displayName ?? 'Kullanıcı',
-                                  otherUserId: otherParticipant,
-                                  otherUserName: otherParticipantName,
-                                ),
-                              ),
+                            AppNavigation.toChat(
+                              context: context,
+                              currentUserId: currentUser.uid,
+                              currentUserName: currentUser.displayName ?? 'Kullanıcı',
+                              otherUserId: otherParticipant,
+                              otherUserName: otherParticipantName,
                             );
                           }
                         },
@@ -442,16 +398,12 @@ class _ChatListPageState extends State<ChatListPage> {
                         );
                         final otherParticipantName = chat.participantDetails[otherParticipant]?.name ?? displayName;
                         
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PrivateChatPage(
-                              currentUserId: currentUser.uid,
-                              currentUserName: currentUser.displayName ?? 'Kullanıcı',
-                              otherUserId: otherParticipant,
-                              otherUserName: otherParticipantName,
-                            ),
-                          ),
+                        AppNavigation.toChat(
+                          context: context,
+                          currentUserId: currentUser.uid,
+                          currentUserName: currentUser.displayName ?? 'Kullanıcı',
+                          otherUserId: otherParticipant,
+                          otherUserName: otherParticipantName,
                         );
                       }
                     },
@@ -473,7 +425,7 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 
   Widget _buildChatItemContent({
-    required ChatModel chat,
+    required ChatEntity chat,
     required currentUser,
     required String displayName,
     required String? photoUrl,
@@ -483,69 +435,90 @@ class _ChatListPageState extends State<ChatListPage> {
   }) {
     final unreadCount = chat.unreadCounts[currentUser.uid] ?? 0;
     
+    // Diğer kullanıcının ID'sini al (profil sayfasına gitmek için)
+    final otherUserId = chat.type == ChatType.private
+        ? chat.participants.firstWhere(
+            (id) => id != currentUser.uid,
+            orElse: () => '',
+          )
+        : '';
+    
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          // Avatar
-          Stack(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.secondary,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withAlpha(AppTheme.alphaMediumDark),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+          // Avatar - Tıklanabilir (profil sayfasına gider)
+          GestureDetector(
+            onTap: () async {
+              if (otherUserId.isEmpty) return;
+              
+              // Kullanıcı profilini çek
+              final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+              final userProfile = await authViewModel.fetchUserProfile(otherUserId);
+              
+              if (userProfile != null && mounted) {
+                AppNavigation.toUserProfile(context: context, userId: userProfile.uid);
+              }
+            },
+            child: Stack(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.secondary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
-                ),
-                child: photoUrl != null
-                    ? ClipOval(
-                        child: Image.network(
-                          photoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                displayName.isNotEmpty 
-                                    ? displayName[0].toUpperCase()
-                                    : '?',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.onPrimary,
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withAlpha(AppTheme.alphaMediumDark),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: photoUrl != null
+                      ? ClipOval(
+                          child: Image.network(
+                            photoUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Text(
+                                  displayName.isNotEmpty 
+                                      ? displayName[0].toUpperCase()
+                                      : '?',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onPrimary,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          displayName.isNotEmpty 
-                              ? displayName[0].toUpperCase()
-                              : '?',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onPrimary,
+                              );
+                            },
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            displayName.isNotEmpty 
+                                ? displayName[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onPrimary,
+                            ),
                           ),
                         ),
-                      ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 16),
           // Content

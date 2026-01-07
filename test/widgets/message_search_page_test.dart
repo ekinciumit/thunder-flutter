@@ -8,8 +8,12 @@ import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dar
 import 'package:thunder/features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/user_model.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/user/data/models/user_model.dart';
+import 'package:thunder/features/chat/data/models/message_model.dart' as model;
+import 'package:thunder/features/user/domain/entities/user_entity.dart';
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
+import 'package:thunder/features/user/data/mappers/user_mapper.dart';
+import 'package:thunder/features/chat/data/mappers/message_mapper.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'message_search_page_test.mocks.dart';
@@ -21,29 +25,31 @@ void main() {
     late MockChatRepository mockChatRepository;
     late AuthViewModel authViewModel;
     late ChatViewModel chatViewModel;
-    late UserModel testUser;
-    late MessageModel testMessage;
+    late UserEntity testUser;
+    late MessageEntity testMessage;
 
     setUp(() {
       mockAuthRepository = MockAuthRepository();
       mockChatRepository = MockChatRepository();
       
-      testUser = UserModel(
+      final testUserModel = UserModel(
         uid: 'user-1',
         email: 'test@example.com',
         displayName: 'Test User',
       );
+      testUser = UserMapper.toEntity(testUserModel);
 
-      testMessage = MessageModel(
+      final testMessageModel = model.MessageModel(
         id: 'msg-1',
         chatId: 'chat-1',
         senderId: 'user-1',
         senderName: 'Test User',
         text: 'Test mesajı',
         timestamp: DateTime.now(),
-        type: MessageType.text,
-        status: MessageStatus.sent,
+        type: model.MessageType.text,
+        status: model.MessageStatus.sent,
       );
+      testMessage = MessageMapper.toEntity(testMessageModel);
 
       // Mock repository setup - AuthViewModel constructor'ı getCurrentUser çağırıyor
       when(mockAuthRepository.getCurrentUser()).thenReturn(testUser);
