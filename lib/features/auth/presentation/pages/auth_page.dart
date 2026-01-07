@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../l10n/app_localizations.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../core/validators/form_validators.dart';
-import '../core/widgets/responsive_widgets.dart';
-import '../core/utils/responsive_helper.dart';
-import '../core/theme/app_theme.dart';
-import '../core/widgets/modern_components.dart';
-import 'widgets/app_card.dart';
-import 'widgets/app_gradient_container.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../../../../core/validators/form_validators.dart';
+import '../../../../core/widgets/responsive_widgets.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../views/widgets/app_card.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});

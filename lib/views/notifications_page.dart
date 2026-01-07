@@ -148,10 +148,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     final currentContext = context;
                     await _userService.markAllNotificationsAsRead(currentUser.uid);
                     if (!mounted) return;
-                    ModernSnackbar.showSuccess(
-                      currentContext,
-                      l10n.allNotificationsRead,
-                    );
+                    if (mounted) {
+                      ModernSnackbar.showSuccess(
+                        currentContext,
+                        l10n.allNotificationsRead,
+                      );
+                    }
                   },
                 );
               },
@@ -233,13 +235,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
       // Bildirimi sil ve yenisini ekle (type'ı değiştirmek yerine)
       await _userService.markNotificationAsRead(notification.id);
       
+      if (!mounted) return;
+      final currentContext = context;
+      final authVM = Provider.of<AuthViewModel>(currentContext, listen: false);
+      await authVM.refreshUserProfile();
       if (mounted) {
-        final currentContext = context;
-        final authVM = Provider.of<AuthViewModel>(currentContext, listen: false);
-        await authVM.refreshUserProfile();
-        if (mounted) {
-          ModernSnackbar.showSuccess(currentContext, 'Takip isteği kabul edildi ✓');
-        }
+        ModernSnackbar.showSuccess(currentContext, 'Takip isteği kabul edildi ✓');
       }
     } catch (e) {
       if (mounted) {

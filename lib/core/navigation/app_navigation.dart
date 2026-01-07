@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/event/domain/entities/event_entity.dart';
 import '../../features/chat/domain/entities/message_entity.dart';
-import '../../views/create_event_page.dart';
+import '../../features/event/presentation/pages/create_event_page.dart';
 
 /// Centralized navigation helper class
 /// Use this instead of Navigator.push directly

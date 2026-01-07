@@ -3,13 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../core/theme/app_theme.dart';
-import '../core/theme/app_color_config.dart';
-import '../core/widgets/modern_components.dart';
-import '../core/widgets/glass_container.dart';
-import '../l10n/app_localizations.dart';
-import 'widgets/app_gradient_container.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_color_config.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../core/widgets/glass_container.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
 
 /// Modern Profil Düzenleme Sayfası
 /// 
@@ -245,9 +245,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             leading: IconButton(
               icon: Icon(Icons.close, color: AppColorConfig.cardColor),
               onPressed: () async {
+                if (!mounted) return;
+                final currentContext = context;
                 if (await _onWillPop()) {
                   if (mounted) {
-                    final currentContext = context;
                     Navigator.of(currentContext).pop();
                   }
                 }

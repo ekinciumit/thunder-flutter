@@ -48,12 +48,12 @@ class UserMapper {
     );
   }
 
-  /// List<UserModel> -> List<UserEntity>
+  /// `List<UserModel>` -> `List<UserEntity>`
   static List<UserEntity> toEntityList(List<UserModel> models) {
     return models.map((model) => toEntity(model)).toList();
   }
 
-  /// List<UserEntity> -> List<UserModel>
+  /// `List<UserEntity>` -> `List<UserModel>`
   static List<UserModel> toModelList(List<UserEntity> entities) {
     return entities.map((entity) => toModel(entity)).toList();
   }

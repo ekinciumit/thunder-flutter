@@ -3,15 +3,15 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../core/validators/form_validators.dart';
-import '../core/widgets/responsive_widgets.dart';
-import '../core/utils/responsive_helper.dart';
-import '../core/theme/app_theme.dart';
-import '../core/theme/app_color_config.dart';
-import '../core/widgets/modern_components.dart';
-import '../l10n/app_localizations.dart';
-import 'widgets/modern_loading_widget.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../../../../core/validators/form_validators.dart';
+import '../../../../core/widgets/responsive_widgets.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_color_config.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../views/widgets/modern_loading_widget.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   final void Function(String name, String bio, String? photoUrl) onComplete;

@@ -1,15 +1,15 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../features/chat/domain/entities/chat_entity.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
-import 'widgets/app_gradient_container.dart';
-import '../core/theme/app_theme.dart';
-import '../core/widgets/skeleton_widgets.dart';
-import '../core/widgets/modern_components.dart';
-import '../l10n/app_localizations.dart';
-import '../core/navigation/app_navigation.dart';
+import '../../domain/entities/chat_entity.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../viewmodels/chat_viewmodel.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/skeleton_widgets.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../core/navigation/app_navigation.dart';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});

@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../features/event/domain/entities/event_entity.dart';
-import '../features/event/presentation/viewmodels/event_viewmodel.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import 'widgets/app_gradient_container.dart';
-import 'widgets/app_card.dart';
-import 'widgets/modern_loading_widget.dart';
-import '../l10n/app_localizations.dart';
-import 'widgets/event_comments_section.dart';
-import 'widgets/participant_chips.dart';
-import 'widgets/participant_management_panel.dart';
-import 'widgets/event_edit_dialog.dart';
-import 'widgets/event_cancel_dialog.dart';
-import 'widgets/event_delete_dialog.dart';
-import 'widgets/event_header.dart';
-import 'widgets/event_meta_card.dart';
-import 'widgets/participants_preview.dart';
+import '../../domain/entities/event_entity.dart';
+import '../viewmodels/event_viewmodel.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../views/widgets/app_card.dart';
+import '../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../views/widgets/event_comments_section.dart';
+import '../../../../views/widgets/participant_chips.dart';
+import '../../../../views/widgets/participant_management_panel.dart';
+import '../../../../views/widgets/event_edit_dialog.dart';
+import '../../../../views/widgets/event_cancel_dialog.dart';
+import '../../../../views/widgets/event_delete_dialog.dart';
+import '../../../../views/widgets/event_header.dart';
+import '../../../../views/widgets/event_meta_card.dart';
+import '../../../../views/widgets/participants_preview.dart';
 
 class EventDetailPage extends StatefulWidget {
   final EventEntity? event; // Optional for route-based navigation

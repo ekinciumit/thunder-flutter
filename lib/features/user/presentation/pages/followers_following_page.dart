@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../features/user/domain/entities/user_entity.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../services/user_service.dart';
-import 'widgets/app_gradient_container.dart';
-import '../core/widgets/modern_components.dart';
-import '../core/widgets/glass_container.dart';
-import '../core/theme/app_theme.dart';
-import '../core/theme/app_color_config.dart';
-import '../core/widgets/skeleton_widgets.dart';
-import '../l10n/app_localizations.dart';
-import '../core/navigation/app_navigation.dart';
+import '../../../../features/user/domain/entities/user_entity.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../../services/user_service.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_color_config.dart';
+import '../../../../core/widgets/skeleton_widgets.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../core/navigation/app_navigation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class FollowersFollowingPage extends StatefulWidget {

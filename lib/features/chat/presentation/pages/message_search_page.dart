@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
-import '../features/chat/domain/entities/message_entity.dart';
-import 'widgets/app_gradient_container.dart';
-import 'widgets/modern_loading_widget.dart';
-import '../core/widgets/modern_components.dart';
-import '../core/widgets/glass_container.dart';
-import '../core/theme/app_theme.dart';
-import '../core/navigation/app_navigation.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../viewmodels/chat_viewmodel.dart';
+import '../../domain/entities/message_entity.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/navigation/app_navigation.dart';
 
 class MessageSearchPage extends StatefulWidget {
   final String? chatId; // null ise tüm sohbetlerde ara

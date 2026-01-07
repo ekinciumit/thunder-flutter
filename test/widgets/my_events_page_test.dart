@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
-import 'package:thunder/views/my_events_page.dart';
+import 'package:thunder/features/event/presentation/pages/my_events_page.dart';
 import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:thunder/features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';

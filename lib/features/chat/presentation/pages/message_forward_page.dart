@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../features/chat/domain/entities/chat_entity.dart';
-import '../features/chat/domain/entities/message_entity.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
-import 'widgets/app_gradient_container.dart';
-import 'widgets/modern_loading_widget.dart';
+import '../../domain/entities/chat_entity.dart';
+import '../../domain/entities/message_entity.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../viewmodels/chat_viewmodel.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../views/widgets/modern_loading_widget.dart';
 
 class MessageForwardPage extends StatefulWidget {
   final MessageEntity message;

@@ -3,21 +3,21 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
-import '../features/event/domain/entities/location_entity.dart';
-import '../features/event/domain/entities/event_entity.dart';
-import '../features/event/presentation/viewmodels/event_viewmodel.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../core/validators/form_validators.dart';
-import '../core/utils/responsive_helper.dart';
-import '../core/theme/app_theme.dart';
-import '../core/theme/app_color_config.dart';
-import '../core/widgets/modern_components.dart';
-import '../core/widgets/glass_container.dart';
-import '../l10n/app_localizations.dart';
-import 'widgets/app_gradient_container.dart';
-import 'widgets/event_cover_photo_picker.dart';
-import 'widgets/location_picker_dialog.dart';
-import '../core/utils/category_utils.dart';
+import '../../domain/entities/location_entity.dart';
+import '../../domain/entities/event_entity.dart';
+import '../viewmodels/event_viewmodel.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../../core/validators/form_validators.dart';
+import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_color_config.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../core/widgets/glass_container.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../views/widgets/event_cover_photo_picker.dart';
+import '../../../../views/widgets/location_picker_dialog.dart';
+import '../../../../core/utils/category_utils.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
@@ -704,9 +704,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
                             navigator.pop();
                           } catch (e) {
                             if (!mounted) return;
-                            setState(() { _isSubmitting = false; });
                             final currentContext = context;
-                            ModernSnackbar.showError(currentContext, e.toString());
+                            setState(() { _isSubmitting = false; });
+                            if (mounted) {
+                              ModernSnackbar.showError(currentContext, e.toString());
+                            }
                           }
                         },
                   icon: _isSubmitting 

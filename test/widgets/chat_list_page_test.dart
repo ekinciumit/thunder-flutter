@@ -6,7 +6,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:thunder/l10n/app_localizations.dart';
-import 'package:thunder/views/chat_list_page.dart';
+import 'package:thunder/features/chat/presentation/pages/chat_list_page.dart';
 import 'package:thunder/features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
 import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';

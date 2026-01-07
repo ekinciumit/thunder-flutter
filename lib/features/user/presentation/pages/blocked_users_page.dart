@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
-import '../core/theme/app_color_config.dart';
-import '../core/widgets/modern_components.dart';
-import '../services/user_service.dart';
-import '../features/user/domain/entities/user_entity.dart';
-import '../l10n/app_localizations.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../../core/theme/app_color_config.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../services/user_service.dart';
+import '../../domain/entities/user_entity.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class BlockedUsersPage extends StatefulWidget {
   final String currentUserId;

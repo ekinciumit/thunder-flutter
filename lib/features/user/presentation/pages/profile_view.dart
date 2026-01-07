@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../features/event/presentation/viewmodels/event_viewmodel.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../../features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
-import 'widgets/user_suggestions_widget.dart';
-import '../features/event/domain/entities/event_entity.dart';
+import '../../../../views/widgets/user_suggestions_widget.dart';
+import '../../../../features/event/domain/entities/event_entity.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'widgets/app_gradient_container.dart';
-import '../core/theme/app_theme.dart';
-import '../core/theme/app_color_config.dart';
-import '../core/widgets/modern_components.dart';
-import '../core/widgets/skeleton_widgets.dart';
-import '../l10n/app_localizations.dart';
-import '../core/navigation/app_navigation.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_color_config.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../core/widgets/skeleton_widgets.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../core/navigation/app_navigation.dart';
 import 'dart:ui' as ui;
 // Removed seed data service as test data seeding is no longer needed.
 
@@ -159,7 +159,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
       
       try {
         if (authViewModel.user == null) {
-          Navigator.of(currentContext).pop();
+          if (mounted) {
+            Navigator.of(currentContext).pop();
+          }
           return;
         }
         
@@ -535,10 +537,12 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                               await _refreshUser(authViewModel);
                               if (!mounted) return;
                               final currentContext = context;
-                              ModernSnackbar.showSuccess(
-                                currentContext,
-                                'Profil başarıyla güncellendi!',
-                              );
+                              if (mounted) {
+                                ModernSnackbar.showSuccess(
+                                  currentContext,
+                                  'Profil başarıyla güncellendi!',
+                                );
+                              }
                             }
                             setState(() => isEditing = !isEditing);
                           },

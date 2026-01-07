@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../features/event/presentation/viewmodels/event_viewmodel.dart';
-import '../features/event/domain/entities/event_entity.dart';
-import '../features/user/data/mappers/user_mapper.dart';
-import '../features/user/domain/entities/user_entity.dart';
-import 'widgets/app_gradient_container.dart';
-import 'widgets/modern_loading_widget.dart';
-import '../core/widgets/modern_components.dart';
-import '../core/theme/app_color_config.dart';
-import '../core/theme/app_theme.dart';
-import '../core/navigation/app_navigation.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../viewmodels/event_viewmodel.dart';
+import '../../domain/entities/event_entity.dart';
+import '../../../../features/user/data/mappers/user_mapper.dart';
+import '../../../../features/user/domain/entities/user_entity.dart';
+import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../core/widgets/modern_components.dart';
+import '../../../../core/theme/app_color_config.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/navigation/app_navigation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class MyEventsPage extends StatefulWidget {
