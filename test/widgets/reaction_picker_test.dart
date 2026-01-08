@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:thunder/views/widgets/reaction_picker.dart';
+import 'package:thunder/features/chat/presentation/widgets/reaction_picker.dart';
 
 void main() {
   group('ReactionPicker Widget Tests', () {

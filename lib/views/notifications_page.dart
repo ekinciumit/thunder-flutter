@@ -145,12 +145,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   tooltip: l10n.markAllAsRead,
                   onPressed: () async {
                     if (!mounted) return;
-                    final currentContext = context;
                     await _userService.markAllNotificationsAsRead(currentUser.uid);
-                    if (!mounted) return;
                     if (mounted) {
                       ModernSnackbar.showSuccess(
-                        currentContext,
+                        context,
                         l10n.allNotificationsRead,
                       );
                     }
@@ -225,6 +223,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   /// Takip isteğini kabul et
   Future<void> _acceptFollowRequest(String currentUserId, NotificationEntity notification) async {
     if (!mounted) return;
+    final currentContext = context;
     
     try {
       await _userService.acceptFollowRequest(
@@ -236,23 +235,21 @@ class _NotificationsPageState extends State<NotificationsPage> {
       await _userService.markNotificationAsRead(notification.id);
       
       if (!mounted) return;
-      final currentContext = context;
       final authVM = Provider.of<AuthViewModel>(currentContext, listen: false);
       await authVM.refreshUserProfile();
       if (mounted) {
         ModernSnackbar.showSuccess(currentContext, 'Takip isteği kabul edildi ✓');
       }
     } catch (e) {
-      if (mounted) {
-        final currentContext = context;
-        ModernSnackbar.showError(currentContext, 'Hata: ${e.toString()}');
-      }
+      if (!mounted) return;
+      ModernSnackbar.showError(currentContext, 'Hata: ${e.toString()}');
     }
   }
 
   /// Takip isteğini reddet
   Future<void> _rejectFollowRequest(String currentUserId, NotificationEntity notification) async {
     if (!mounted) return;
+    final currentContext = context;
     
     try {
       await _userService.rejectFollowRequest(
@@ -262,12 +259,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
       await _userService.markNotificationAsRead(notification.id);
       
       if (mounted) {
-        ModernSnackbar.showSuccess(context, 'Takip isteği reddedildi');
+        ModernSnackbar.showSuccess(currentContext, 'Takip isteği reddedildi');
       }
     } catch (e) {
-      if (mounted) {
-        ModernSnackbar.showError(context, 'Hata: ${e.toString()}');
-      }
+      if (!mounted) return;
+      ModernSnackbar.showError(currentContext, 'Hata: ${e.toString()}');
     }
   }
 

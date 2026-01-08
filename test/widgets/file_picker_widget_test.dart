@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:thunder/views/widgets/file_picker_widget.dart';
+import 'package:thunder/features/chat/presentation/widgets/file_picker_widget.dart';
 
 void main() {
   group('FilePickerWidget Widget Tests', () {

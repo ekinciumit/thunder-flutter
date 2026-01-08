@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 import '../../../../features/user/domain/entities/user_entity.dart';
 import '../../../../features/event/domain/entities/event_entity.dart';
-import '../../../../views/widgets/user_suggestions_widget.dart';
+import '../widgets/user_suggestions_widget.dart';
 import '../../../../views/widgets/app_gradient_container.dart';
 import '../../../../core/widgets/modern_components.dart';
 import '../../../../core/theme/app_theme.dart';

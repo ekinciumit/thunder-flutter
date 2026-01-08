@@ -6,7 +6,7 @@ import '../viewmodels/event_viewmodel.dart';
 import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../domain/entities/event_entity.dart';
 import '../../../../views/widgets/app_gradient_container.dart';
-import '../../../../views/widgets/event_card.dart';
+import '../widgets/event_card.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_color_config.dart';

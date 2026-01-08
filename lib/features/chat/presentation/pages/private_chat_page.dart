@@ -7,19 +7,19 @@ import '../../domain/entities/message_entity.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../../../views/widgets/chat_app_bar.dart';
-import '../../../../views/widgets/chat_media_handler.dart';
+import '../widgets/chat_app_bar.dart';
+import '../widgets/chat_media_handler.dart';
 import '../../../../core/widgets/modern_components.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/navigation/app_navigation.dart';
-import '../../../../views/widgets/helpers/voice_recording_helper.dart';
-import '../../../../views/widgets/helpers/message_sender_helper.dart';
-import '../../../../views/widgets/helpers/chat_initialization_helper.dart';
-import '../../../../views/widgets/helpers/chat_pagination_helper.dart';
-import '../../../../views/widgets/helpers/chat_message_actions_helper.dart';
-import '../../../../views/widgets/helpers/chat_message_formatter_helper.dart';
-import '../../../../views/widgets/chat_message_list_builder.dart';
-import '../../../../views/widgets/chat_bottom_section.dart';
+import '../widgets/helpers/voice_recording_helper.dart';
+import '../widgets/helpers/message_sender_helper.dart';
+import '../widgets/helpers/chat_initialization_helper.dart';
+import '../widgets/helpers/chat_pagination_helper.dart';
+import '../widgets/helpers/chat_message_actions_helper.dart';
+import '../widgets/helpers/chat_message_formatter_helper.dart';
+import '../widgets/chat_message_list_builder.dart';
+import '../widgets/chat_bottom_section.dart';
 
 class PrivateChatPage extends StatefulWidget {
   final String currentUserId;
@@ -440,6 +440,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               onScrollToBottom: _scrollToBottom,
               onMessagesUpdated: (messages) {
                 // Sadece gerçekten değişiklik varsa setState yap
+                if (!mounted) return;
                 final currentIds = _allMessages.map((m) => m.id).toSet();
                 final newIds = messages.map((m) => m.id).toSet();
                 if (currentIds != newIds || messages.length != _allMessages.length) {

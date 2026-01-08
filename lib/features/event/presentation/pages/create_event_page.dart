@@ -7,17 +7,19 @@ import '../../domain/entities/location_entity.dart';
 import '../../domain/entities/event_entity.dart';
 import '../viewmodels/event_viewmodel.dart';
 import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../../../../core/validators/form_validators.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/theme/app_color_config.dart';
 import '../../../../core/widgets/modern_components.dart';
-import '../../../../core/widgets/glass_container.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../views/widgets/app_gradient_container.dart';
-import '../../../../views/widgets/event_cover_photo_picker.dart';
-import '../../../../views/widgets/location_picker_dialog.dart';
+import '../widgets/event_cover_photo_picker.dart';
+import '../widgets/location_picker_dialog.dart';
 import '../../../../core/utils/category_utils.dart';
+import '../widgets/event_form_fields_section.dart';
+import '../widgets/event_category_picker_section.dart';
+import '../widgets/event_date_time_picker_section.dart';
+import '../widgets/event_location_picker_section.dart';
+import '../widgets/event_submit_button_section.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
@@ -503,235 +505,111 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   onPickPhoto: _pickCoverPhoto,
                 ),
                 const SizedBox(height: AppTheme.spacingXl),
-                // Form Fields - Glass Style
-                GlassContainer(
-                  borderRadius: AppTheme.radiusLg,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spacingMd,
-                    vertical: AppTheme.spacingLg, // Üst padding artırıldı
-                  ),
-                  child: Column(
-                      children: [
-                        ModernInputField(
-                          controller: titleController,
-                          label: l10n?.eventTitle ?? 'Event Title',
-                          textInputAction: TextInputAction.next,
-                          validator: FormValidators.title,
-                          prefixIcon: Icon(Icons.title, color: AppColorConfig.primaryColor),
-                        ),
-                        const SizedBox(height: AppTheme.spacingMd),
-                        ModernInputField(
-                          controller: descController,
-                          label: l10n?.eventDescription ?? 'Description',
-                          textInputAction: TextInputAction.next,
-                          maxLines: 3,
-                          validator: FormValidators.description,
-                          prefixIcon: Icon(Icons.description, color: AppColorConfig.secondaryColor),
-                        ),
-                        const SizedBox(height: AppTheme.spacingMd),
-                        ModernInputField(
-                          controller: addressController,
-                          label: l10n?.eventAddress ?? 'Address',
-                          textInputAction: TextInputAction.next,
-                          validator: FormValidators.address,
-                          prefixIcon: Icon(Icons.location_on, color: AppColorConfig.tertiaryColor),
-                        ),
-                        const SizedBox(height: AppTheme.spacingMd),
-                        ModernInputField(
-                          controller: quotaController,
-                          label: l10n?.eventQuota ?? 'Quota',
-                          textInputAction: TextInputAction.next,
-                          keyboardType: TextInputType.number,
-                          validator: FormValidators.quota,
-                          prefixIcon: Icon(Icons.people, color: AppColorConfig.primaryColor),
-                        ),
-                      ],
-                    ),
+                // Form Fields Section
+                EventFormFieldsSection(
+                  titleController: titleController,
+                  descController: descController,
+                  addressController: addressController,
+                  quotaController: quotaController,
+                  l10n: l10n,
                 ),
                 const SizedBox(height: AppTheme.spacingMd),
-                // Kategori ve Tarih - Glass Style
-                GlassContainer(
-                  borderRadius: AppTheme.radiusLg,
-                  padding: const EdgeInsets.all(AppTheme.spacingMd),
-                  child: Column(
-                      children: [
-                        Builder(
-                          builder: (context) {
-                            final categoryColors = CategoryUtils.getCategoryColorScheme(selectedCategory);
-                            return OutlinedButton.icon(
-                              onPressed: _pickCategory,
-                              icon: Icon(
-                                Icons.category,
-                                color: categoryColors['primary']!,
-                              ),
-                              label: Text(
-                                selectedCategory,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: categoryColors['primary']!,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppTheme.spacingMd,
-                                  vertical: AppTheme.spacingMd,
-                                ),
-                                minimumSize: const Size(double.infinity, 56),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                ),
-                                side: BorderSide(
-                                  color: categoryColors['primary']!.withAlpha(AppTheme.alphaMedium),
-                                  width: 1.5,
-                                ),
-                                backgroundColor: categoryColors['primary']!.withAlpha(AppTheme.alphaVeryLight),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: AppTheme.spacingMd),
-                        OutlinedButton.icon(
-                          onPressed: _pickDateTime,
-                          icon: const Icon(Icons.calendar_today),
-                          label: Builder(
-                            builder: (context) {
-                              final dt = selectedDateTime;
-                              if (dt == null) return Text(l10n?.selectDateTime ?? 'Select Date & Time');
-                              return Text('${dt.day}.${dt.month}.${dt.year} - ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}');
-                            },
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppTheme.spacingMd,
-                              vertical: AppTheme.spacingMd,
-                            ),
-                            minimumSize: const Size(double.infinity, 56),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                // Category Picker Section
+                EventCategoryPickerSection(
+                  selectedCategory: selectedCategory,
+                  onPickCategory: _pickCategory,
+                  theme: theme,
                 ),
                 const SizedBox(height: AppTheme.spacingMd),
-                // Konum seçme butonu
-                FilledButton.icon(
-                  onPressed: isLocating ? null : _selectLocationOnMap,
-                  icon: const Icon(Icons.location_on),
-                  label: Builder(
-                    builder: (context) {
-                      final loc = selectedLatLng;
-                      if (loc == null) return Text(l10n?.selectLocation ?? 'Select Location');
-                      return Text('${l10n?.locationSelected ?? 'Location Selected'}: (${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)})');
-                    },
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColorConfig.primaryColor,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingXl,
-                      vertical: AppTheme.spacingLg,
-                    ),
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    ),
-                  ),
+                // Date Time Picker Section
+                EventDateTimePickerSection(
+                  selectedDateTime: selectedDateTime,
+                  onPickDateTime: _pickDateTime,
+                  l10n: l10n,
+                ),
+                const SizedBox(height: AppTheme.spacingMd),
+                // Location Picker Section
+                EventLocationPickerSection(
+                  selectedLatLng: selectedLatLng,
+                  isLocating: isLocating,
+                  onSelectLocation: _selectLocationOnMap,
+                  theme: theme,
+                  l10n: l10n,
                 ),
                 const SizedBox(height: AppTheme.spacingXl),
-                // Etkinlik Oluştur butonu
-                FilledButton.icon(
-                  onPressed: (eventViewModel.isLoading || _isSubmitting)
-                      ? null
-                      : () async {
-                          // Double submit engelleme
-                          if (_isSubmitting) return;
-                          
-                          final navigator = Navigator.of(context);
-                          // Form validasyonu
-                          if (_formKey.currentState?.validate() != true) {
-                            ModernSnackbar.showError(
-                              context,
-                              l10n?.fillAllFields ?? 'Please fill all fields',
-                            );
-                            return;
-                          }
-                          // Guard clause: Tarih kontrolü (yerel değişkene ata)
-                          final dateTime = selectedDateTime;
-                          if (dateTime == null) {
-                            ModernSnackbar.showError(
-                              context,
-                              l10n?.selectEventDateTime ?? 'Please select date and time',
-                            );
-                            return;
-                          }
-                          // Guard clause: Konum kontrolü (yerel değişkene ata)
-                          final latLng = selectedLatLng;
-                          if (latLng == null) {
-                            ModernSnackbar.showError(
-                              context,
-                              l10n?.selectEventLocation ?? 'Please select location',
-                            );
-                            return;
-                          }
-                          
-                          // Submit başlat - buton disabled olacak
-                          setState(() { _isSubmitting = true; });
-                          
-                          try {
-                            // Clean Architecture: EventEntity kullan
-                            final locationEntity = LocationEntity(
-                              latitude: latLng.latitude,
-                              longitude: latLng.longitude,
-                            );
-                            
-                            final event = EventEntity(
-                              id: '',
-                              title: titleController.text.trim(),
-                              description: descController.text.trim(),
-                              location: locationEntity,
-                              address: addressController.text.trim(),
-                              datetime: dateTime,
-                              quota: int.tryParse(quotaController.text.trim()) ?? 0,
-                              createdBy: authViewModel.user?.uid ?? '',
-                              participants: [authViewModel.user?.uid ?? ''],
-                              coverPhotoUrl: uploadedPhotoUrl,
-                              category: selectedCategory,
-                            );
-                            await eventViewModel.addEvent(event);
-                            if (!mounted) return;
-                            navigator.pop();
-                          } catch (e) {
-                            if (!mounted) return;
-                            final currentContext = context;
-                            setState(() { _isSubmitting = false; });
-                            if (mounted) {
-                              ModernSnackbar.showError(currentContext, e.toString());
-                            }
-                          }
-                        },
-                  icon: _isSubmitting 
-                      ? const SizedBox(
-                          width: 20, 
-                          height: 20, 
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.add),
-                  label: Text(_isSubmitting ? (l10n?.loading ?? 'Loading...') : (l10n?.createEvent ?? 'Create Event')),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColorConfig.tertiaryColor,
-                    foregroundColor: theme.colorScheme.onTertiary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingXl,
-                      vertical: AppTheme.spacingLg,
-                    ),
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    ),
-                    elevation: 2,
-                  ),
+                // Submit Button Section
+                EventSubmitButtonSection(
+                  isLoading: eventViewModel.isLoading,
+                  isSubmitting: _isSubmitting,
+                  onSubmit: () async {
+                    // Double submit engelleme
+                    if (_isSubmitting) return;
+                    
+                    final navigator = Navigator.of(context);
+                    // Form validasyonu
+                    if (_formKey.currentState?.validate() != true) {
+                      ModernSnackbar.showError(
+                        context,
+                        l10n?.fillAllFields ?? 'Please fill all fields',
+                      );
+                      return;
+                    }
+                    // Guard clause: Tarih kontrolü (yerel değişkene ata)
+                    final dateTime = selectedDateTime;
+                    if (dateTime == null) {
+                      ModernSnackbar.showError(
+                        context,
+                        l10n?.selectEventDateTime ?? 'Please select date and time',
+                      );
+                      return;
+                    }
+                    // Guard clause: Konum kontrolü (yerel değişkene ata)
+                    final latLng = selectedLatLng;
+                    if (latLng == null) {
+                      ModernSnackbar.showError(
+                        context,
+                        l10n?.selectEventLocation ?? 'Please select location',
+                      );
+                      return;
+                    }
+                    
+                    // Submit başlat - buton disabled olacak
+                    setState(() { _isSubmitting = true; });
+                    
+                    try {
+                      // Clean Architecture: EventEntity kullan
+                      final locationEntity = LocationEntity(
+                        latitude: latLng.latitude,
+                        longitude: latLng.longitude,
+                      );
+                      
+                      final event = EventEntity(
+                        id: '',
+                        title: titleController.text.trim(),
+                        description: descController.text.trim(),
+                        location: locationEntity,
+                        address: addressController.text.trim(),
+                        datetime: dateTime,
+                        quota: int.tryParse(quotaController.text.trim()) ?? 0,
+                        createdBy: authViewModel.user?.uid ?? '',
+                        participants: [authViewModel.user?.uid ?? ''],
+                        coverPhotoUrl: uploadedPhotoUrl,
+                        category: selectedCategory,
+                      );
+                      await eventViewModel.addEvent(event);
+                      if (!mounted) return;
+                      navigator.pop();
+                    } catch (e) {
+                      if (!mounted) return;
+                      setState(() { _isSubmitting = false; });
+                      if (mounted) {
+                        final currentContext = context;
+                        ModernSnackbar.showError(currentContext, e.toString());
+                      }
+                    }
+                  },
+                  theme: theme,
+                  l10n: l10n,
                 ),
                   ],
                 ),

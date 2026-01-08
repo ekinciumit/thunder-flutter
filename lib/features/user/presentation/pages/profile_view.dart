@@ -6,9 +6,10 @@ import '../../../../features/event/presentation/viewmodels/event_viewmodel.dart'
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
-import '../../../../views/widgets/user_suggestions_widget.dart';
+import '../widgets/user_suggestions_widget.dart';
 import '../../../../features/event/domain/entities/event_entity.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../widgets/profile_events_section.dart';
 import '../../../../views/widgets/app_gradient_container.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_color_config.dart';
@@ -16,7 +17,6 @@ import '../../../../core/widgets/modern_components.dart';
 import '../../../../core/widgets/skeleton_widgets.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/navigation/app_navigation.dart';
-import 'dart:ui' as ui;
 // Removed seed data service as test data seeding is no longer needed.
 
 /// Helper class for Selector optimization
@@ -156,11 +156,12 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
       // Context'i async öncesi sakla
       if (!mounted) return;
       final currentContext = context;
+      final navigator = Navigator.of(currentContext);
       
       try {
         if (authViewModel.user == null) {
           if (mounted) {
-            Navigator.of(currentContext).pop();
+            navigator.pop();
           }
           return;
         }
@@ -168,10 +169,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         // Clean Architecture: ViewModel üzerinden yükle
         final url = await authViewModel.uploadProfilePhoto(croppedFileObj.path);
         
-        if (!mounted) {
-          Navigator.of(currentContext).pop(); // Progress dialog'u kapat
-          return;
-        }
+        if (!mounted) return;
+        navigator.pop(); // Progress dialog'u kapat
         
         // Profil güncellemesini yap, ama sayfa değişikliğini geciktir
         await authViewModel.completeProfile(
@@ -529,6 +528,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                           child: OutlinedButton(
                           onPressed: () async {
                             if (isEditing) {
+                              if (!mounted) return;
                               await authViewModel.completeProfile(
                                 displayName: nameController.text.trim(),
                                 bio: bioController.text.trim(),
@@ -536,13 +536,10 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                               );
                               await _refreshUser(authViewModel);
                               if (!mounted) return;
-                              final currentContext = context;
-                              if (mounted) {
-                                ModernSnackbar.showSuccess(
-                                  currentContext,
-                                  'Profil başarıyla güncellendi!',
-                                );
-                              }
+                              ModernSnackbar.showSuccess(
+                                context,
+                                'Profil başarıyla güncellendi!',
+                              );
                             }
                             setState(() => isEditing = !isEditing);
                           },
@@ -668,150 +665,10 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                   ] else
                     const SizedBox(height: AppTheme.spacingLg),
                   // Etkinliklerim - Dikey Liste
-                  StreamBuilder<List<EventEntity>>(
-                    stream: _getUserEventsStream(user.uid),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(AppTheme.spacingXl),
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
-                      }
-
-                      final events = snapshot.data ?? [];
-
-                      if (events.isEmpty) {
-                        return Padding(
-                          padding: const EdgeInsets.all(AppTheme.spacingXl),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.event_note_rounded,
-                                size: 64,
-                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: AppTheme.alphaMedium / 255.0),
-                              ),
-                              const SizedBox(height: AppTheme.spacingMd),
-                              Text(
-                                l10n.noData,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      // Dikey liste görünümü
-                      return ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
-                        itemCount: events.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: AppTheme.spacingMd),
-                        itemBuilder: (context, index) {
-                          final event = events[index];
-                          return GestureDetector(
-                            onTap: () {
-                              AppNavigation.toEventDetail(context: context, event: event);
-                            },
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                              child: BackdropFilter(
-                                filter: ui.ImageFilter.blur(
-                                  sigmaX: theme.brightness == Brightness.dark ? 10 : 0,
-                                  sigmaY: theme.brightness == Brightness.dark ? 10 : 0,
-                                ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                                    color: theme.brightness == Brightness.dark
-                                        ? theme.colorScheme.surface.withValues(alpha: 0.1)
-                                        : theme.colorScheme.surface.withValues(alpha: 0.9),
-                                    border: Border.all(
-                                      color: theme.brightness == Brightness.dark
-                                          ? theme.colorScheme.outline.withValues(alpha: 0.2)
-                                          : theme.colorScheme.outline.withValues(alpha: 0.1),
-                                      width: 1.0,
-                                    ),
-                                    boxShadow: theme.brightness == Brightness.dark
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.1),
-                                              blurRadius: 20,
-                                              offset: const Offset(0, 5),
-                                            ),
-                                          ]
-                                        : [],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Etkinlik başlığı
-                                      Padding(
-                                        padding: const EdgeInsets.all(AppTheme.spacingMd),
-                                        child: Text(
-                                          event.title,
-                                          style: theme.textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColorConfig.cardColor,
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                  // Etkinlik görseli
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.only(
-                                      bottomLeft: Radius.circular(AppTheme.radiusLg),
-                                      bottomRight: Radius.circular(AppTheme.radiusLg),
-                                    ),
-                                    child: event.coverPhotoUrl != null && event.coverPhotoUrl!.isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: event.coverPhotoUrl!,
-                                            fit: BoxFit.cover,
-                                            width: double.infinity,
-                                            height: 200,
-                                            memCacheWidth: 600,
-                                            memCacheHeight: 400,
-                                            placeholder: (context, url) => Container(
-                                              height: 200,
-                                              color: theme.colorScheme.surfaceContainerHighest,
-                                              child: const Center(
-                                                child: CircularProgressIndicator(strokeWidth: 2),
-                                              ),
-                                            ),
-                                            errorWidget: (context, url, error) => Container(
-                                              height: 200,
-                                              color: theme.colorScheme.surfaceContainerHighest,
-                                              child: Icon(
-                                                Icons.event_note_rounded,
-                                                size: 48,
-                                                color: theme.colorScheme.onSurfaceVariant,
-                                              ),
-                                            ),
-                                          )
-                                        : Container(
-                                            height: 200,
-                                            color: theme.colorScheme.surfaceContainerHighest,
-                                            child: Icon(
-                                              Icons.event_note_rounded,
-                                              size: 48,
-                                              color: theme.colorScheme.onSurfaceVariant,
-                                            ),
-                                          ),
-                                  ),
-                                ],
-                              ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
+                  ProfileEventsSection(
+                    eventsStream: _getUserEventsStream(user.uid),
+                    theme: theme,
+                    l10n: l10n,
                   ),
                   const SizedBox(height: AppTheme.spacingXl),
                 ],

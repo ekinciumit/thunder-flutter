@@ -246,10 +246,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
               icon: Icon(Icons.close, color: AppColorConfig.cardColor),
               onPressed: () async {
                 if (!mounted) return;
-                final currentContext = context;
+                final navigator = Navigator.of(context);
                 if (await _onWillPop()) {
                   if (mounted) {
-                    Navigator.of(currentContext).pop();
+                    navigator.pop();
                   }
                 }
               },

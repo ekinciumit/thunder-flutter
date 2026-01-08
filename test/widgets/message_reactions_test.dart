@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:thunder/views/widgets/message_reactions.dart';
+import 'package:thunder/features/chat/presentation/widgets/message_reactions.dart';
 
 void main() {
   group('MessageReactions Widget Tests', () {
