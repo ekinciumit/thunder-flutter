@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../../../user/data/models/user_model.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/utils/image_compressor.dart';
 
 /// Remote data source interface for authentication
 /// 
@@ -197,13 +198,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw ServerException('Fotoğraf dosyası bulunamadı');
       }
 
+      // Cost Optimization: Compress image before upload (70-80% storage savings)
+      final compressedFile = await ImageCompressor.compressProfilePhoto(photoFile);
+
       // Güvenlik: UID bazlı path yapısı - sadece kendi klasörüne yazabilir
       final fileId = '${DateTime.now().millisecondsSinceEpoch}.jpg';
       final storageRef = _storage.ref().child('profile_photos').child(userId).child(fileId);
 
-      final uploadTask = storageRef.putFile(photoFile);
+      final uploadTask = storageRef.putFile(compressedFile);
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      // Clean up temporary compressed file
+      try {
+        if (compressedFile.path != photoFile.path) {
+          await compressedFile.delete();
+        }
+      } catch (_) {
+        // Ignore cleanup errors
+      }
       
       return downloadUrl;
     } catch (e) {
