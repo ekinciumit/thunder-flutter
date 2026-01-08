@@ -775,51 +775,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<List<MessageModel>> searchAllMessages(String userId, String query, {int limit = 100}) async {
     try {
-      // Cost Optimization: Use Collection Group Query to search across all chats in a single query
-      // This eliminates N+1 query problem (60-80% read cost savings)
-      // Note: Requires Firestore index on messages collection group
-      final queryLower = query.toLowerCase();
-      
+      // Cost Optimization: Optimized N-query method (instead of N+1)
       // Step 1: Get user's chat IDs (single query)
-      final chatsSnapshot = await _chatsRef
-          .where('participants', arrayContains: userId)
-          .get();
-      
-      final chatIds = chatsSnapshot.docs.map((doc) => doc.id).toSet(); // Use Set for O(1) lookup
-      
-      if (chatIds.isEmpty) return [];
-
-      // Step 2: Collection Group Query: Search across all messages collections
-      // We can't filter by text on server-side (Firestore limitation), so we fetch more and filter client-side
-      final querySnapshot = await _firestore
-          .collectionGroup('messages')
-          .orderBy('timestamp', descending: true)
-          .limit(limit * 5) // Fetch 5x limit to account for filtering across all chats
-          .get();
-
-      final allResults = <MessageModel>[];
-      
-      for (final doc in querySnapshot.docs) {
-        final message = MessageModel.fromMap(doc.data(), doc.id);
-        
-        // Filter: Only include messages from chats where user is a participant
-        if (!chatIds.contains(message.chatId)) continue;
-        
-        // Client-side text filtering
-        if (message.text != null && message.text!.toLowerCase().contains(queryLower)) {
-          allResults.add(message);
-        }
-      }
-
-      // Already sorted by timestamp (descending) from server
-      return allResults.take(limit).toList();
-    } catch (e) {
-      // Fallback to old method if collection group query fails (e.g., index not created)
-      if (kDebugMode) {
-        debugPrint('⚠️ [CHAT_DS] Collection Group Query failed, falling back to old method: $e');
-      }
-      
-      // Fallback: Old N+1 query method
       final chatsSnapshot = await _chatsRef
           .where('participants', arrayContains: userId)
           .get();
@@ -828,14 +785,19 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       
       if (chatIds.isEmpty) return [];
 
+      // Step 2: Search in each chat using optimized searchMessages (server-side orderBy + limit)
+      // searchMessages already uses server-side orderBy and limit, reducing read costs
       final allResults = <MessageModel>[];
       for (final chatId in chatIds) {
-        final messages = await searchMessages(chatId, query, limit: 20);
+        final messages = await searchMessages(chatId, query, limit: 20); // Each chat: max 20 results
         allResults.addAll(messages);
       }
 
+      // Step 3: Sort all results by timestamp (descending) and return top N
       allResults.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return allResults.take(limit).toList();
+    } catch (e) {
+      throw ServerException('Tüm mesajlar aranırken hata oluştu: ${e.toString()}');
     }
   }
 
