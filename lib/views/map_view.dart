@@ -13,6 +13,7 @@ import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../l10n/app_localizations.dart';
 import '../core/navigation/app_navigation.dart';
+import '../services/map_cache_service.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -356,6 +357,11 @@ class _MapViewState extends State<MapView> {
                     style: isDark ? _darkMapStyle : null, // Dark mode için özel stil
                     onMapCreated: (controller) {
                       mapController = controller;
+                      // Cost Optimization: Cache map controller and position
+                      final position = userPosition != null
+                          ? LatLng(userPosition!.latitude, userPosition!.longitude)
+                          : const LatLng(39.925533, 32.866287); // Ankara default
+                      MapCacheService.cacheController(controller, position, zoom: _currentZoom);
                     },
                     onCameraMove: (position) {
                       _currentZoom = position.zoom;
