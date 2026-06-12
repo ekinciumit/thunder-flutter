@@ -41,10 +41,6 @@ class _FakeEither_0<L, R> extends _i1.SmartFake implements _i2.Either<L, R> {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
-  MockAuthRepository() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>> signIn(
     String? email,
@@ -53,6 +49,13 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
       (super.noSuchMethod(
             Invocation.method(#signIn, [email, password]),
             returnValue:
+                _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i5.UserEntity>(
+                    this,
+                    Invocation.method(#signIn, [email, password]),
+                  ),
+                ),
+            returnValueForMissingStub:
                 _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>>.value(
                   _FakeEither_0<_i2.Failure, _i5.UserEntity>(
                     this,
@@ -76,6 +79,13 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
                     Invocation.method(#signUp, [email, password]),
                   ),
                 ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i5.UserEntity>(
+                    this,
+                    Invocation.method(#signUp, [email, password]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity>>);
 
@@ -89,6 +99,13 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
                 Invocation.method(#signOut, []),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#signOut, []),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -104,6 +121,13 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
                 Invocation.method(#saveUserProfile, [user]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#saveUserProfile, [user]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -114,6 +138,13 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
       (super.noSuchMethod(
             Invocation.method(#fetchUserProfile, [uid]),
             returnValue:
+                _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity?>>.value(
+                  _FakeEither_0<_i2.Failure, _i5.UserEntity?>(
+                    this,
+                    Invocation.method(#fetchUserProfile, [uid]),
+                  ),
+                ),
+            returnValueForMissingStub:
                 _i4.Future<_i2.Either<_i2.Failure, _i5.UserEntity?>>.value(
                   _FakeEither_0<_i2.Failure, _i5.UserEntity?>(
                     this,
@@ -133,6 +164,13 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
                 Invocation.method(#saveUserToken, [token]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#saveUserToken, [token]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -149,6 +187,16 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
                 Invocation.method(#uploadProfilePhoto, [photoFilePath, userId]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+                  _FakeEither_0<_i2.Failure, String>(
+                    this,
+                    Invocation.method(#uploadProfilePhoto, [
+                      photoFilePath,
+                      userId,
+                    ]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, String>>);
 
@@ -157,6 +205,7 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
       (super.noSuchMethod(
             Invocation.method(#getAllUsersStream, []),
             returnValue: _i4.Stream<List<_i5.UserEntity>>.empty(),
+            returnValueForMissingStub: _i4.Stream<List<_i5.UserEntity>>.empty(),
           )
           as _i4.Stream<List<_i5.UserEntity>>);
 
@@ -172,6 +221,37 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
                 Invocation.method(#sendPasswordResetEmail, [email]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#sendPasswordResetEmail, [email]),
+                  ),
+                ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> deleteAccount({
+    required String? password,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteAccount, [], {#password: password}),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#deleteAccount, [], {#password: password}),
+              ),
+            ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#deleteAccount, [], {
+                      #password: password,
+                    }),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 }
@@ -180,15 +260,15 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
-  MockChatRepository() {
-    _i1.throwOnMissingStub(this);
-  }
-
   @override
   String getChatId(String? userA, String? userB) =>
       (super.noSuchMethod(
             Invocation.method(#getChatId, [userA, userB]),
             returnValue: _i7.dummyValue<String>(
+              this,
+              Invocation.method(#getChatId, [userA, userB]),
+            ),
+            returnValueForMissingStub: _i7.dummyValue<String>(
               this,
               Invocation.method(#getChatId, [userA, userB]),
             ),
@@ -208,6 +288,13 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                     Invocation.method(#getChatById, [chatId]),
                   ),
                 ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, _i8.ChatEntity?>>.value(
+                  _FakeEither_0<_i2.Failure, _i8.ChatEntity?>(
+                    this,
+                    Invocation.method(#getChatById, [chatId]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, _i8.ChatEntity?>>);
 
@@ -216,6 +303,7 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
       (super.noSuchMethod(
             Invocation.method(#getChatStream, [chatId]),
             returnValue: _i4.Stream<_i8.ChatEntity?>.empty(),
+            returnValueForMissingStub: _i4.Stream<_i8.ChatEntity?>.empty(),
           )
           as _i4.Stream<_i8.ChatEntity?>);
 
@@ -227,6 +315,13 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
       (super.noSuchMethod(
             Invocation.method(#getOrCreatePrivateChat, [userA, userB]),
             returnValue:
+                _i4.Future<_i2.Either<_i2.Failure, _i8.ChatEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i8.ChatEntity>(
+                    this,
+                    Invocation.method(#getOrCreatePrivateChat, [userA, userB]),
+                  ),
+                ),
+            returnValueForMissingStub:
                 _i4.Future<_i2.Either<_i2.Failure, _i8.ChatEntity>>.value(
                   _FakeEither_0<_i2.Failure, _i8.ChatEntity>(
                     this,
@@ -253,6 +348,19 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
               #photoUrl: photoUrl,
             }),
             returnValue:
+                _i4.Future<_i2.Either<_i2.Failure, _i8.ChatEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i8.ChatEntity>(
+                    this,
+                    Invocation.method(#createGroupChat, [], {
+                      #name: name,
+                      #createdBy: createdBy,
+                      #participants: participants,
+                      #description: description,
+                      #photoUrl: photoUrl,
+                    }),
+                  ),
+                ),
+            returnValueForMissingStub:
                 _i4.Future<_i2.Either<_i2.Failure, _i8.ChatEntity>>.value(
                   _FakeEither_0<_i2.Failure, _i8.ChatEntity>(
                     this,
@@ -333,6 +441,31 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                     }),
                   ),
                 ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, _i9.MessageEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i9.MessageEntity>(
+                    this,
+                    Invocation.method(#sendMessage, [], {
+                      #chatId: chatId,
+                      #senderId: senderId,
+                      #senderName: senderName,
+                      #senderPhotoUrl: senderPhotoUrl,
+                      #text: text,
+                      #type: type,
+                      #imageUrl: imageUrl,
+                      #videoUrl: videoUrl,
+                      #audioUrl: audioUrl,
+                      #fileUrl: fileUrl,
+                      #fileName: fileName,
+                      #fileSize: fileSize,
+                      #gifUrl: gifUrl,
+                      #stickerUrl: stickerUrl,
+                      #location: location,
+                      #contact: contact,
+                      #replyToMessageId: replyToMessageId,
+                    }),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, _i9.MessageEntity>>);
 
@@ -344,6 +477,8 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
       (super.noSuchMethod(
             Invocation.method(#getMessagesStream, [chatId], {#limit: limit}),
             returnValue: _i4.Stream<List<_i9.MessageEntity>>.empty(),
+            returnValueForMissingStub:
+                _i4.Stream<List<_i9.MessageEntity>>.empty(),
           )
           as _i4.Stream<List<_i9.MessageEntity>>);
 
@@ -373,6 +508,19 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                     ),
                   ),
                 ),
+            returnValueForMissingStub:
+                _i4.Future<
+                  _i2.Either<_i2.Failure, List<_i9.MessageEntity>>
+                >.value(
+                  _FakeEither_0<_i2.Failure, List<_i9.MessageEntity>>(
+                    this,
+                    Invocation.method(
+                      #loadOlderMessages,
+                      [chatId, lastMessageTime],
+                      {#limit: limit},
+                    ),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, List<_i9.MessageEntity>>>);
 
@@ -381,6 +529,7 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
       (super.noSuchMethod(
             Invocation.method(#getUserChats, [userId]),
             returnValue: _i4.Stream<List<_i8.ChatEntity>>.empty(),
+            returnValueForMissingStub: _i4.Stream<List<_i8.ChatEntity>>.empty(),
           )
           as _i4.Stream<List<_i8.ChatEntity>>);
 
@@ -397,6 +546,13 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 Invocation.method(#markMessageAsRead, [messageId, userId]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#markMessageAsRead, [messageId, userId]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -413,6 +569,13 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 Invocation.method(#deleteMessage, [messageId, userId]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#deleteMessage, [messageId, userId]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -429,6 +592,13 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 Invocation.method(#editMessage, [messageId, newText]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#editMessage, [messageId, newText]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -450,6 +620,17 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 ]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#updateTypingStatus, [
+                      chatId,
+                      userId,
+                      isTyping,
+                    ]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -467,6 +648,13 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 Invocation.method(#addReaction, [messageId, userId, emoji]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#addReaction, [messageId, userId, emoji]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -484,6 +672,17 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 Invocation.method(#removeReaction, [messageId, userId, emoji]),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#removeReaction, [
+                      messageId,
+                      userId,
+                      emoji,
+                    ]),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -506,6 +705,20 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
               #duration: duration,
             }),
             returnValue:
+                _i4.Future<_i2.Either<_i2.Failure, _i9.MessageEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i9.MessageEntity>(
+                    this,
+                    Invocation.method(#sendVoiceMessage, [], {
+                      #chatId: chatId,
+                      #senderId: senderId,
+                      #senderName: senderName,
+                      #senderPhotoUrl: senderPhotoUrl,
+                      #audioUrl: audioUrl,
+                      #duration: duration,
+                    }),
+                  ),
+                ),
+            returnValueForMissingStub:
                 _i4.Future<_i2.Either<_i2.Failure, _i9.MessageEntity>>.value(
                   _FakeEither_0<_i2.Failure, _i9.MessageEntity>(
                     this,
@@ -560,6 +773,22 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                     }),
                   ),
                 ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, _i9.MessageEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i9.MessageEntity>(
+                    this,
+                    Invocation.method(#sendFileMessage, [], {
+                      #chatId: chatId,
+                      #senderId: senderId,
+                      #senderName: senderName,
+                      #senderPhotoUrl: senderPhotoUrl,
+                      #fileUrl: fileUrl,
+                      #fileName: fileName,
+                      #fileSize: fileSize,
+                      #fileExtension: fileExtension,
+                    }),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, _i9.MessageEntity>>);
 
@@ -580,6 +809,19 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
               #senderPhotoUrl: senderPhotoUrl,
             }),
             returnValue:
+                _i4.Future<_i2.Either<_i2.Failure, _i9.MessageEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i9.MessageEntity>(
+                    this,
+                    Invocation.method(#forwardMessage, [], {
+                      #originalMessage: originalMessage,
+                      #targetChatId: targetChatId,
+                      #senderId: senderId,
+                      #senderName: senderName,
+                      #senderPhotoUrl: senderPhotoUrl,
+                    }),
+                  ),
+                ),
+            returnValueForMissingStub:
                 _i4.Future<_i2.Either<_i2.Failure, _i9.MessageEntity>>.value(
                   _FakeEither_0<_i2.Failure, _i9.MessageEntity>(
                     this,
@@ -620,6 +862,19 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                     ),
                   ),
                 ),
+            returnValueForMissingStub:
+                _i4.Future<
+                  _i2.Either<_i2.Failure, List<_i9.MessageEntity>>
+                >.value(
+                  _FakeEither_0<_i2.Failure, List<_i9.MessageEntity>>(
+                    this,
+                    Invocation.method(
+                      #searchMessages,
+                      [chatId, query],
+                      {#limit: limit},
+                    ),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, List<_i9.MessageEntity>>>);
 
@@ -633,6 +888,19 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
               {#limit: limit},
             ),
             returnValue:
+                _i4.Future<
+                  _i2.Either<_i2.Failure, List<_i9.MessageEntity>>
+                >.value(
+                  _FakeEither_0<_i2.Failure, List<_i9.MessageEntity>>(
+                    this,
+                    Invocation.method(
+                      #searchAllMessages,
+                      [userId, query],
+                      {#limit: limit},
+                    ),
+                  ),
+                ),
+            returnValueForMissingStub:
                 _i4.Future<
                   _i2.Either<_i2.Failure, List<_i9.MessageEntity>>
                 >.value(
@@ -670,6 +938,17 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 ),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+                  _FakeEither_0<_i2.Failure, String>(
+                    this,
+                    Invocation.method(
+                      #uploadVoiceMessage,
+                      [audioFilePath],
+                      {#chatId: chatId, #senderId: senderId},
+                    ),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, String>>);
 
@@ -696,6 +975,17 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 ),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+                  _FakeEither_0<_i2.Failure, String>(
+                    this,
+                    Invocation.method(
+                      #uploadFileMessage,
+                      [filePath, fileName],
+                      {#chatId: chatId, #senderId: senderId},
+                    ),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, String>>);
 
@@ -722,6 +1012,17 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 ),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+                  _FakeEither_0<_i2.Failure, String>(
+                    this,
+                    Invocation.method(
+                      #uploadChatMedia,
+                      [filePath, storagePath],
+                      {#contentType: contentType, #onProgress: onProgress},
+                    ),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, String>>);
 
@@ -750,6 +1051,18 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 }),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#updateGroupInfo, [], {
+                      #chatId: chatId,
+                      #name: name,
+                      #description: description,
+                      #photoUrl: photoUrl,
+                    }),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -772,6 +1085,16 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 }),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#addAdmin, [], {
+                      #chatId: chatId,
+                      #userId: userId,
+                    }),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -794,6 +1117,80 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 }),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#removeAdmin, [], {
+                      #chatId: chatId,
+                      #userId: userId,
+                    }),
+                  ),
+                ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> addGroupParticipants({
+    required String? chatId,
+    required List<String>? userIds,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#addGroupParticipants, [], {
+              #chatId: chatId,
+              #userIds: userIds,
+            }),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#addGroupParticipants, [], {
+                  #chatId: chatId,
+                  #userIds: userIds,
+                }),
+              ),
+            ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#addGroupParticipants, [], {
+                      #chatId: chatId,
+                      #userIds: userIds,
+                    }),
+                  ),
+                ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> removeGroupParticipant({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeGroupParticipant, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#removeGroupParticipant, [], {
+                  #chatId: chatId,
+                  #userId: userId,
+                }),
+              ),
+            ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#removeGroupParticipant, [], {
+                      #chatId: chatId,
+                      #userId: userId,
+                    }),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -819,6 +1216,17 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 }),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#muteChat, [], {
+                      #chatId: chatId,
+                      #userId: userId,
+                      #muteUntil: muteUntil,
+                    }),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
@@ -841,6 +1249,16 @@ class MockChatRepository extends _i1.Mock implements _i6.ChatRepository {
                 }),
               ),
             ),
+            returnValueForMissingStub:
+                _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+                  _FakeEither_0<_i2.Failure, void>(
+                    this,
+                    Invocation.method(#unmuteChat, [], {
+                      #chatId: chatId,
+                      #userId: userId,
+                    }),
+                  ),
+                ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 }

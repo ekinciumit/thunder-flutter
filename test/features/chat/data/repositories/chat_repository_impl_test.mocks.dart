@@ -559,6 +559,36 @@ class MockChatRemoteDataSource extends _i1.Mock
           as _i6.Future<void>);
 
   @override
+  _i6.Future<void> addGroupParticipants({
+    required String? chatId,
+    required List<String>? userIds,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#addGroupParticipants, [], {
+              #chatId: chatId,
+              #userIds: userIds,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> removeGroupParticipant({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeGroupParticipant, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
   _i6.Future<void> muteChat({
     required String? chatId,
     required String? userId,

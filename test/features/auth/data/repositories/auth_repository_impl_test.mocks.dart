@@ -133,6 +133,15 @@ class MockAuthRemoteDataSource extends _i1.Mock
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> deleteAccount({required String? password}) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteAccount, [], {#password: password}),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 }
 
 /// A class which mocks [AuthLocalDataSource].

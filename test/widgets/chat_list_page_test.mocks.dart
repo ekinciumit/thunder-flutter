@@ -659,6 +659,50 @@ class MockChatRepository extends _i1.Mock implements _i3.ChatRepository {
           as _i5.Future<_i2.Either<_i2.Failure, void>>);
 
   @override
+  _i5.Future<_i2.Either<_i2.Failure, void>> addGroupParticipants({
+    required String? chatId,
+    required List<String>? userIds,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#addGroupParticipants, [], {
+              #chatId: chatId,
+              #userIds: userIds,
+            }),
+            returnValue: _i5.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#addGroupParticipants, [], {
+                  #chatId: chatId,
+                  #userIds: userIds,
+                }),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i5.Future<_i2.Either<_i2.Failure, void>> removeGroupParticipant({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeGroupParticipant, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i5.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#removeGroupParticipant, [], {
+                  #chatId: chatId,
+                  #userId: userId,
+                }),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
   _i5.Future<_i2.Either<_i2.Failure, void>> muteChat({
     required String? chatId,
     required String? userId,
@@ -839,6 +883,21 @@ class MockAuthRepository extends _i1.Mock implements _i8.AuthRepository {
               _FakeEither_0<_i2.Failure, void>(
                 this,
                 Invocation.method(#sendPasswordResetEmail, [email]),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i5.Future<_i2.Either<_i2.Failure, void>> deleteAccount({
+    required String? password,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteAccount, [], {#password: password}),
+            returnValue: _i5.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#deleteAccount, [], {#password: password}),
               ),
             ),
           )

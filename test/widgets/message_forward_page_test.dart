@@ -19,8 +19,13 @@ import 'package:thunder/l10n/app_localizations.dart';
 
 import 'message_forward_page_test.mocks.dart';
 
-@GenerateMocks([AuthRepository, ChatRepository])
+@GenerateNiceMocks([
+  MockSpec<AuthRepository>(),
+  MockSpec<ChatRepository>(),
+])
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('MessageForwardPage Widget Tests', () {
     late MockAuthRepository mockAuthRepository;
     late MockChatRepository mockChatRepository;
@@ -62,7 +67,7 @@ void main() {
 
       when(mockAuthRepository.getCurrentUser()).thenReturn(testUser);
       when(mockAuthRepository.fetchUserProfile(any)).thenAnswer(
-        (_) async => Either.left(ServerFailure('not cached')),
+        (_) async => Either.right(testUser),
       );
       when(mockChatRepository.getUserChats(any)).thenAnswer(
         (_) => Stream.value([testChat]),
@@ -79,46 +84,56 @@ void main() {
       chatViewModel = ChatViewModel(chatRepository: mockChatRepository);
     });
 
-    tearDown(() {
+    tearDown(() async {
       authViewModel.dispose();
       chatViewModel.dispose();
     });
 
-    Future<void> pumpPage(WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('tr'),
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+    Widget buildTestApp() {
+      return MaterialApp(
+        locale: const Locale('tr'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('tr'), Locale('en')],
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AuthViewModel>.value(value: authViewModel),
+            ChangeNotifierProvider<ChatViewModel>.value(value: chatViewModel),
           ],
-          supportedLocales: const [Locale('tr'), Locale('en')],
-          home: MultiProvider(
-            providers: [
-              ChangeNotifierProvider<AuthViewModel>.value(value: authViewModel),
-              ChangeNotifierProvider<ChatViewModel>.value(value: chatViewModel),
-            ],
-            child: MessageForwardPage(message: testMessage),
-          ),
+          child: MessageForwardPage(message: testMessage),
         ),
       );
     }
 
     testWidgets('MessageForwardPage - Widget render ediliyor', (WidgetTester tester) async {
-      await pumpPage(tester);
+      await tester.pumpWidget(buildTestApp());
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(MessageForwardPage), findsOneWidget);
+      expect(find.text('Mesaj İlet'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
 
     testWidgets('MessageForwardPage - Loading state gösteriliyor', (WidgetTester tester) async {
-      await pumpPage(tester);
+      when(mockChatRepository.getUserChats(any)).thenAnswer(
+        (_) => Stream<List<ChatEntity>>.empty(),
+      );
+
+      await tester.pumpWidget(buildTestApp());
       await tester.pump();
 
       expect(find.byType(MessageForwardPage), findsOneWidget);
+      expect(find.text('Sohbetler yükleniyor...'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
     });
   });
 }
