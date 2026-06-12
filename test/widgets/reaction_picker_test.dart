@@ -5,11 +5,9 @@ import 'package:thunder/features/chat/presentation/widgets/reaction_picker.dart'
 void main() {
   group('ReactionPicker Widget Tests', () {
     late String? selectedEmoji;
-    late bool closeCalled;
 
     setUp(() {
       selectedEmoji = null;
-      closeCalled = false;
     });
 
     testWidgets('ReactionPicker - Widget render ediliyor', (WidgetTester tester) async {
@@ -21,9 +19,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),
@@ -44,9 +40,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),
@@ -73,9 +67,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),
@@ -96,9 +88,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),
@@ -127,9 +117,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),

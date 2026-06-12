@@ -5,7 +5,6 @@ import 'package:thunder/features/chat/data/repositories/chat_repository_impl.dar
 import 'package:thunder/features/chat/data/datasources/chat_remote_data_source.dart';
 import 'package:thunder/features/chat/data/models/chat_model.dart' as chat_model;
 import 'package:thunder/features/chat/data/models/message_model.dart' as model;
-import 'package:thunder/features/chat/data/mappers/chat_mapper.dart';
 import 'package:thunder/features/chat/data/mappers/message_mapper.dart';
 import 'package:thunder/features/chat/domain/entities/chat_entity.dart' hide ChatType;
 import 'package:thunder/features/chat/domain/entities/message_entity.dart';

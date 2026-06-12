@@ -27,18 +27,15 @@ class ChatMessageDeleteDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return AlertDialog(
-      title: Text(l10n?.deleteMessageTitle ?? 'Delete Message'),
-      content: Text(
-        l10n?.deleteMessageConfirm ?? 
-        'Are you sure you want to delete this message?',
-      ),
+      title: Text(l10n.deleteMessageTitle),
+      content: Text(l10n.deleteMessageConfirm),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(l10n!.cancel),
+          child: Text(l10n.cancel),
         ),
         TextButton(
           onPressed: () async {
@@ -49,20 +46,20 @@ class ChatMessageDeleteDialog extends StatelessWidget {
                 navigator.pop();
                 ModernSnackbar.showSuccess(
                   context,
-                  l10n!.messageDeleted,
+                  l10n.messageDeleted,
                 );
               }
             } catch (e) {
               if (context.mounted) {
                 ModernSnackbar.showError(
                   context,
-                  l10n!.errorWithDetails(e.toString()),
+                  l10n.errorWithDetails(e.toString()),
                 );
               }
             }
           },
           style: TextButton.styleFrom(foregroundColor: Colors.red),
-          child: Text(l10n!.delete),
+          child: Text(l10n.delete),
         ),
       ],
     );

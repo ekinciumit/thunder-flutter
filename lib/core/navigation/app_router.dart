@@ -169,10 +169,7 @@ class AppRouter {
       GoRoute(
         path: '/complete-profile',
         name: 'complete-profile',
-        builder: (context, state) {
-          final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-          return const CompleteProfilePage();
-        },
+        builder: (context, state) => const CompleteProfilePage(),
       ),
 
       // Home (with bottom navigation)
