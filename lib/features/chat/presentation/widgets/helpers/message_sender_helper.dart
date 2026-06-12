@@ -329,7 +329,7 @@ class MessageSenderHelper {
       scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text(l10n.fileSendError + ': ${e.toString()}'),
+          content: Text('${l10n.fileSendError}: ${e.toString()}'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 4),
         ),
