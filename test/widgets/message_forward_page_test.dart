@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
@@ -14,6 +15,7 @@ import 'package:thunder/features/user/domain/entities/user_entity.dart';
 import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 import 'package:thunder/features/user/data/mappers/user_mapper.dart';
 import 'package:thunder/core/errors/failures.dart';
+import 'package:thunder/l10n/app_localizations.dart';
 
 import 'message_forward_page_test.mocks.dart';
 
@@ -31,7 +33,7 @@ void main() {
     setUp(() {
       mockAuthRepository = MockAuthRepository();
       mockChatRepository = MockChatRepository();
-      
+
       final testUserModel = UserModel(
         uid: 'user-1',
         email: 'test@example.com',
@@ -58,69 +60,65 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      // Mock repository setup - AuthViewModel constructor'ı getCurrentUser çağırıyor
       when(mockAuthRepository.getCurrentUser()).thenReturn(testUser);
-      when(mockChatRepository.getUserChats(any)).thenAnswer((_) async* {
-        yield [testChat];
-      });
+      when(mockAuthRepository.fetchUserProfile(any)).thenAnswer(
+        (_) async => Either.left(ServerFailure('not cached')),
+      );
+      when(mockChatRepository.getUserChats(any)).thenAnswer(
+        (_) => Stream.value([testChat]),
+      );
       when(mockChatRepository.forwardMessage(
         originalMessage: anyNamed('originalMessage'),
         targetChatId: anyNamed('targetChatId'),
         senderId: anyNamed('senderId'),
         senderName: anyNamed('senderName'),
         senderPhotoUrl: anyNamed('senderPhotoUrl'),
-      )).thenAnswer((_) async => Either.right(testMessage)); // Repository Entity döndürüyor
-      
+      )).thenAnswer((_) async => Either.right(testMessage));
+
       authViewModel = AuthViewModel(authRepository: mockAuthRepository);
       chatViewModel = ChatViewModel(chatRepository: mockChatRepository);
     });
 
-    testWidgets('MessageForwardPage - Widget render ediliyor', (WidgetTester tester) async {
-      // Arrange & Act
+    tearDown(() {
+      authViewModel.dispose();
+      chatViewModel.dispose();
+    });
+
+    Future<void> pumpPage(WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('tr'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('tr'), Locale('en')],
           home: MultiProvider(
             providers: [
               ChangeNotifierProvider<AuthViewModel>.value(value: authViewModel),
               ChangeNotifierProvider<ChatViewModel>.value(value: chatViewModel),
             ],
-            child: MessageForwardPage(
-              message: testMessage,
-            ),
+            child: MessageForwardPage(message: testMessage),
           ),
         ),
       );
+    }
 
-      // Firestore stream'leri ve ViewModel async işlemleri test ortamında çalışmaz
+    testWidgets('MessageForwardPage - Widget render ediliyor', (WidgetTester tester) async {
+      await pumpPage(tester);
       await tester.pump();
-      await tester.pump(Duration(seconds: 1));
+      await tester.pump(const Duration(milliseconds: 100));
 
-      // Assert
       expect(find.byType(MessageForwardPage), findsOneWidget);
     });
 
     testWidgets('MessageForwardPage - Loading state gösteriliyor', (WidgetTester tester) async {
-      // Arrange & Act
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MultiProvider(
-            providers: [
-              ChangeNotifierProvider<AuthViewModel>.value(value: authViewModel),
-              ChangeNotifierProvider<ChatViewModel>.value(value: chatViewModel),
-            ],
-            child: MessageForwardPage(
-              message: testMessage,
-            ),
-          ),
-        ),
-      );
-
-      // İlk render'da loading state olabilir
+      await pumpPage(tester);
       await tester.pump();
 
-      // Assert
       expect(find.byType(MessageForwardPage), findsOneWidget);
     });
   });
 }
-
