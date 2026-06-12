@@ -572,6 +572,8 @@
   "accept": "Accept",
   "reject": "Reject",
   "commentsChat": "Comments / Chat",
+  "goToGroupChat": "Go to Group Chat",
+  "createGroupChat": "Create Group Chat",
   "mustJoinToChat": "You must join the event to see and participate in the chat.",
   "noComments": "No comments yet. Be the first to comment!",
   "writeComment": "Write a comment...",
@@ -714,6 +716,262 @@
   "participantManagement": "Participant Management",
   "@participantManagement": {
     "description": "Participant management title"
+  },
+  "notLoggedIn": "User not logged in",
+  "groupChatNotFound": "Group chat not found",
+  "groupInfo": "Group Info",
+  "noDescription": "No description",
+  "noParticipantsFound": "No participants found",
+  "unnamed": "Unnamed",
+  "creator": "Creator",
+  "admin": "Admin",
+  "you": "You",
+  "demoteAdmin": "Remove Admin",
+  "promoteAdmin": "Make Admin",
+  "adminPromoted": "{name} is now an admin",
+  "@adminPromoted": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminDemoted": "{name} is no longer an admin",
+  "@adminDemoted": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "groupPhotoUpdated": "Group photo updated",
+  "groupPhotoUploadError": "Error uploading photo: {error}",
+  "@groupPhotoUploadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "editGroupName": "Edit Group Name",
+  "groupName": "Group Name",
+  "groupNameHint": "Enter group name",
+  "groupNameUpdated": "Group name updated",
+  "groupNameUpdateError": "Error updating group name: {error}",
+  "@groupNameUpdateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "editDescription": "Edit Description",
+  "descriptionHint": "Enter group description",
+  "descriptionUpdated": "Description updated",
+  "descriptionUpdateError": "Error updating description: {error}",
+  "@descriptionUpdateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "removeParticipantConfirm": "Remove {name} from the event?",
+  "@removeParticipantConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "userLabel": "User: {id}",
+  "@userLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "view": "View",
+  "manage": "Manage",
+  "goToEventDetail": "Go to Event Details",
+  "chatsLoadError": "Error loading chats: {error}",
+  "@chatsLoadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "messageForwardedSuccess": "Message forwarded successfully",
+  "messageForwardFailed": "Failed to forward message: {error}",
+  "@messageForwardFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "commentSendFailed": "Failed to send comment: {error}",
+  "@commentSendFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "photoUploadFailed": "Failed to upload photo",
+  "photoUploaded": "Photo uploaded",
+  "photoUploadError": "Photo upload error: {error}",
+  "@photoUploadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "filePickError": "File selection error: {error}",
+  "@filePickError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "logoutError": "Error signing out: {error}",
+  "@logoutError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "themeSelection": "Theme",
+  "lightMode": "Light Mode",
+  "lightThemeSubtitle": "Light color theme",
+  "darkThemeSubtitle": "Dark color theme",
+  "systemMode": "System",
+  "systemThemeSubtitle": "Follow system setting",
+  "turkish": "Turkish",
+  "english": "English",
+  "crashTestTitle": "Test crash?",
+  "crashTestMessage": "The app will crash. Use only for Crashlytics testing.",
+  "crashTestButton": "Crash",
+  "crashlyticsTestTitle": "Crashlytics Test (crash)",
+  "crashlyticsTestSubtitle": "Intentionally crash the app",
+  "bioOptional": "Bio (Optional)",
+  "completeProfileSubtitle": "A few more details to personalize your account",
+  "nameHint": "Your first and last name",
+  "bioHint": "Write a short bio about yourself",
+  "nameRequired": "Name cannot be empty",
+  "profileSaveFailed": "Failed to save profile: {error}",
+  "@profileSaveFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "devPreviewTitle": "📱 Screen Previews",
+  "screenPreviewsSubtitle": "View all screens with mock data",
+  "selectFile": "Select File",
+  "allFiles": "All Files",
+  "fileTypeWord": "Word",
+  "fileTypeExcel": "Excel",
+  "fileTypePowerPoint": "PowerPoint",
+  "fileTypeArchive": "ZIP/RAR",
+  "errorWithDetails": "Error: {error}",
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "fileSentSuccess": "File sent",
+  "myEvents": "My Events",
+  "past": "Past",
+  "addMembers": "Add Members",
+  "removeMember": "Remove from Group",
+  "removeMemberConfirm": "Remove {name} from the group?",
+  "@removeMemberConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "membersAdded": "Members added",
+  "memberRemoved": "Member removed from group",
+  "leaveGroup": "Leave Group",
+  "leaveGroupConfirm": "Are you sure you want to leave this group?",
+  "leftGroup": "You left the group",
+  "creatorCannotLeave": "The group creator cannot leave the group",
+  "selectMembersToAdd": "Select people to add",
+  "deleteAccount": "Delete Account",
+  "deleteAccountSubtitle": "All your data will be permanently deleted",
+  "deleteAccountConfirm": "Are you sure you want to delete your account?",
+  "deleteAccountWarning": "This action cannot be undone. Your profile, messages, and events will be deleted.",
+  "deleteAccountPasswordPrompt": "Enter your password to confirm",
+  "accountDeleted": "Your account has been deleted",
+  "deleteAccountError": "Failed to delete account: {error}",
+  "@deleteAccountError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "participantsCount": "Participants ({count})",
+  "@participantsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "fileUploadingNamed": "Uploading {fileName}...",
+  "@fileUploadingNamed": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "create": "Create",
+  "theme": "Theme",
+  "active": "Active",
+  "groupNameRequired": "Group name is required",
+  "groupNameExampleHint": "e.g. Friends, Work Team",
+  "groupDescriptionOptional": "Description (Optional)",
+  "groupDescriptionShortHint": "A short description about the group",
+  "selectParticipants": "Select Participants *",
+  "participantsSelectedCount": "{count} selected",
+  "@participantsSelectedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "selectAtLeastOneParticipant": "Select at least one person",
+  "groupChatCreated": "Group chat created",
+  "groupChatCreateFailed": "Could not create group chat",
+  "usersLoadFailed": "Could not load users",
+  "noOtherUsersYet": "No other users yet",
+  "noSearchResults": "No search results",
+  "tryDifferentSearchTerm": "Try a different search term",
+  "clusterEventsCount": "{count} events",
+  "@clusterEventsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "developerSection": "Developer",
+  "crashlyticsNonFatalTest": "Crashlytics Test (non-fatal)",
+  "crashlyticsNonFatalSubtitle": "Creates an error record in Firebase Console",
+  "nonFatalTestSent": "Non-fatal test record sent",
+  "searchUsersShort": "Search users...",
+  "validationEmailRequired": "Email is required",
+  "validationEmailInvalid": "Enter a valid email address",
+  "validationPasswordRequired": "Password is required",
+  "validationPasswordMinLength": "Password must be at least 6 characters",
+  "validationPasswordStrength": "Password must contain at least one letter and one number",
+  "validationNameRequired": "Name is required",
+  "validationNameMinLength": "Name must be at least 2 characters",
+  "validationNameInvalid": "Name can only contain letters and spaces",
+  "validationBioMaxLength": "Bio can be at most 500 characters",
+  "validationTitleRequired": "Title is required",
+  "validationTitleMinLength": "Title must be at least 3 characters",
+  "validationTitleMaxLength": "Title can be at most 100 characters",
+  "validationDescriptionRequired": "Description is required",
+  "validationDescriptionMinLength": "Description must be at least 10 characters",
+  "validationDescriptionMaxLength": "Description can be at most 2000 characters",
+  "validationAddressRequired": "Address is required",
+  "validationAddressMinLength": "Address must be at least 5 characters",
+  "validationQuotaRequired": "Quota is required",
+  "validationQuotaInvalid": "Enter a valid number",
+  "validationQuotaMin": "Quota must be at least 1",
+  "validationQuotaMax": "Quota can be at most 1000",
+  "validationFieldRequired": "{fieldName} is required",
+  "@validationFieldRequired": {
+    "placeholders": {
+      "fieldName": {"type": "String"}
+    }
+  },
+  "validationFieldMinLength": "{fieldName} must be at least {minLength} characters",
+  "@validationFieldMinLength": {
+    "placeholders": {
+      "fieldName": {"type": "String"},
+      "minLength": {"type": "int"}
+    }
+  },
+  "validationFieldMaxLength": "{fieldName} can be at most {maxLength} characters",
+  "@validationFieldMaxLength": {
+    "placeholders": {
+      "fieldName": {"type": "String"},
+      "maxLength": {"type": "int"}
+    }
   }
 }
 

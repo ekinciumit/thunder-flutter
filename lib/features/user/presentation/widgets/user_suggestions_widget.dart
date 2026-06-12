@@ -10,7 +10,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_color_config.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-class UserSuggestionsWidget extends StatelessWidget {
+class UserSuggestionsWidget extends StatefulWidget {
   final String currentUserId;
   final List<String> followingIds;
   final List<String> followersIds;
@@ -24,16 +24,34 @@ class UserSuggestionsWidget extends StatelessWidget {
     this.isExpanded = true,
   });
 
+  @override
+  State<UserSuggestionsWidget> createState() => _UserSuggestionsWidgetState();
+}
+
+class _UserSuggestionsWidgetState extends State<UserSuggestionsWidget> {
+  // ✅ Hangi kullanıcıya istek gönderildiğini takip et (local state)
+  final Map<String, bool> _sentRequests = {};
+
   Future<List<UserEntity>> _getSuggestions(BuildContext context) async {
     // Clean Architecture: AuthViewModel üzerinden user işlemleri
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final currentUser = authViewModel.user;
     final suggestions = <UserEntity>[];
-    final seenIds = <String>{currentUserId, ...followingIds};
+    
+    // ✅ Keşfet bölümünden hariç tutulacak kişiler:
+    // 1. Kendisi (currentUserId)
+    // 2. Takip ettikleri (followingIds)
+    // 3. İstek attıkları (sentFollowRequests) - ÖNEMLİ: Daha önce istek attığımız kişiler görünmemeli
+    final seenIds = <String>{
+      widget.currentUserId,
+      ...widget.followingIds,
+      if (currentUser != null) ...currentUser.sentFollowRequests, // ✅ İstek attıklarımızı hariç tut
+    };
 
     // 1. Takip edilenlerin takip ettikleri (en iyi öneriler)
-    if (followingIds.isNotEmpty) {
+    if (widget.followingIds.isNotEmpty) {
       final followingUsers = await Future.wait(
-        followingIds.take(5).map((id) => authViewModel.fetchUserProfile(id)),
+        widget.followingIds.take(5).map((id) => authViewModel.fetchUserProfile(id)),
       );
 
       for (final user in followingUsers) {
@@ -54,9 +72,9 @@ class UserSuggestionsWidget extends StatelessWidget {
     }
 
     // 2. Ortak takipçiler
-    if (suggestions.length < 5 && followersIds.isNotEmpty) {
+    if (suggestions.length < 5 && widget.followersIds.isNotEmpty) {
       final followersUsers = await Future.wait(
-        followersIds.take(10).map((id) => authViewModel.fetchUserProfile(id)),
+        widget.followersIds.take(10).map((id) => authViewModel.fetchUserProfile(id)),
       );
 
       for (final user in followersUsers) {
@@ -126,7 +144,7 @@ class UserSuggestionsWidget extends StatelessWidget {
             blurStrength: 10,
             glassAlpha: AppTheme.glassAlphaLight,
             borderAlpha: AppTheme.glassAlphaMedium,
-            child: isExpanded
+            child: widget.isExpanded
                     ? LayoutBuilder(
                         builder: (context, constraints) {
                           // Ekran genişliğinin 1/3'ü kadar genişlik (yan yana 3 tane sığsın)
@@ -154,6 +172,11 @@ class UserSuggestionsWidget extends StatelessWidget {
   Widget _buildSuggestionItem(BuildContext context, UserEntity user, ThemeData theme, double itemWidth) {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final currentUser = authViewModel.user;
+    
+    // ✅ İstek gönderildi mi kontrolü (önce local state, sonra currentUser'dan)
+    final hasSentRequest = _sentRequests[user.uid] ?? 
+                           (currentUser?.sentFollowRequests.contains(user.uid) ?? false);
+    
     // Karşılıklı takip kontrolü
     final isMutualFollow = currentUser != null && 
                           currentUser.following.contains(user.uid) && 
@@ -215,14 +238,31 @@ class UserSuggestionsWidget extends StatelessWidget {
                   
                   if (isMutualFollow) {
                     await userService.unfollowUser(currentUser.uid, user.uid);
+                    // ✅ Local state'i temizle (takip bırakıldı)
+                    setState(() {
+                      _sentRequests.remove(user.uid);
+                    });
                     if (context.mounted) {
                       ModernSnackbar.showSuccess(context, 'Takip bırakıldı');
                     }
-                  } else {
-                    // Takip isteği gönder
-                    await userService.sendFollowRequest(currentUser.uid, user.uid);
+                  } else if (hasSentRequest) {
+                    // ✅ İstek iptal et
+                    await userService.cancelFollowRequest(currentUser.uid, user.uid);
+                    setState(() {
+                      _sentRequests[user.uid] = false;
+                    });
                     if (context.mounted) {
-                      ModernSnackbar.showSuccess(context, 'Takip isteği gönderildi');
+                      ModernSnackbar.showSuccess(context, 'İstek iptal edildi');
+                    }
+                  } else {
+                    // ✅ Takip isteği gönder
+                    await userService.sendFollowRequest(currentUser.uid, user.uid);
+                    // ✅ Local state'i güncelle (istek gönderildi)
+                    setState(() {
+                      _sentRequests[user.uid] = true;
+                    });
+                    if (context.mounted) {
+                      ModernSnackbar.showSuccess(context, 'İstek gönderildi');
                     }
                   }
                 } catch (e) {
@@ -235,12 +275,16 @@ class UserSuggestionsWidget extends StatelessWidget {
                 }
               },
               style: FilledButton.styleFrom(
-                backgroundColor: isMutualFollow
+                backgroundColor: hasSentRequest
                     ? theme.colorScheme.surfaceContainerHighest
-                    : AppColorConfig.primaryColor,
-                foregroundColor: isMutualFollow
+                    : isMutualFollow
+                        ? theme.colorScheme.surfaceContainerHighest
+                        : AppColorConfig.primaryColor,
+                foregroundColor: hasSentRequest
                     ? theme.colorScheme.onSurface
-                    : theme.colorScheme.onPrimary,
+                    : isMutualFollow
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 4,
@@ -251,7 +295,11 @@ class UserSuggestionsWidget extends StatelessWidget {
                 ),
               ),
               child: Text(
-                isMutualFollow ? 'Takip' : 'Takip Et',
+                hasSentRequest
+                    ? 'İstek Gönderildi'
+                    : isMutualFollow
+                        ? 'Takip'
+                        : 'Takip Et',
                 style: const TextStyle(fontSize: 11),
               ),
             ),
@@ -261,4 +309,3 @@ class UserSuggestionsWidget extends StatelessWidget {
     );
   }
 }
-

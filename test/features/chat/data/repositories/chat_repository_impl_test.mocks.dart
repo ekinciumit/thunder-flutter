@@ -26,6 +26,7 @@ import 'package:thunder/features/chat/data/models/message_model.dart' as _i3;
 // ignore_for_file: unnecessary_parenthesis
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
+// ignore_for_file: invalid_use_of_internal_member
 
 class _FakeChatModel_0 extends _i1.SmartFake implements _i2.ChatModel {
   _FakeChatModel_0(Object parent, Invocation parentInvocation)
@@ -64,6 +65,14 @@ class MockChatRemoteDataSource extends _i1.Mock
             returnValue: _i6.Future<_i2.ChatModel?>.value(),
           )
           as _i6.Future<_i2.ChatModel?>);
+
+  @override
+  _i6.Stream<_i2.ChatModel?> getChatStream(String? chatId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getChatStream, [chatId]),
+            returnValue: _i6.Stream<_i2.ChatModel?>.empty(),
+          )
+          as _i6.Stream<_i2.ChatModel?>);
 
   @override
   _i6.Future<_i2.ChatModel> getOrCreatePrivateChat(
@@ -499,4 +508,85 @@ class MockChatRemoteDataSource extends _i1.Mock
             ),
           )
           as _i6.Future<String>);
+
+  @override
+  _i6.Future<void> updateGroupInfo({
+    required String? chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateGroupInfo, [], {
+              #chatId: chatId,
+              #name: name,
+              #description: description,
+              #photoUrl: photoUrl,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> addAdmin({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#addAdmin, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> removeAdmin({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeAdmin, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> muteChat({
+    required String? chatId,
+    required String? userId,
+    DateTime? muteUntil,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#muteChat, [], {
+              #chatId: chatId,
+              #userId: userId,
+              #muteUntil: muteUntil,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> unmuteChat({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteChat, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
 }

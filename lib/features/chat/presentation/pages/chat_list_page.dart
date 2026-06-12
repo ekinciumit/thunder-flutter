@@ -1,11 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../domain/entities/chat_entity.dart';
 import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../viewmodels/chat_viewmodel.dart';
-import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/app_gradient_container.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_color_config.dart';
 import '../../../../core/widgets/skeleton_widgets.dart';
 import '../../../../core/widgets/modern_components.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -92,6 +94,19 @@ class _ChatListPageState extends State<ChatListPage> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 80), // Bottom navigation bar için boşluk
+          child: FloatingActionButton.extended(
+            onPressed: () {
+              context.push('/chat/create-group');
+            },
+            icon: const Icon(Icons.group_add_rounded),
+            label: Text(l10n.createGroupChat),
+            backgroundColor: AppColorConfig.primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 4,
+          ),
+        ),
         appBar: AppBar(
           title: Text(
             l10n.chat,
@@ -346,11 +361,15 @@ class _ChatListPageState extends State<ChatListPage> {
                             
                             AppNavigation.toChat(
                               context: context,
+                              chatId: chat.id,
                               currentUserId: currentUser.uid,
                               currentUserName: currentUser.displayName ?? 'Kullanıcı',
                               otherUserId: otherParticipant,
                               otherUserName: otherParticipantName,
                             );
+                          } else if (chat.type == ChatType.group) {
+                            // Grup sohbetine git
+                            context.push('/chat/${chat.id}/group?name=${Uri.encodeComponent(chat.name)}&photoUrl=${Uri.encodeComponent(chat.photoUrl ?? '')}');
                           }
                         },
                         borderRadius: BorderRadius.circular(20),
@@ -400,11 +419,15 @@ class _ChatListPageState extends State<ChatListPage> {
                         
                         AppNavigation.toChat(
                           context: context,
+                          chatId: chat.id,
                           currentUserId: currentUser.uid,
                           currentUserName: currentUser.displayName ?? 'Kullanıcı',
                           otherUserId: otherParticipant,
                           otherUserName: otherParticipantName,
                         );
+                      } else if (chat.type == ChatType.group) {
+                        // Grup sohbetine git
+                        context.push('/chat/${chat.id}/group?name=${Uri.encodeComponent(chat.name)}&photoUrl=${Uri.encodeComponent(chat.photoUrl ?? '')}');
                       }
                     },
                     borderRadius: BorderRadius.circular(20),

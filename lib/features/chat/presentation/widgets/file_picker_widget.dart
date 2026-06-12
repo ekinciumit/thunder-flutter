@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class FilePickerWidget extends StatelessWidget {
   final Function(PlatformFile file) onFileSelected;
@@ -13,6 +14,7 @@ class FilePickerWidget extends StatelessWidget {
 
   Future<void> _pickFile(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.any,
@@ -28,13 +30,15 @@ class FilePickerWidget extends StatelessWidget {
       }
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Dosya seçme hatası: $e')),
+        SnackBar(content: Text(l10n.filePickError(e.toString()))),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       height: 200,
       decoration: BoxDecoration(
@@ -50,7 +54,6 @@ class FilePickerWidget extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Handle bar
           Container(
             width: 40,
             height: 4,
@@ -60,23 +63,18 @@ class FilePickerWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
-          // Title
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'Dosya Seç',
-              style: TextStyle(
+              l10n.selectFile,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
           ),
-          
           const SizedBox(height: 16),
-          
-          // File type options
           Expanded(
             child: GridView.count(
               crossAxisCount: 3,
@@ -87,7 +85,7 @@ class FilePickerWidget extends StatelessWidget {
               children: [
                 _buildFileTypeOption(
                   icon: Icons.folder_open,
-                  label: 'Tüm Dosyalar',
+                  label: l10n.allFiles,
                   color: Colors.blue,
                   onTap: () => _pickFile(context),
                 ),
@@ -99,81 +97,44 @@ class FilePickerWidget extends StatelessWidget {
                 ),
                 _buildFileTypeOption(
                   icon: Icons.description,
-                  label: 'Word',
+                  label: l10n.fileTypeWord,
                   color: Colors.blue[700]!,
                   onTap: () => _pickFileByType(context, FileType.custom, allowedExtensions: ['doc', 'docx']),
                 ),
                 _buildFileTypeOption(
                   icon: Icons.table_chart,
-                  label: 'Excel',
+                  label: l10n.fileTypeExcel,
                   color: Colors.green,
                   onTap: () => _pickFileByType(context, FileType.custom, allowedExtensions: ['xls', 'xlsx']),
                 ),
                 _buildFileTypeOption(
                   icon: Icons.slideshow,
-                  label: 'PowerPoint',
+                  label: l10n.fileTypePowerPoint,
                   color: Colors.orange,
                   onTap: () => _pickFileByType(context, FileType.custom, allowedExtensions: ['ppt', 'pptx']),
                 ),
                 _buildFileTypeOption(
                   icon: Icons.archive,
-                  label: 'ZIP/RAR',
+                  label: l10n.fileTypeArchive,
                   color: Colors.purple,
                   onTap: () => _pickFileByType(context, FileType.custom, allowedExtensions: ['zip', 'rar', '7z']),
                 ),
               ],
             ),
           ),
-          
           const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildFileTypeOption({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 32,
-              color: color,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickFileByType(BuildContext context, FileType type, {List<String>? allowedExtensions}) async {
+  Future<void> _pickFileByType(
+    BuildContext context,
+    FileType type, {
+    List<String>? allowedExtensions,
+  }) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
     try {
       final result = await FilePicker.platform.pickFiles(
         type: type,
@@ -190,11 +151,43 @@ class FilePickerWidget extends StatelessWidget {
       }
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Dosya seçme hatası: $e')),
+        SnackBar(content: Text(l10n.filePickError(e.toString()))),
       );
     }
   }
+
+  Widget _buildFileTypeOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
-
-
-

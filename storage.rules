@@ -1,82 +1,159 @@
 rules_version = '2';
 
-// Firebase Storage Security Rules
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Helper: Dosya boyutu kontrolü (max 10MB)
-    function isValidSize() {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidImageSize() {
       return request.resource.size < 10 * 1024 * 1024;
     }
-    
-    // Helper: Image contentType kontrolü
+
+    function isValidVideoSize() {
+      return request.resource.size < 50 * 1024 * 1024;
+    }
+
+    function isValidAudioSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    function isValidFileSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
     function isValidImageType() {
       return request.resource.contentType.matches('image/.*');
     }
-    
-    // Helper: Audio contentType kontrolü
+
     function isValidAudioType() {
       return request.resource.contentType.matches('audio/.*');
     }
-    
-    // Helper: Video contentType kontrolü
+
     function isValidVideoType() {
       return request.resource.contentType.matches('video/.*');
     }
-    
-    // Profil fotoğrafları - sadece kendi fotoğrafını yükleyebilir
+
+    function chatDoc(chatId) {
+      return firestore.get(/databases/(default)/documents/chats/$(chatId));
+    }
+
+    function canAccessChat(chatId) {
+      return firestore.exists(/databases/(default)/documents/chats/$(chatId))
+        && (
+          request.auth.uid in chatDoc(chatId).data.participants
+          || chatId.matches('.*' + request.auth.uid + '.*')
+        );
+    }
+
+    function eventDoc(eventId) {
+      return firestore.get(/databases/(default)/documents/events/$(eventId));
+    }
+
+    function isEventOwner(eventId) {
+      return firestore.exists(/databases/(default)/documents/events/$(eventId))
+        && eventDoc(eventId).data.createdBy == request.auth.uid;
+    }
+
+    function isEventParticipant(eventId) {
+      return firestore.exists(/databases/(default)/documents/events/$(eventId))
+        && (
+          eventDoc(eventId).data.createdBy == request.auth.uid
+          || ('participants' in eventDoc(eventId).data
+              && request.auth.uid in eventDoc(eventId).data.participants)
+          || ('approvedParticipants' in eventDoc(eventId).data
+              && request.auth.uid in eventDoc(eventId).data.approvedParticipants)
+        );
+    }
+
+    function isTempEventCover(eventId) {
+      return eventId.matches('temp_.*');
+    }
+
+    // Profil fotoğrafları
     match /profile_photos/{userId}/{fileId} {
-      allow read: if true; // Herkes okuyabilir
-      allow write: if request.auth != null && 
-        request.auth.uid == userId && // Sadece kendi klasörüne yazabilir
-        isValidSize() && // Max 10MB
-        isValidImageType(); // Sadece image dosyaları
+      allow read: if true;
+      allow write: if isSignedIn()
+        && request.auth.uid == userId
+        && isValidImageSize()
+        && isValidImageType();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
-    
-    // Etkinlik kapak fotoğrafları - sadece etkinlik sahibi yükleyebilir
-    // NOT: Event owner kontrolü Firestore'dan yapılmalı (Cloud Function veya client-side)
-    // Burada sadece path bazlı kontrol yapıyoruz
+
+    // Etkinlik kapak fotoğrafları
     match /event_covers/{eventId}/{fileId} {
-      allow read: if true; // Herkes okuyabilir
-      allow write: if request.auth != null && 
-        isValidSize() && // Max 10MB
-        isValidImageType(); // Sadece image dosyaları
-      // NOT: Event owner kontrolü için Cloud Function veya client-side validation gerekli
+      allow read: if true;
+      allow write: if isSignedIn()
+        && isValidImageSize()
+        && isValidImageType()
+        && (isTempEventCover(eventId) || isEventOwner(eventId));
+      allow delete: if isSignedIn()
+        && (isTempEventCover(eventId) || isEventOwner(eventId));
     }
-    
-    // Sohbet medya dosyaları - sadece etkinlik katılımcıları
-    // NOT: Event participant kontrolü Firestore'dan yapılmalı
-    match /chat_media/{eventId}/{fileId} {
-      allow read: if request.auth != null; // Giriş yapmış kullanıcılar
-      allow write: if request.auth != null && 
-        isValidSize() && // Max 10MB
-        (isValidImageType() || isValidVideoType()); // Sadece image/video dosyaları
-      // NOT: Event participant kontrolü için Cloud Function veya client-side validation gerekli
+
+    // Etkinlik galeri fotoğrafları
+    match /event_photos/{eventId}/{fileId} {
+      allow read: if true;
+      allow write: if isSignedIn()
+        && isEventParticipant(eventId)
+        && isValidImageSize()
+        && isValidImageType();
+      allow delete: if isSignedIn() && isEventOwner(eventId);
     }
-    
-    // Sesli mesajlar - sadece kendi chat klasörüne yazabilir
+
+    // Eski düz event_photos path'i (mevcut URL'ler için salt okunur)
+    match /event_photos/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Sohbet medya dosyaları (görsel/video)
+    match /chat_media/{chatId}/{fileId} {
+      allow read: if isSignedIn() && canAccessChat(chatId);
+      allow write: if isSignedIn()
+        && canAccessChat(chatId)
+        && (
+          (isValidImageType() && isValidImageSize())
+          || (isValidVideoType() && isValidVideoSize())
+        );
+      allow delete: if isSignedIn() && canAccessChat(chatId);
+    }
+
+    // Eski düz chat_media path'i (mevcut URL'ler için salt okunur)
+    match /chat_media/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Sesli mesajlar
     match /voice_messages/{chatId}/{senderId}/{fileId} {
-      allow read: if request.auth != null; // Giriş yapmış kullanıcılar
-      allow write: if request.auth != null && 
-        request.auth.uid == senderId && // Sadece kendi klasörüne yazabilir
-        isValidSize() && // Max 10MB
-        isValidAudioType(); // Sadece audio dosyaları
+      allow read: if isSignedIn() && canAccessChat(chatId);
+      allow write: if isSignedIn()
+        && request.auth.uid == senderId
+        && canAccessChat(chatId)
+        && isValidAudioSize()
+        && isValidAudioType();
+      allow delete: if isSignedIn()
+        && request.auth.uid == senderId
+        && canAccessChat(chatId);
     }
-    
-    // Chat dosyaları - sadece kendi chat klasörüne yazabilir
+
+    // Sohbet dosyaları
     match /chat_files/{chatId}/{senderId}/{fileId} {
-      allow read: if request.auth != null; // Giriş yapmış kullanıcılar
-      allow write: if request.auth != null && 
-        request.auth.uid == senderId && // Sadece kendi klasörüne yazabilir
-        isValidSize(); // Max 10MB
-      // NOT: contentType kontrolü yok çünkü farklı dosya tipleri olabilir
+      allow read: if isSignedIn() && canAccessChat(chatId);
+      allow write: if isSignedIn()
+        && request.auth.uid == senderId
+        && canAccessChat(chatId)
+        && isValidFileSize();
+      allow delete: if isSignedIn()
+        && request.auth.uid == senderId
+        && canAccessChat(chatId);
     }
-    
-    // Genel dosya erişimi - güvenlik için KAPALI
-    // Sadece yukarıdaki özel path'ler kullanılmalı
+
+    // Tanımsız path'ler kapalı
     match /{allPaths=**} {
-      allow read: if request.auth != null; // Sadece giriş yapmış kullanıcılar
-      allow write: if false; // ❌ YAZMA KAPALI - Güvenlik için
+      allow read, write: if false;
     }
   }
 }

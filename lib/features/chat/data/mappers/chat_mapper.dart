@@ -33,6 +33,7 @@ class ChatMapper {
       isArchived: chatModel.isArchived,
       isMuted: chatModel.isMuted,
       mutedBy: chatModel.mutedBy,
+      mutedUntil: chatModel.mutedUntil,
       settings: chatModel.settings,
       metadata: chatModel.metadata,
     );
@@ -64,6 +65,7 @@ class ChatMapper {
       isArchived: chatEntity.isArchived,
       isMuted: chatEntity.isMuted,
       mutedBy: chatEntity.mutedBy,
+      mutedUntil: chatEntity.mutedUntil,
       settings: chatEntity.settings,
       metadata: chatEntity.metadata,
     );

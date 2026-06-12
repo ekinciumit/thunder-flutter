@@ -721,6 +721,324 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  final Map<String, ChatEntity?> _chatCache = {};
+  final Map<String, StreamController<ChatEntity?>> _chatStreamControllers = {};
+  final Map<String, StreamSubscription<ChatEntity?>> _chatStreamSubscriptions = {};
+
+  /// Önbellekteki chat verisini döndürür (stream henüz emit etmemişse null).
+  ChatEntity? getCachedChat(String chatId) => _chatCache[chatId];
+
+  /// Chat'i stream olarak getir
+  ///
+  /// Yeni dinleyicilere önbellekteki son değer hemen iletilir.
+  Stream<ChatEntity?> getChatStream(String chatId) {
+    _ensureChatStreamStarted(chatId);
+    final controller = _chatStreamControllers[chatId]!;
+
+    return Stream<ChatEntity?>.multi((emitter) {
+      if (_chatCache.containsKey(chatId)) {
+        emitter.add(_chatCache[chatId]);
+      }
+      final subscription = controller.stream.listen(
+        emitter.add,
+        onError: emitter.addError,
+        onDone: emitter.close,
+      );
+      emitter.onCancel = subscription.cancel;
+    });
+  }
+
+  void _ensureChatStreamStarted(String chatId) {
+    if (_chatStreamSubscriptions.containsKey(chatId)) return;
+
+    _chatStreamControllers[chatId] = StreamController<ChatEntity?>.broadcast();
+
+    _chatStreamSubscriptions[chatId] = _chatRepository.getChatStream(chatId).listen(
+      (chat) {
+        _chatCache[chatId] = chat;
+        final controller = _chatStreamControllers[chatId];
+        if (controller != null && !controller.isClosed) {
+          controller.add(chat);
+        }
+      },
+      onError: (error) {
+        if (kDebugMode) {
+          debugPrint('❌ [ChatViewModel] getChatStream error: $error');
+        }
+        final controller = _chatStreamControllers[chatId];
+        if (controller != null && !controller.isClosed) {
+          controller.addError(error);
+        }
+      },
+    );
+  }
+
+  /// Grup bilgilerini güncelle (sadece yöneticiler)
+  /// 
+  /// Clean Architecture: Repository kullanır
+  Future<void> updateGroupInfo({
+    required String chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  }) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    
+    try {
+      final result = await _chatRepository.updateGroupInfo(
+        chatId: chatId,
+        name: name,
+        description: description,
+        photoUrl: photoUrl,
+      );
+      
+      result.fold(
+        (failure) {
+          error = failure.message;
+          notifyListeners();
+        },
+        (_) {
+          // Başarılı
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in updateGroupInfo: $e');
+      }
+      error = e.toString();
+      notifyListeners();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Kullanıcıyı yönetici yap (sadece yöneticiler)
+  /// 
+  /// Clean Architecture: Repository kullanır
+  Future<void> addAdmin({
+    required String chatId,
+    required String userId,
+  }) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    
+    try {
+      final result = await _chatRepository.addAdmin(
+        chatId: chatId,
+        userId: userId,
+      );
+      
+      result.fold(
+        (failure) {
+          error = failure.message;
+          notifyListeners();
+        },
+        (_) {
+          // Başarılı
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in addAdmin: $e');
+      }
+      error = e.toString();
+      notifyListeners();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Kullanıcıyı yöneticilikten çıkar (sadece yöneticiler)
+  /// 
+  /// Clean Architecture: Repository kullanır
+  Future<void> removeAdmin({
+    required String chatId,
+    required String userId,
+  }) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    
+    try {
+      final result = await _chatRepository.removeAdmin(
+        chatId: chatId,
+        userId: userId,
+      );
+      
+      result.fold(
+        (failure) {
+          error = failure.message;
+          notifyListeners();
+        },
+        (_) {
+          // Başarılı
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in removeAdmin: $e');
+      }
+      error = e.toString();
+      notifyListeners();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Gruba üye ekle (sadece yöneticiler)
+  Future<void> addGroupParticipants({
+    required String chatId,
+    required List<String> userIds,
+  }) async {
+    if (userIds.isEmpty) return;
+
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      final result = await _chatRepository.addGroupParticipants(
+        chatId: chatId,
+        userIds: userIds,
+      );
+
+      result.fold(
+        (failure) {
+          error = failure.message;
+          notifyListeners();
+        },
+        (_) {},
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in addGroupParticipants: $e');
+      }
+      error = e.toString();
+      notifyListeners();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Gruptan üye çıkar
+  Future<void> removeGroupParticipant({
+    required String chatId,
+    required String userId,
+  }) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      final result = await _chatRepository.removeGroupParticipant(
+        chatId: chatId,
+        userId: userId,
+      );
+
+      result.fold(
+        (failure) {
+          error = failure.message;
+          notifyListeners();
+        },
+        (_) {},
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in removeGroupParticipant: $e');
+      }
+      error = e.toString();
+      notifyListeners();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Sohbeti sessize al (belirli bir süre için veya süresiz)
+  /// 
+  /// Clean Architecture: Repository kullanır
+  Future<void> muteChat({
+    required String chatId,
+    required String userId,
+    DateTime? muteUntil,
+  }) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    
+    try {
+      final result = await _chatRepository.muteChat(
+        chatId: chatId,
+        userId: userId,
+        muteUntil: muteUntil,
+      );
+      
+      result.fold(
+        (failure) {
+          error = failure.message;
+          notifyListeners();
+        },
+        (_) {
+          // Başarılı
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in muteChat: $e');
+      }
+      error = e.toString();
+      notifyListeners();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Sohbet sessize almayı kaldır
+  /// 
+  /// Clean Architecture: Repository kullanır
+  Future<void> unmuteChat({
+    required String chatId,
+    required String userId,
+  }) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    
+    try {
+      final result = await _chatRepository.unmuteChat(
+        chatId: chatId,
+        userId: userId,
+      );
+      
+      result.fold(
+        (failure) {
+          error = failure.message;
+          notifyListeners();
+        },
+        (_) {
+          // Başarılı
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ChatViewModel] Error in unmuteChat: $e');
+      }
+      error = e.toString();
+      notifyListeners();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     // Performance: Tüm stream subscription'ları iptal et

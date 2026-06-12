@@ -78,7 +78,7 @@ class ReactionPicker extends StatelessWidget {
                 return GestureDetector(
                   onTap: () {
                     onReactionSelected(emoji);
-                    onClose();
+                    // ✅ onClose çağrılmasın, onReactionSelected içinde zaten Navigator.pop var
                   },
                   child: Container(
                     decoration: BoxDecoration(

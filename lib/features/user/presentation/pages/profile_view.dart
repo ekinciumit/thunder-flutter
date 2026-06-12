@@ -10,7 +10,7 @@ import '../widgets/user_suggestions_widget.dart';
 import '../../../../features/event/domain/entities/event_entity.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../widgets/profile_events_section.dart';
-import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/app_gradient_container.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_color_config.dart';
 import '../../../../core/widgets/modern_components.dart';
@@ -55,9 +55,16 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
     bioController = TextEditingController(text: user?.bio ?? '');
     _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     _animationController.forward();
-    // Kullanıcı profilini yükle
+    // ✅ Kullanıcı profilini yükle (sadece displayName yoksa veya boşsa)
+    // Gereksiz yere her seferinde yüklemeyi önlemek için kontrol ekle
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      authViewModel.loadUserProfile();
+      if (mounted && authViewModel.user != null) {
+        // Sadece displayName yoksa veya boşsa yükle (zaten yüklenmiş olabilir)
+        final currentUser = authViewModel.user;
+        if (currentUser?.displayName == null || currentUser!.displayName!.isEmpty) {
+          authViewModel.loadUserProfile();
+        }
+      }
     });
   }
 
@@ -139,7 +146,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusXl),
           ),
-          title: const Text('Yükleniyor...'),
+          title: Text(AppLocalizations.of(context)!.loading),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -257,7 +264,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                 await _changePhoto(authViewModel);
               },
               icon: const Icon(Icons.camera_alt),
-              label: const Text('Yeni Fotoğraf Yükle'),
+              label: Text(AppLocalizations.of(context)!.uploadNewPhoto),
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusXl),
@@ -298,6 +305,11 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final overlayText = AppColorConfig.getOverlayTextPrimary(brightness);
+    final overlayTextSecondary = AppColorConfig.getOverlayTextSecondary(brightness);
+    final overlayAccent = AppColorConfig.getOverlayAccent(brightness);
+    final overlayBorder = AppColorConfig.getOverlayBorder(brightness);
     final l10n = AppLocalizations.of(context)!;
     
     try {
@@ -308,9 +320,25 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         isLoading: vm.isLoading,
       ),
       shouldRebuild: (previous, next) {
-        // Sadece user veya isLoading değiştiğinde rebuild yap
-        return previous.user?.uid != next.user?.uid ||
-               previous.isLoading != next.isLoading;
+        // ✅ User değişikliklerini kontrol et (uid, displayName, bio, photoUrl)
+        final prevUser = previous.user;
+        final nextUser = next.user;
+        
+        // User null durumları
+        if (prevUser == null && nextUser == null) {
+          return previous.isLoading != next.isLoading;
+        }
+        if (prevUser == null || nextUser == null) {
+          return true; // User null'dan non-null'a veya tersi
+        }
+        
+        // ✅ User bilgileri değişti mi kontrol et
+        final userChanged = prevUser.uid != nextUser.uid ||
+                           prevUser.displayName != nextUser.displayName ||
+                           prevUser.bio != nextUser.bio ||
+                           prevUser.photoUrl != nextUser.photoUrl;
+        
+        return userChanged || previous.isLoading != next.isLoading;
       },
       builder: (context, authState, _) {
         if (kDebugMode) {
@@ -330,11 +358,36 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         
         final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
         final user = authState.user;
+        
+        // ✅ User değiştiğinde controller'ları güncelle
+        // Bu, completeProfile sonrası veya profil refresh sonrası çalışır
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && user != null) {
+            final currentDisplayName = nameController.text;
+            final currentBio = bioController.text;
+            final newDisplayName = user.displayName ?? '';
+            final newBio = user.bio ?? '';
+            
+            // Sadece değiştiyse güncelle (sonsuz döngüyü önlemek için)
+            if (currentDisplayName != newDisplayName || currentBio != newBio) {
+              if (kDebugMode) {
+                debugPrint('✅ [PROFILEVIEW] Controller\'lar güncelleniyor: displayName=$newDisplayName, bio=$newBio');
+              }
+              setState(() {
+                nameController.text = newDisplayName;
+                bioController.text = newBio;
+              });
+            }
+          }
+        });
 
         return AppGradientContainer(
-          backgroundImagePath: 'assets/backgrounds/background_2.png',
+          backgroundImagePath: brightness == Brightness.dark
+              ? 'assets/backgrounds/background_2.png'
+              : null,
           backgroundOpacity: 0.7,
           child: Scaffold(
+            backgroundColor: Colors.transparent,
         body: SafeArea(
           top: false,
           bottom: false,
@@ -501,7 +554,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                           user.displayName ?? l10n.name,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColorConfig.cardColor,
+                            color: overlayText,
                           ),
                         ),
                       ),
@@ -512,7 +565,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                       Text(
                             user.bio!,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppColorConfig.cardColor.withValues(alpha: 0.78),
+                              color: overlayTextSecondary,
                         ),
                       ),
                       ],
@@ -544,8 +597,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                             setState(() => isEditing = !isEditing);
                           },
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColorConfig.cardColor,
-                              side: const BorderSide(color: AppColorConfig.cardColor, width: 1.5),
+                              foregroundColor: overlayAccent,
+                              side: BorderSide(color: overlayBorder, width: 1.5),
                               padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -561,8 +614,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                               AppNavigation.toUserSearch(context);
                             },
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColorConfig.cardColor,
-                              side: const BorderSide(color: AppColorConfig.cardColor, width: 1.5),
+                              foregroundColor: overlayAccent,
+                              side: BorderSide(color: overlayBorder, width: 1.5),
                               padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -577,8 +630,8 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                             AppNavigation.toSettings(context);
                           },
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColorConfig.cardColor,
-                            side: const BorderSide(color: AppColorConfig.cardColor, width: 1.5),
+                            foregroundColor: overlayAccent,
+                            side: BorderSide(color: overlayBorder, width: 1.5),
                             padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -609,7 +662,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                                   'Keşfet',
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: AppColorConfig.cardColor,
+                                    color: overlayText,
                                   ),
                                 ),
                               ),
@@ -634,7 +687,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
                               },
                               icon: Icon(
                                 Icons.close_rounded,
-                                color: AppColorConfig.cardColor,
+                                color: overlayText,
                                 size: 20,
                               ),
                               padding: EdgeInsets.zero,
@@ -686,7 +739,7 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
         debugPrint('❌ [PROFILEVIEW] Stack trace: $stackTrace');
       }
       return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
+        appBar: AppBar(title: Text(AppLocalizations.of(context)!.error)),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -703,6 +756,9 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
 
 
   Widget _buildStatColumn(String label, int count, ThemeData theme, VoidCallback? onTap) {
+    final brightness = theme.brightness;
+    final overlayText = AppColorConfig.getOverlayTextPrimary(brightness);
+    final overlayTextSecondary = AppColorConfig.getOverlayTextSecondary(brightness);
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -712,14 +768,14 @@ class _ProfileViewState extends State<ProfileView> with SingleTickerProviderStat
           '$count',
             style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold, 
-              color: AppColorConfig.cardColor,
+              color: overlayText,
             ),
           ),
           const SizedBox(height: AppTheme.spacingXs),
         Text(
           label,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppColorConfig.cardColor.withValues(alpha: 0.78),
+            color: overlayTextSecondary,
           ),
         ),
       ],

@@ -3,8 +3,11 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:thunder/features/chat/data/datasources/chat_remote_data_source.dart';
-import 'package:thunder/features/chat/data/models/chat_model.dart';
+import 'package:thunder/features/chat/data/models/chat_model.dart' as chat_model;
 import 'package:thunder/features/chat/data/models/message_model.dart' as model;
+import 'package:thunder/features/chat/data/mappers/chat_mapper.dart';
+import 'package:thunder/features/chat/data/mappers/message_mapper.dart';
+import 'package:thunder/features/chat/domain/entities/chat_entity.dart' hide ChatType;
 import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 import 'package:thunder/core/errors/exceptions.dart';
 import 'package:thunder/core/errors/failures.dart';
@@ -45,15 +48,15 @@ void main() {
     group('getOrCreatePrivateChat', () {
       const testUserA = 'user-a';
       const testUserB = 'user-b';
-      final testChat = ChatModel(
+      final testChat = chat_model.ChatModel(
         id: 'chat-123',
         name: 'Private Chat',
-        type: ChatType.private,
+        type: chat_model.ChatType.private,
         participants: [testUserA, testUserB],
         createdAt: DateTime.now(),
       );
 
-      test('should return Right(ChatModel) when successful', () async {
+      test('should return Right(ChatEntity) when successful', () async {
         // Arrange
         when(mockRemoteDataSource.getOrCreatePrivateChat(testUserA, testUserB))
             .thenAnswer((_) async => testChat);
@@ -63,7 +66,9 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testChat);
+        expect(result.right.id, testChat.id);
+        expect(result.right.name, testChat.name);
+        expect(result.right.participants, testChat.participants);
         verify(mockRemoteDataSource.getOrCreatePrivateChat(testUserA, testUserB)).called(1);
       });
 
@@ -100,15 +105,15 @@ void main() {
       const testName = 'Test Group';
       const testCreatedBy = 'user-123';
       final testParticipants = ['user-123', 'user-456'];
-      final testChat = ChatModel(
+      final testChat = chat_model.ChatModel(
         id: 'chat-123',
         name: testName,
-        type: ChatType.group,
+        type: chat_model.ChatType.group,
         participants: testParticipants,
         createdAt: DateTime.now(),
       );
 
-      test('should return Right(ChatModel) when successful', () async {
+      test('should return Right(ChatEntity) when successful', () async {
         // Arrange
         when(mockRemoteDataSource.createGroupChat(
           name: anyNamed('name'),
@@ -125,7 +130,9 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testChat);
+        expect(result.right.id, testChat.id);
+        expect(result.right.name, testChat.name);
+        expect(result.right.participants, testChat.participants);
         verify(mockRemoteDataSource.createGroupChat(
           name: testName,
           createdBy: testCreatedBy,
@@ -249,7 +256,7 @@ void main() {
         // Assert
         expect(stream, isA<Stream<List<MessageEntity>>>());
         final result = await stream.first;
-        expect(result, testMessages);
+        expect(result, [MessageMapper.toEntity(testMessages.first)]);
         verify(mockRemoteDataSource.getMessagesStream(testChatId, limit: 50)).called(1);
       });
 
@@ -317,10 +324,10 @@ void main() {
     group('getUserChats', () {
       const testUserId = 'user-123';
       final testChats = [
-        ChatModel(
+        chat_model.ChatModel(
           id: 'chat-1',
           name: 'Chat 1',
-          type: ChatType.private,
+          type: chat_model.ChatType.private,
           participants: [testUserId, 'user-456'],
           createdAt: DateTime.now(),
         ),
@@ -335,9 +342,11 @@ void main() {
         final stream = repository.getUserChats(testUserId);
 
         // Assert
-        expect(stream, isA<Stream<List<ChatModel>>>());
+        expect(stream, isA<Stream<List<ChatEntity>>>());
         final result = await stream.first;
-        expect(result, testChats);
+        expect(result.length, 1);
+        expect(result.first.id, testChats.first.id);
+        expect(result.first.name, testChats.first.name);
         verify(mockRemoteDataSource.getUserChats(testUserId)).called(1);
       });
 

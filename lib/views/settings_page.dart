@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,7 +15,8 @@ import '../services/feedback_service.dart';
 import '../services/user_service.dart';
 import '../l10n/app_localizations.dart';
 import '../core/navigation/app_navigation.dart';
-import 'widgets/app_gradient_container.dart';
+import '../services/crash_reporting_service.dart';
+import '../core/widgets/app_gradient_container.dart';
 
 /// Ayarlar Sayfası
 /// 
@@ -56,6 +58,13 @@ class SettingsPage extends StatelessWidget {
             onTap: () {
               AppNavigation.toEditProfile(context);
             },
+          ),
+          _buildSettingsTile(
+            context: context,
+            icon: Icons.delete_forever_outlined,
+            title: l10n.deleteAccount,
+            subtitle: l10n.deleteAccountSubtitle,
+            onTap: () => _showDeleteAccountDialog(context, authViewModel, l10n),
           ),
           _buildSettingsTile(
             context: context,
@@ -105,17 +114,17 @@ class SettingsPage extends StatelessWidget {
               String themeSubtitle;
               
               if (themeService.isSystem) {
-                themeTitle = 'Tema';
+                themeTitle = l10n.theme;
                 themeIcon = Icons.brightness_auto;
-                themeSubtitle = 'Sistem';
+                themeSubtitle = l10n.systemMode;
               } else if (themeService.isDark) {
-                themeTitle = 'Gece Modu';
+                themeTitle = l10n.darkMode;
                 themeIcon = Icons.dark_mode;
-                themeSubtitle = 'Aktif';
+                themeSubtitle = l10n.active;
               } else {
-                themeTitle = 'Gündüz Modu';
+                themeTitle = l10n.lightMode;
                 themeIcon = Icons.light_mode;
-                themeSubtitle = 'Aktif';
+                themeSubtitle = l10n.active;
               }
               
               return _buildSettingsTile(
@@ -132,7 +141,7 @@ class SettingsPage extends StatelessWidget {
               context: context,
               icon: Icons.language,
               title: l10n.language,
-              subtitle: languageService.isTurkish ? 'Türkçe' : 'English',
+              subtitle: languageService.isTurkish ? l10n.turkish : l10n.english,
               onTap: () => _showLanguageSelector(context, languageService, l10n),
             ),
           ),
@@ -226,6 +235,64 @@ class SettingsPage extends StatelessWidget {
           
           const Divider(height: AppTheme.spacingXl),
           
+          // ✅ Geliştirici Bölümü (Sadece Debug Modunda)
+          if (kDebugMode) ...[
+            _buildSectionHeader('🛠️ ${l10n.developerSection}', theme),
+            _buildSettingsTile(
+              context: context,
+              icon: Icons.phone_android,
+              title: l10n.devPreviewTitle,
+              subtitle: l10n.screenPreviewsSubtitle,
+              onTap: () {
+                context.push('/dev-preview');
+              },
+            ),
+            _buildSettingsTile(
+              context: context,
+              icon: Icons.bug_report_outlined,
+              title: l10n.crashlyticsNonFatalTest,
+              subtitle: l10n.crashlyticsNonFatalSubtitle,
+              onTap: () async {
+                await CrashReportingService.sendTestNonFatal();
+                if (context.mounted) {
+                  ModernSnackbar.showSuccess(
+                    context,
+                    l10n.nonFatalTestSent,
+                  );
+                }
+              },
+            ),
+            _buildSettingsTile(
+              context: context,
+              icon: Icons.warning_amber_rounded,
+              title: l10n.crashlyticsTestTitle,
+              subtitle: l10n.crashlyticsTestSubtitle,
+              onTap: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text(l10n.crashTestTitle),
+                    content: Text(l10n.crashTestMessage),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text(l10n.cancel),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text(l10n.crashTestButton),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await CrashReportingService.sendTestCrash();
+                }
+              },
+            ),
+            const Divider(height: AppTheme.spacingXl),
+          ],
+          
           // Çıkış Yap - En altta
           Padding(
             padding: const EdgeInsets.all(AppTheme.spacingLg),
@@ -267,7 +334,7 @@ class SettingsPage extends StatelessWidget {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Çıkış yapılırken bir hata oluştu: ${e.toString()}'),
+                          content: Text(l10n.logoutError(e.toString())),
                           backgroundColor: AppColorConfig.errorColor,
                         ),
                       );
@@ -291,6 +358,97 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _showDeleteAccountDialog(
+    BuildContext context,
+    AuthViewModel authViewModel,
+    AppLocalizations l10n,
+  ) async {
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteAccount),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.deleteAccountConfirm),
+              const SizedBox(height: AppTheme.spacingSm),
+              Text(
+                l10n.deleteAccountWarning,
+                style: TextStyle(
+                  color: Theme.of(dialogContext).colorScheme.error,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingLg),
+              Text(l10n.deleteAccountPasswordPrompt),
+              const SizedBox(height: AppTheme.spacingSm),
+              TextFormField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: l10n.password,
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return l10n.deleteAccountPasswordPrompt;
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.pop(dialogContext, true);
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColorConfig.errorColor,
+            ),
+            child: Text(l10n.deleteAccount),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !context.mounted) {
+      passwordController.dispose();
+      return;
+    }
+
+    final password = passwordController.text;
+    passwordController.dispose();
+
+    try {
+      await authViewModel.deleteAccount(password: password);
+      if (context.mounted) {
+        ModernSnackbar.showSuccess(context, l10n.accountDeleted);
+        context.go('/auth');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ModernSnackbar.showError(
+          context,
+          l10n.deleteAccountError(e.toString()),
+        );
+      }
+    }
   }
 
   Widget _buildSectionHeader(String title, ThemeData theme) {
@@ -357,7 +515,7 @@ class SettingsPage extends StatelessWidget {
             ),
             const SizedBox(height: AppTheme.spacingLg),
             Text(
-              'Tema Seçimi',
+              l10n.themeSelection,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -365,8 +523,8 @@ class SettingsPage extends StatelessWidget {
             const SizedBox(height: AppTheme.spacingMd),
             ListTile(
               leading: const Icon(Icons.light_mode, color: Colors.orange),
-              title: const Text('Gündüz Modu'),
-              subtitle: const Text('Açık renk teması'),
+              title: Text(l10n.lightMode),
+              subtitle: Text(l10n.lightThemeSubtitle),
               trailing: themeService.isLight 
                   ? const Icon(Icons.check, color: AppColorConfig.primaryColor)
                   : null,
@@ -377,8 +535,8 @@ class SettingsPage extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.dark_mode, color: Colors.blue),
-              title: const Text('Gece Modu'),
-              subtitle: const Text('Koyu renk teması'),
+              title: Text(l10n.darkMode),
+              subtitle: Text(l10n.darkThemeSubtitle),
               trailing: themeService.isDark 
                   ? const Icon(Icons.check, color: AppColorConfig.primaryColor)
                   : null,
@@ -389,8 +547,8 @@ class SettingsPage extends StatelessWidget {
             ),
             ListTile(
               leading: Icon(Icons.brightness_auto, color: Theme.of(context).colorScheme.onSurfaceVariant),
-              title: const Text('Sistem'),
-              subtitle: const Text('Sistem ayarına göre otomatik'),
+              title: Text(l10n.systemMode),
+              subtitle: Text(l10n.systemThemeSubtitle),
               trailing: themeService.isSystem 
                   ? const Icon(Icons.check, color: AppColorConfig.primaryColor)
                   : null,
@@ -438,7 +596,7 @@ class SettingsPage extends StatelessWidget {
             const SizedBox(height: AppTheme.spacingMd),
             ListTile(
               leading: const Text('🇹🇷', style: TextStyle(fontSize: 24)),
-              title: const Text('Türkçe'),
+              title: Text(l10n.turkish),
               trailing: languageService.isTurkish 
                   ? const Icon(Icons.check, color: AppColorConfig.primaryColor)
                   : null,
@@ -449,7 +607,7 @@ class SettingsPage extends StatelessWidget {
             ),
             ListTile(
               leading: const Text('🇬🇧', style: TextStyle(fontSize: 24)),
-              title: const Text('English'),
+              title: Text(l10n.english),
               trailing: languageService.isEnglish 
                   ? const Icon(Icons.check, color: AppColorConfig.primaryColor)
                   : null,

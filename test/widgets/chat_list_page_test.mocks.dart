@@ -30,6 +30,7 @@ import 'package:thunder/features/user/domain/entities/user_entity.dart' as _i9;
 // ignore_for_file: unnecessary_parenthesis
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
+// ignore_for_file: invalid_use_of_internal_member
 
 class _FakeEither_0<L, R> extends _i1.SmartFake implements _i2.Either<L, R> {
   _FakeEither_0(Object parent, Invocation parentInvocation)
@@ -70,6 +71,14 @@ class MockChatRepository extends _i1.Mock implements _i3.ChatRepository {
                 ),
           )
           as _i5.Future<_i2.Either<_i2.Failure, _i6.ChatEntity?>>);
+
+  @override
+  _i5.Stream<_i6.ChatEntity?> getChatStream(String? chatId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getChatStream, [chatId]),
+            returnValue: _i5.Stream<_i6.ChatEntity?>.empty(),
+          )
+          as _i5.Stream<_i6.ChatEntity?>);
 
   @override
   _i5.Future<_i2.Either<_i2.Failure, _i6.ChatEntity>> getOrCreatePrivateChat(
@@ -576,6 +585,125 @@ class MockChatRepository extends _i1.Mock implements _i3.ChatRepository {
             ),
           )
           as _i5.Future<_i2.Either<_i2.Failure, String>>);
+
+  @override
+  _i5.Future<_i2.Either<_i2.Failure, void>> updateGroupInfo({
+    required String? chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateGroupInfo, [], {
+              #chatId: chatId,
+              #name: name,
+              #description: description,
+              #photoUrl: photoUrl,
+            }),
+            returnValue: _i5.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#updateGroupInfo, [], {
+                  #chatId: chatId,
+                  #name: name,
+                  #description: description,
+                  #photoUrl: photoUrl,
+                }),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i5.Future<_i2.Either<_i2.Failure, void>> addAdmin({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#addAdmin, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i5.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#addAdmin, [], {
+                  #chatId: chatId,
+                  #userId: userId,
+                }),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i5.Future<_i2.Either<_i2.Failure, void>> removeAdmin({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeAdmin, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i5.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#removeAdmin, [], {
+                  #chatId: chatId,
+                  #userId: userId,
+                }),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i5.Future<_i2.Either<_i2.Failure, void>> muteChat({
+    required String? chatId,
+    required String? userId,
+    DateTime? muteUntil,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#muteChat, [], {
+              #chatId: chatId,
+              #userId: userId,
+              #muteUntil: muteUntil,
+            }),
+            returnValue: _i5.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#muteChat, [], {
+                  #chatId: chatId,
+                  #userId: userId,
+                  #muteUntil: muteUntil,
+                }),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i5.Future<_i2.Either<_i2.Failure, void>> unmuteChat({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteChat, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i5.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#unmuteChat, [], {
+                  #chatId: chatId,
+                  #userId: userId,
+                }),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.Either<_i2.Failure, void>>);
 }
 
 /// A class which mocks [AuthRepository].

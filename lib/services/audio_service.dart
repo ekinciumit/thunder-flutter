@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'app_permission_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'audio_state_notifier.dart';
@@ -36,8 +36,7 @@ class AudioService {
 
   /// Mikrofon izni iste
   Future<bool> requestMicrophonePermission() async {
-    final status = await Permission.microphone.request();
-    return status == PermissionStatus.granted;
+    return AppPermissionService.requestMicrophonePermission();
   }
 
   /// Ses kaydı başlat

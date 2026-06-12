@@ -15,6 +15,7 @@ import '../../../../core/utils/image_compressor.dart';
 abstract class ChatRemoteDataSource {
   String getChatId(String userA, String userB);
   Future<ChatModel?> getChatById(String chatId);
+  Stream<ChatModel?> getChatStream(String chatId);
   Future<ChatModel> getOrCreatePrivateChat(String userA, String userB);
   Future<ChatModel> createGroupChat({
     required String name,
@@ -88,6 +89,51 @@ abstract class ChatRemoteDataSource {
   /// Chat medya (image/video) dosyasını Firebase Storage'a yükler
   /// Progress callback ile progress güncellemesi yapılabilir
   Future<String> uploadChatMedia(File file, String storagePath, {String? contentType, void Function(double progress)? onProgress});
+  
+  /// Grup bilgilerini güncelle (sadece yöneticiler)
+  Future<void> updateGroupInfo({
+    required String chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  });
+  
+  /// Kullanıcıyı yönetici yap (sadece yöneticiler)
+  Future<void> addAdmin({
+    required String chatId,
+    required String userId,
+  });
+  
+  /// Kullanıcıyı yöneticilikten çıkar (sadece yöneticiler)
+  Future<void> removeAdmin({
+    required String chatId,
+    required String userId,
+  });
+
+  /// Gruba üye ekle (sadece yöneticiler)
+  Future<void> addGroupParticipants({
+    required String chatId,
+    required List<String> userIds,
+  });
+
+  /// Gruptan üye çıkar (yöneticiler veya kullanıcı kendisi)
+  Future<void> removeGroupParticipant({
+    required String chatId,
+    required String userId,
+  });
+  
+  /// Sohbeti sessize al (belirli bir süre için veya süresiz)
+  Future<void> muteChat({
+    required String chatId,
+    required String userId,
+    DateTime? muteUntil, // null = süresiz
+  });
+  
+  /// Sohbet sessize almayı kaldır
+  Future<void> unmuteChat({
+    required String chatId,
+    required String userId,
+  });
 }
 
 /// Chat Remote Data Source Implementation
@@ -122,6 +168,24 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       return ChatModel.fromMap(chatDoc.data()!, chatId);
     } catch (e) {
       throw ServerException('Chat getirilirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  /// Chat'i stream olarak getir
+  Stream<ChatModel?> getChatStream(String chatId) {
+    try {
+      return _chatsRef.doc(chatId).snapshots().map((snapshot) {
+        if (!snapshot.exists) return null;
+        return ChatModel.fromMap(snapshot.data()!, chatId);
+      }).handleError((error) {
+        if (kDebugMode) {
+          debugPrint('❌ [CHAT_DS] getChatStream error: $error');
+        }
+        return null;
+      });
+    } catch (e) {
+      throw ServerException('Chat stream getirilirken hata oluştu: ${e.toString()}');
     }
   }
 
@@ -492,34 +556,50 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<void> addReaction(String messageId, String userId, String emoji) async {
     try {
+      // ✅ Güvenlik: Sadece belirli messageId için reaction ekle
       final messageDoc = await _messagesRef.doc(messageId).get();
-      if (messageDoc.exists) {
-        final data = messageDoc.data()!;
-        final reactionsData = data['reactions'] ?? {};
-        final reactions = <String, List<String>>{};
-        
-        // Safely convert reactions map
-        if (reactionsData is Map) {
-          reactionsData.forEach((key, value) {
-            if (value is List) {
-              reactions[key.toString()] = value.map((e) => e.toString()).toList();
-            }
-          });
-        }
-        
-        if (reactions[userId] == null) {
-          reactions[userId] = [];
-        }
-        
-        if (!reactions[userId]!.contains(emoji)) {
-          reactions[userId]!.add(emoji);
-        }
-        
-        await _messagesRef.doc(messageId).update({
-          'reactions': reactions,
+      if (!messageDoc.exists) {
+        throw ServerException('Mesaj bulunamadı: $messageId');
+      }
+      
+      final data = messageDoc.data()!;
+      final reactionsData = data['reactions'] ?? {};
+      
+      // ✅ Yeni Map oluştur (referans paylaşımını önle)
+      final reactions = <String, List<String>>{};
+      
+      // Safely convert reactions map
+      if (reactionsData is Map) {
+        reactionsData.forEach((key, value) {
+          if (value is List) {
+            // ✅ Yeni List oluştur (referans paylaşımını önle)
+            reactions[key.toString()] = List<String>.from(value.map((e) => e.toString()));
+          }
         });
       }
+      
+      // ✅ Yeni List oluştur (referans paylaşımını önle)
+      if (reactions[userId] == null) {
+        reactions[userId] = <String>[];
+      }
+      
+      // ✅ Emoji yoksa ekle
+      if (!reactions[userId]!.contains(emoji)) {
+        reactions[userId] = List<String>.from(reactions[userId]!)..add(emoji);
+      }
+      
+      // ✅ Sadece bu messageId için update yap
+      await _messagesRef.doc(messageId).update({
+        'reactions': reactions,
+      });
+      
+      if (kDebugMode) {
+        debugPrint('✅ [CHAT_DS] Reaction added: messageId=$messageId, userId=$userId, emoji=$emoji');
+      }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [CHAT_DS] addReaction error: $e');
+      }
       throw ServerException('Tepki eklenirken hata oluştu: ${e.toString()}');
     }
   }
@@ -527,33 +607,49 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<void> removeReaction(String messageId, String userId, String emoji) async {
     try {
+      // ✅ Güvenlik: Sadece belirli messageId için reaction kaldır
       final messageDoc = await _messagesRef.doc(messageId).get();
-      if (messageDoc.exists) {
-        final data = messageDoc.data()!;
-        final reactionsData = data['reactions'] ?? {};
-        final reactions = <String, List<String>>{};
-        
-        // Safely convert reactions map
-        if (reactionsData is Map) {
-          reactionsData.forEach((key, value) {
-            if (value is List) {
-              reactions[key.toString()] = value.map((e) => e.toString()).toList();
-            }
-          });
-        }
-        
-        if (reactions[userId] != null) {
-          reactions[userId]!.remove(emoji);
-          if (reactions[userId]!.isEmpty) {
-            reactions.remove(userId);
+      if (!messageDoc.exists) {
+        throw ServerException('Mesaj bulunamadı: $messageId');
+      }
+      
+      final data = messageDoc.data()!;
+      final reactionsData = data['reactions'] ?? {};
+      
+      // ✅ Yeni Map oluştur (referans paylaşımını önle)
+      final reactions = <String, List<String>>{};
+      
+      // Safely convert reactions map
+      if (reactionsData is Map) {
+        reactionsData.forEach((key, value) {
+          if (value is List) {
+            // ✅ Yeni List oluştur (referans paylaşımını önle)
+            reactions[key.toString()] = List<String>.from(value.map((e) => e.toString()));
           }
-        }
-        
-        await _messagesRef.doc(messageId).update({
-          'reactions': reactions,
         });
       }
+      
+      // ✅ Emoji'yi kaldır
+      if (reactions[userId] != null) {
+        // ✅ Yeni List oluştur (referans paylaşımını önle)
+        reactions[userId] = List<String>.from(reactions[userId]!)..remove(emoji);
+        if (reactions[userId]!.isEmpty) {
+          reactions.remove(userId);
+        }
+      }
+      
+      // ✅ Sadece bu messageId için update yap
+      await _messagesRef.doc(messageId).update({
+        'reactions': reactions,
+      });
+      
+      if (kDebugMode) {
+        debugPrint('✅ [CHAT_DS] Reaction removed: messageId=$messageId, userId=$userId, emoji=$emoji');
+      }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [CHAT_DS] removeReaction error: $e');
+      }
       throw ServerException('Tepki kaldırılırken hata oluştu: ${e.toString()}');
     }
   }
@@ -930,6 +1026,138 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Medya dosyası yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> updateGroupInfo({
+    required String chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  }) async {
+    try {
+      final updateData = <String, dynamic>{};
+      
+      if (name != null) {
+        updateData['name'] = name;
+      }
+      if (description != null) {
+        updateData['description'] = description;
+      }
+      if (photoUrl != null) {
+        updateData['photoUrl'] = photoUrl;
+      }
+      
+      if (updateData.isEmpty) {
+        return; // Güncellenecek bir şey yok
+      }
+      
+      await _chatsRef.doc(chatId).update(updateData);
+    } catch (e) {
+      throw ServerException('Grup bilgileri güncellenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> addAdmin({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'admins': FieldValue.arrayUnion([userId]),
+      });
+    } catch (e) {
+      throw ServerException('Yönetici eklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> removeAdmin({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'admins': FieldValue.arrayRemove([userId]),
+      });
+    } catch (e) {
+      throw ServerException('Yönetici çıkarılırken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> addGroupParticipants({
+    required String chatId,
+    required List<String> userIds,
+  }) async {
+    if (userIds.isEmpty) return;
+
+    try {
+      final chatDoc = await _chatsRef.doc(chatId).get();
+      if (!chatDoc.exists) {
+        throw ServerException('Grup sohbeti bulunamadı');
+      }
+
+      final existing = List<String>.from(chatDoc.data()?['participants'] ?? []);
+      final newUserIds = userIds.where((id) => !existing.contains(id)).toList();
+      if (newUserIds.isEmpty) return;
+
+      await _chatsRef.doc(chatId).update({
+        'participants': FieldValue.arrayUnion(newUserIds),
+      });
+      await _updateParticipantDetails(chatId, newUserIds);
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Üye eklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> removeGroupParticipant({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'participants': FieldValue.arrayRemove([userId]),
+        'admins': FieldValue.arrayRemove([userId]),
+        'participantDetails.$userId': FieldValue.delete(),
+      });
+    } catch (e) {
+      throw ServerException('Üye çıkarılırken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> muteChat({
+    required String chatId,
+    required String userId,
+    DateTime? muteUntil,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'mutedUntil.$userId': muteUntil != null ? Timestamp.fromDate(muteUntil) : null,
+        'mutedBy.$userId': true, // Eski sistemle uyumluluk için
+      });
+    } catch (e) {
+      throw ServerException('Sohbet sessize alınırken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> unmuteChat({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'mutedUntil.$userId': FieldValue.delete(),
+        'mutedBy.$userId': FieldValue.delete(),
+      });
+    } catch (e) {
+      throw ServerException('Sohbet sessize alma kaldırılırken hata oluştu: ${e.toString()}');
     }
   }
 }

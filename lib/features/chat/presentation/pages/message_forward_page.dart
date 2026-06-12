@@ -4,8 +4,9 @@ import '../../domain/entities/chat_entity.dart';
 import '../../domain/entities/message_entity.dart';
 import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../viewmodels/chat_viewmodel.dart';
-import '../../../../views/widgets/app_gradient_container.dart';
-import '../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../core/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/modern_loading_widget.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class MessageForwardPage extends StatefulWidget {
   final MessageEntity message;
@@ -54,8 +55,9 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
         setState(() {
           _isLoading = false;
         });
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sohbetler yüklenirken hata: $e')),
+          SnackBar(content: Text(l10n.chatsLoadError(e.toString()))),
         );
       }
     }
@@ -78,20 +80,20 @@ class _MessageForwardPageState extends State<MessageForwardPage> {
         originalMessage: widget.message,
         targetChatId: targetChat.id,
         senderId: currentUser.uid,
-        senderName: currentUser.displayName ?? 'Kullanıcı',
+        senderName: currentUser.displayName ?? AppLocalizations.of(context)!.user,
         senderPhotoUrl: currentUser.photoUrl,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mesaj başarıyla iletildi')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.messageForwardedSuccess)),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Mesaj iletilemedi: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.messageForwardFailed(e.toString()))),
         );
       }
     } finally {

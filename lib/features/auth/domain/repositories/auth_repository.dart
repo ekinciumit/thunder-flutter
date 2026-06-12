@@ -53,5 +53,8 @@ abstract class AuthRepository {
 
   /// Şifre sıfırlama email'i gönder
   Future<Either<Failure, void>> sendPasswordResetEmail(String email);
+
+  /// Hesabı kalıcı olarak sil
+  Future<Either<Failure, void>> deleteAccount({required String password});
 }
 

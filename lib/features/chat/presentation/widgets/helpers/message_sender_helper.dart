@@ -7,6 +7,7 @@ import '../../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart
 import '../../viewmodels/chat_viewmodel.dart';
 import '../../../domain/entities/message_entity.dart';
 import '../../../../../core/widgets/modern_components.dart';
+import '../../../../../l10n/app_localizations.dart';
 
 /// Helper class for sending different types of messages
 class MessageSenderHelper {
@@ -100,22 +101,22 @@ class MessageSenderHelper {
   }) async {
     if (!context.mounted) return;
     
-    // Show loading indicator
+    final l10n = AppLocalizations.of(context)!;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     scaffoldMessenger.showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Row(
           children: [
-            SizedBox(
+            const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: 12),
-            Text('Sesli mesaj yükleniyor...'),
+            const SizedBox(width: 12),
+            Text(l10n.voiceMessageUploading),
           ],
         ),
-        duration: Duration(seconds: 30),
+        duration: const Duration(seconds: 30),
       ),
     );
 
@@ -186,10 +187,10 @@ class MessageSenderHelper {
       if (context.mounted) {
         scaffoldMessenger.hideCurrentSnackBar();
         scaffoldMessenger.showSnackBar(
-          const SnackBar(
-            content: Text('Sesli mesaj gönderildi'),
+          SnackBar(
+            content: Text(l10n.voiceMessageSent),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
         onSuccess();
@@ -200,7 +201,7 @@ class MessageSenderHelper {
       scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('Sesli mesaj gönderme hatası: ${e.toString()}'),
+          content: Text('${l10n.voiceMessageError}: ${e.toString()}'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 4),
         ),
@@ -220,12 +221,12 @@ class MessageSenderHelper {
   }) async {
     if (!context.mounted) return;
     
-    // Null check
+    final l10n = AppLocalizations.of(context)!;
     if (file.path == null || file.path!.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dosya yolu bulunamadı'),
+          SnackBar(
+            content: Text(l10n.fileNotFound),
             backgroundColor: Colors.red,
           ),
         );
@@ -233,22 +234,20 @@ class MessageSenderHelper {
       return;
     }
 
-    // File size check (max 50MB)
-    const maxFileSize = 50 * 1024 * 1024; // 50MB
+    const maxFileSize = 50 * 1024 * 1024;
     if (file.size > maxFileSize) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dosya boyutu çok büyük (Max: 50MB)'),
+          SnackBar(
+            content: Text(l10n.fileTooLarge),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 4),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
       return;
     }
 
-    // Show loading indicator
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     scaffoldMessenger.showSnackBar(
       SnackBar(
@@ -261,7 +260,7 @@ class MessageSenderHelper {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('${file.name} yükleniyor...'),
+              child: Text(l10n.fileUploadingNamed(file.name)),
             ),
           ],
         ),
@@ -316,10 +315,10 @@ class MessageSenderHelper {
       if (context.mounted) {
         scaffoldMessenger.hideCurrentSnackBar();
         scaffoldMessenger.showSnackBar(
-          const SnackBar(
-            content: Text('Dosya gönderildi'),
+          SnackBar(
+            content: Text(l10n.fileSentSuccess),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
         onSuccess();
@@ -330,7 +329,7 @@ class MessageSenderHelper {
       scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('Dosya gönderme hatası: ${e.toString()}'),
+          content: Text(l10n.fileSendError + ': ${e.toString()}'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 4),
         ),

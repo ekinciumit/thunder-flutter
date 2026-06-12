@@ -28,7 +28,7 @@ class _ModernLoadingWidgetState extends State<ModernLoadingWidget>
   @override
   void initState() {
     super.initState();
-    
+
     _rotationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,

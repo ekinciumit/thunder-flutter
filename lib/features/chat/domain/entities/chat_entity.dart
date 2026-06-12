@@ -34,7 +34,8 @@ class ChatEntity {
   final List<String> moderators;
   final bool isArchived;
   final bool isMuted;
-  final Map<String, bool> mutedBy; // userId -> is muted
+  final Map<String, bool> mutedBy; // userId -> is muted (deprecated, use mutedUntil)
+  final Map<String, DateTime?> mutedUntil; // userId -> mute end time (null = unlimited)
   final Map<String, dynamic>? settings;
   final Map<String, dynamic>? metadata;
 
@@ -58,6 +59,7 @@ class ChatEntity {
     this.isArchived = false,
     this.isMuted = false,
     this.mutedBy = const {},
+    this.mutedUntil = const {},
     this.settings,
     this.metadata,
   });
@@ -83,6 +85,7 @@ class ChatEntity {
     bool? isArchived,
     bool? isMuted,
     Map<String, bool>? mutedBy,
+    Map<String, DateTime?>? mutedUntil,
     Map<String, dynamic>? settings,
     Map<String, dynamic>? metadata,
   }) {
@@ -106,6 +109,7 @@ class ChatEntity {
       isArchived: isArchived ?? this.isArchived,
       isMuted: isMuted ?? this.isMuted,
       mutedBy: mutedBy ?? this.mutedBy,
+      mutedUntil: mutedUntil ?? this.mutedUntil,
       settings: settings ?? this.settings,
       metadata: metadata ?? this.metadata,
     );
@@ -123,6 +127,31 @@ class ChatEntity {
     return admins.contains(userId);
   }
 
+  /// Kullanıcı grup oluşturan mı kontrol eder
+  bool isCreator(String userId) {
+    return createdBy == userId;
+  }
+
+  /// Kullanıcı grup yöneticisi mi kontrol eder (oluşturan veya admin)
+  bool isGroupAdmin(String userId) {
+    return isCreator(userId) || isAdmin(userId);
+  }
+
+  /// Kullanıcı grup bilgilerini düzenleyebilir mi (sadece yöneticiler)
+  bool canEditGroup(String userId) {
+    return isGroupAdmin(userId);
+  }
+
+  /// Kullanıcı yönetici yapabilir/çıkarabilir mi (sadece yöneticiler)
+  bool canManageAdmins(String userId) {
+    return isGroupAdmin(userId);
+  }
+
+  /// Kullanıcı üye ekleyebilir/çıkarabilir mi (sadece yöneticiler)
+  bool canManageMembers(String userId) {
+    return isGroupAdmin(userId);
+  }
+
   /// Kullanıcı moderator mü kontrol eder
   bool isModerator(String userId) {
     return moderators.contains(userId);
@@ -133,9 +162,20 @@ class ChatEntity {
     return participants.contains(userId);
   }
 
-  /// Kullanıcı sohbeti susturmuş mu kontrol eder
+  /// Kullanıcı sohbeti susturmuş mu kontrol eder (deprecated, use isMutedUntil)
   bool isMutedBy(String userId) {
     return mutedBy[userId] ?? false;
+  }
+
+  /// Kullanıcı sohbeti susturmuş mu kontrol eder (mutedUntil kullanarak)
+  bool isMutedUntil(String userId) {
+    final muteEndTime = mutedUntil[userId];
+    if (muteEndTime == null) {
+      // null = süresiz sessize alınmış
+      return mutedBy[userId] ?? false; // Eski sistemle uyumluluk için
+    }
+    // Süre dolmuş mu kontrol et
+    return DateTime.now().isBefore(muteEndTime);
   }
 
   /// Sohbet aktif mi kontrol eder (arşivlenmemiş)

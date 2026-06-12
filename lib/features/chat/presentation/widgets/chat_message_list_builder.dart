@@ -39,20 +39,26 @@ class ChatMessageListBuilder extends StatefulWidget {
 }
 
 class _ChatMessageListBuilderState extends State<ChatMessageListBuilder> {
-  bool _isInitialLoad = true;
+  bool _showLoadingPlaceholder = true;
   Set<String> _previousMessageIds = {}; // Sadece ID'leri sakla, mesajları değil
 
   @override
   void initState() {
     super.initState();
-    // Timeout: 3 saniye sonra loading'i kapat (mesaj gelmese bile)
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted && _isInitialLoad) {
-        setState(() {
-          _isInitialLoad = false;
-        });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkCachedMessages());
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted && _showLoadingPlaceholder) {
+        setState(() => _showLoadingPlaceholder = false);
       }
     });
+  }
+
+  void _checkCachedMessages() {
+    if (!mounted || widget.chatId == null) return;
+    final cached = context.read<ChatViewModel>().getMessagesForChat(widget.chatId!);
+    if (cached.isNotEmpty && _showLoadingPlaceholder) {
+      setState(() => _showLoadingPlaceholder = false);
+    }
   }
 
   @override
@@ -62,12 +68,8 @@ class _ChatMessageListBuilderState extends State<ChatMessageListBuilder> {
       return const MessageListSkeleton();
     }
 
-    if (_isInitialLoad) {
-      return const MessageListSkeleton();
-    }
-
     return Selector<ChatViewModel, List<MessageEntity>>(
-      selector: (_, vm) => widget.chatId != null ? vm.getMessagesForChat(widget.chatId!) : <MessageEntity>[],
+      selector: (_, vm) => vm.getMessagesForChat(widget.chatId!),
       shouldRebuild: (previous, next) {
         // Performance: Sadece mesaj listesi değiştiyse rebuild
         if (previous.length != next.length) return true;
@@ -87,27 +89,22 @@ class _ChatMessageListBuilderState extends State<ChatMessageListBuilder> {
         // Entity'leri direkt kullan (Clean Architecture: UI Entity görmeli)
         final sortedMessages = List<MessageEntity>.from(messageEntities);
         sortedMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        
-        // İlk yükleme tamamlandı mı kontrol et (sadece bir kez)
-        if (_isInitialLoad && sortedMessages.isNotEmpty) {
-          // Sadece bir kez setState yap ve scroll yap
+
+        if (_showLoadingPlaceholder && sortedMessages.isEmpty) {
+          return const MessageListSkeleton();
+        }
+
+        if (_showLoadingPlaceholder && sortedMessages.isNotEmpty) {
           Future.microtask(() {
-            if (mounted && _isInitialLoad) {
-              setState(() {
-                _isInitialLoad = false;
-              });
-              
-              // İlk yüklemede son mesajlara scroll yap (WhatsApp gibi)
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (widget.scrollController.hasClients && sortedMessages.isNotEmpty) {
-                    widget.scrollController.jumpTo(
-                      widget.scrollController.position.maxScrollExtent,
-                    );
-                  }
-                });
-              });
-            }
+            if (!mounted) return;
+            setState(() => _showLoadingPlaceholder = false);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (widget.scrollController.hasClients) {
+                widget.scrollController.jumpTo(
+                  widget.scrollController.position.maxScrollExtent,
+                );
+              }
+            });
           });
         }
         
@@ -115,18 +112,21 @@ class _ChatMessageListBuilderState extends State<ChatMessageListBuilder> {
         final currentIds = sortedMessages.map((m) => m.id).toSet();
         final newMessages = sortedMessages.where((m) => !_previousMessageIds.contains(m.id)).toList();
         
-        // State'i güncelle (scroll kontrolü için) - sadece gerçekten değiştiyse
-        // BU ÇOK ÖNEMLİ: builder içinde setState çağırmayın, sadece callback çağırın
-        if (currentIds != _previousMessageIds) {
+        // ✅ shouldRebuild zaten reactions değişikliğini algılıyor, bu yüzden builder çağrılıyor
+        // onMessagesUpdated callback'ini her zaman çağır (reactions değişikliği için de)
+        // Ama sadece gerçekten değişiklik varsa setState yapılacak (private_chat_page.dart'da kontrol ediliyor)
+        if (currentIds != _previousMessageIds || 
+            sortedMessages.any((msg) => _previousMessageIds.contains(msg.id))) {
           // ID'leri güncelle (setState olmadan, sadece state değişkenini güncelle)
           _previousMessageIds = currentIds;
           
-          // onMessagesUpdated callback'ini sadece gerçekten değişiklik varsa çağır
+          // onMessagesUpdated callback'ini çağır (yeni mesaj veya reaction değişikliği için)
           // Future.microtask kullan ki builder içinde setState çağrılmasın
           Future.microtask(() {
             widget.onMessagesUpdated(messageEntities);
             
             // Yeni mesaj geldiğinde scroll yap (sadece yeni mesaj varsa)
+            // Reaction değişikliğinde scroll yapma (pozisyonu koru)
             if (newMessages.isNotEmpty) {
               widget.onScrollToBottom();
             }

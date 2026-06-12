@@ -300,6 +300,11 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   }
 
   void _handleReactionTap(MessageEntity message, String emoji) async {
+    if (!mounted || !_scrollController.hasClients) return;
+    
+    // ✅ Scroll pozisyonunu kaydet (stream güncellemesinden sonra korumak için)
+    final currentScrollPosition = _scrollController.position.pixels;
+    
     final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
     await ChatMessageActionsHelper.handleReactionTap(
       context: context,
@@ -307,6 +312,19 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       currentUserId: widget.currentUserId,
       chatViewModel: chatViewModel,
     );
+    
+    // ✅ Stream güncellemesinden sonra scroll pozisyonunu koru
+    // Stream güncellemesi async olduğu için kısa bir gecikme ile pozisyonu geri yükle
+    if (mounted && _scrollController.hasClients) {
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted && _scrollController.hasClients) {
+          // Mevcut scroll pozisyonunu koru (reaction eklenince mesaj yüksekliği değişebilir)
+          final maxScroll = _scrollController.position.maxScrollExtent;
+          final targetPosition = currentScrollPosition.clamp(0.0, maxScroll);
+          _scrollController.jumpTo(targetPosition);
+        }
+      });
+    }
   }
 
   Future<void> _sendVoiceMessage(String filePath, Duration duration) async {

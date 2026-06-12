@@ -1,12 +1,18 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../views/home_page.dart';
 import '../../features/auth/presentation/pages/auth_page.dart';
 import '../../features/auth/presentation/pages/complete_profile_page.dart';
 import '../../features/chat/presentation/pages/private_chat_page.dart';
+import '../../features/chat/presentation/pages/create_group_chat_page.dart';
+import '../../features/chat/presentation/pages/group_chat_page.dart';
+import '../../features/chat/presentation/pages/group_chat_info_page.dart';
 import '../../features/event/presentation/pages/event_detail_page.dart';
+import '../../features/event/presentation/pages/event_chat_page.dart';
 import '../../features/event/presentation/pages/create_event_page.dart';
 import '../../features/user/presentation/pages/user_profile_page.dart';
 import '../../views/settings_page.dart';
@@ -17,11 +23,15 @@ import '../../features/auth/presentation/pages/edit_profile_page.dart';
 import '../../features/user/presentation/pages/blocked_users_page.dart';
 import '../../features/user/presentation/pages/followers_following_page.dart';
 import '../../features/user/presentation/pages/user_search_page.dart';
-import '../../features/event/presentation/pages/my_events_page.dart';
 import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../views/dev_preview_page.dart';
+import '../../features/event/presentation/viewmodels/event_viewmodel.dart';
 import '../../features/event/domain/entities/event_entity.dart';
 import '../../features/chat/domain/entities/message_entity.dart';
 import '../../features/user/domain/entities/user_entity.dart';
+import '../../services/notification_service.dart';
+import '../../services/crash_reporting_service.dart';
+import '../../l10n/app_localizations.dart';
 
 /// App Router - Centralized navigation using go_router
 class AppRouter {
@@ -65,28 +75,31 @@ class AppRouter {
           return '/auth';
         }
 
-        // Redirect to complete profile if needed
-        // BUT: Allow certain routes even if profile incomplete
-        final allowedIncompleteRoutes = [
-          isEventCreateRoute,
-          isUserProfileRoute, // Allow viewing profiles even if incomplete
-          isSettingsRoute,
-          isProfileEditRoute,
-          isNotificationsRoute,
-          isChatRoute,
-          isEventRoute,
-          isEventsRoute,
-          isMessageRoute,
-          isSearchRoute,
-          isHomeRoute, // Allow home route even if profile incomplete
-        ];
-        final isAllowedRoute = allowedIncompleteRoutes.any((allowed) => allowed);
-        
-        if (isAuthenticated && needsProfileCompletion && !isCompleteProfileRoute && !isAuthRoute && !isAllowedRoute) {
-          if (kDebugMode) {
-            debugPrint('🟡 [ROUTER] Redirect: Profile incomplete → /complete-profile');
+        // ✅ Redirect to complete profile if needed
+        // Profil tamamlanmamışsa ve complete-profile route'unda değilsek redirect yap
+        if (isAuthenticated && needsProfileCompletion && !isCompleteProfileRoute && !isAuthRoute) {
+          // Allow certain routes even if profile incomplete (ama home route değil)
+          final allowedIncompleteRoutes = [
+            isEventCreateRoute,
+            isUserProfileRoute, // Allow viewing profiles even if incomplete
+            isSettingsRoute,
+            isProfileEditRoute,
+            isNotificationsRoute,
+            isChatRoute,
+            isEventRoute,
+            isEventsRoute,
+            isMessageRoute,
+            isSearchRoute,
+            // ❌ isHomeRoute'u kaldırdık - profil tamamlanmamışsa home'a gitmesin, complete-profile'a gitsin
+          ];
+          final isAllowedRoute = allowedIncompleteRoutes.any((allowed) => allowed);
+          
+          if (!isAllowedRoute) {
+            if (kDebugMode) {
+              debugPrint('🟡 [ROUTER] Redirect: Profile incomplete → /complete-profile');
+            }
+            return '/complete-profile';
           }
-          return '/complete-profile';
         }
 
         // Redirect to home if authenticated and profile complete (on auth route)
@@ -115,6 +128,9 @@ class AppRouter {
         // AuthViewModel değişikliklerini dinle (giriş/çıkış sonrası otomatik redirect)
         refreshListenable: authViewModel,
         redirect: redirectLogic,
+        observers: [
+          FirebaseAnalyticsObserver(analytics: CrashReportingService.analytics),
+        ],
         routes: _getRoutes(),
       );
     } else {
@@ -124,6 +140,9 @@ class AppRouter {
         initialLocation: '/',
         debugLogDiagnostics: kDebugMode, // Sadece debug modda log bas
         redirect: redirectLogic,
+        observers: [
+          FirebaseAnalyticsObserver(analytics: CrashReportingService.analytics),
+        ],
         routes: _getRoutes(),
       );
     }
@@ -152,19 +171,7 @@ class AppRouter {
         name: 'complete-profile',
         builder: (context, state) {
           final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-          return CompleteProfilePage(
-            onComplete: (name, bio, photoUrl) async {
-              try {
-                await authViewModel.completeProfile(
-                  displayName: name,
-                  bio: bio,
-                  photoUrl: photoUrl,
-                );
-              } catch (e) {
-                // Error handling is done in ViewModel
-              }
-            },
-          );
+          return const CompleteProfilePage();
         },
       ),
 
@@ -193,6 +200,39 @@ class AppRouter {
             otherUserName: otherUserName,
             chatId: chatId,
           );
+        },
+      ),
+      
+      // Create Group Chat
+      GoRoute(
+        path: '/chat/create-group',
+        name: 'create-group-chat',
+        builder: (context, state) => const CreateGroupChatPage(),
+      ),
+      
+      // Group Chat Page
+      GoRoute(
+        path: '/chat/:chatId/group',
+        name: 'group-chat',
+        builder: (context, state) {
+          final chatId = state.pathParameters['chatId']!;
+          final groupName = state.uri.queryParameters['name'];
+          final groupPhotoUrl = state.uri.queryParameters['photoUrl'];
+          return GroupChatPage(
+            chatId: chatId,
+            groupName: groupName,
+            groupPhotoUrl: groupPhotoUrl,
+          );
+        },
+      ),
+      
+      // Group Chat Info Page
+      GoRoute(
+        path: '/chat/:chatId/info',
+        name: 'group-chat-info',
+        builder: (context, state) {
+          final chatId = state.pathParameters['chatId']!;
+          return GroupChatInfoPage(chatId: chatId);
         },
       ),
 
@@ -251,11 +291,19 @@ class AppRouter {
           return EventDetailPage(eventId: eventId);
         },
       ),
-
+      
+      // Event Chat Page
       GoRoute(
-        path: '/events/my',
-        name: 'my-events',
-        builder: (context, state) => const MyEventsPage(),
+        path: '/event/:eventId/chat',
+        name: 'event-chat',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          final eventTitle = state.uri.queryParameters['title'];
+          return EventChatPage(
+            eventId: eventId,
+            eventTitle: eventTitle,
+          );
+        },
       ),
 
       // User Routes
@@ -400,6 +448,16 @@ class AppRouter {
         },
       ),
 
+      // Dev Preview (sadece debug modunda)
+      if (kDebugMode)
+        GoRoute(
+          path: '/dev-preview',
+          name: 'dev-preview',
+          builder: (context, state) {
+            return const DevPreviewPage();
+          },
+        ),
+
       GoRoute(
         path: '/message/search',
         name: 'message-search',
@@ -428,34 +486,78 @@ class AppRouter {
 }
 
 /// RootPage widget for router
-class RootPage extends StatelessWidget {
+class RootPage extends StatefulWidget {
   const RootPage({super.key});
+
+  @override
+  State<RootPage> createState() => _RootPageState();
+}
+
+class _RootPageState extends State<RootPage> {
+  NotificationService? _notificationService;
+  bool _servicesInitialized = false;
+
+  @override
+  void dispose() {
+    _notificationService?.dispose();
+    super.dispose();
+  }
+
+  /// Servisleri asenkron olarak başlatır (build metodunu bloklamaz)
+  Future<void> _initializeServices(AuthViewModel authViewModel) async {
+    if (_servicesInitialized) return;
+    
+    // Kullanıcı giriş yaptığında ve profil tamamlama gerekmediğinde servisleri başlat
+    if (authViewModel.user != null && !authViewModel.needsProfileCompletion) {
+      _servicesInitialized = true;
+      
+      // Bildirim servisini başlat (async, build'i bloklamaz)
+      _notificationService = NotificationService();
+      unawaited(_notificationService!.initialize(authViewModel));
+      
+      // Giriş sonrası etkinlik dinlemeyi başlat
+      final eventVm = Provider.of<EventViewModel>(context, listen: false);
+      eventVm.listenEvents();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthViewModel?>(
       builder: (context, authViewModel, _) {
+        // ViewModel henüz hazır değilse loading göster
         if (authViewModel == null) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
+        
+        // ViewModel hazır, servisleri başlat (async, build'i bloklamaz)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _initializeServices(authViewModel);
+        });
+        
         if (authViewModel.user != null) {
           if (authViewModel.needsProfileCompletion) {
-            return CompleteProfilePage(
-              onComplete: (name, bio, photoUrl) async {
-                try {
-                  await authViewModel.completeProfile(
-                    displayName: name,
-                    bio: bio,
-                    photoUrl: photoUrl,
+            // SignUp başarılı mesajını burada göster (sadece yeni kayıt olduysa)
+            if (authViewModel.justSignedUp) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final l10n = AppLocalizations.of(context);
+                if (l10n != null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(l10n.signUpSuccess),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      duration: const Duration(seconds: 3),
+                    ),
                   );
-                } catch (e) {
-                  // Error handling is done in ViewModel
+                  // Flag'i sıfırla (bir kere göster)
+                  authViewModel.justSignedUp = false;
                 }
-              },
-            );
+              });
+            }
+            
+            return const CompleteProfilePage();
           }
           return const HomePage();
         }

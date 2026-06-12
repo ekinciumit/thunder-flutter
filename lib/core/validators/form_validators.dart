@@ -1,231 +1,180 @@
-// Form Validators
-// 
-// Merkezi form validasyon servisi
-// Tüm form alanları için validator fonksiyonları
-// 
-// Bu sınıf ValidationLogic'i kullanarak error message döndürür
-// Clean Architecture: Validation logic ayrı, form validators UI için error message döndürür
-
+import '../../l10n/app_localizations.dart';
 import 'validation_logic.dart';
 
 class FormValidators {
-  /// İsim format kontrolü için regex pattern
-  /// Sadece harf, boşluk ve Türkçe karakterler
   static final RegExp _nameRegex = RegExp(
     r'^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]{2,}$',
   );
 
-  /// Email validator
-  /// 
-  /// Kontroller:
-  /// - Boş olmamalı
-  /// - Geçerli email formatı olmalı
-  static String? email(String? value) {
+  static String? email(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return 'E-posta adresi zorunludur';
+      return l10n.validationEmailRequired;
     }
 
     if (!ValidationLogic.isValidEmail(value.trim())) {
-      return 'Geçerli bir e-posta adresi giriniz';
+      return l10n.validationEmailInvalid;
     }
 
     return null;
   }
 
-  /// Password validator
-  /// 
-  /// Kontroller:
-  /// - Boş olmamalı
-  /// - En az 6 karakter olmalı
-  /// - En az bir harf ve bir rakam içermeli
-  static String? password(String? value) {
+  static String? password(String? value, AppLocalizations l10n) {
     if (value == null || value.isEmpty) {
-      return 'Şifre zorunludur';
+      return l10n.validationPasswordRequired;
     }
 
     if (!ValidationLogic.isValidPasswordLength(value)) {
-      return 'Şifre en az 6 karakter olmalıdır';
+      return l10n.validationPasswordMinLength;
     }
 
     if (!ValidationLogic.isStrongPassword(value)) {
-      return 'Şifre en az bir harf ve bir rakam içermelidir';
+      return l10n.validationPasswordStrength;
     }
 
     return null;
   }
 
-  /// İsim validator
-  /// 
-  /// Kontroller:
-  /// - Boş olmamalı
-  /// - En az 2 karakter olmalı
-  /// - Sadece harf, boşluk ve Türkçe karakterler içermeli
-  static String? name(String? value) {
+  static String? name(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return 'İsim zorunludur';
+      return l10n.validationNameRequired;
     }
 
     final trimmedValue = value.trim();
 
     if (trimmedValue.length < 2) {
-      return 'İsim en az 2 karakter olmalıdır';
+      return l10n.validationNameMinLength;
     }
 
     if (!_nameRegex.hasMatch(trimmedValue)) {
-      return 'İsim sadece harf ve boşluk içerebilir';
+      return l10n.validationNameInvalid;
     }
 
     return null;
   }
 
-  /// Bio validator
-  /// 
-  /// Kontroller:
-  /// - Opsiyonel (boş olabilir)
-  /// - Maksimum 500 karakter olmalı
-  static String? bio(String? value) {
+  static String? bio(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return null; // Bio opsiyonel
+      return null;
     }
 
     if (value.length > 500) {
-      return 'Biyografi en fazla 500 karakter olabilir';
+      return l10n.validationBioMaxLength;
     }
 
     return null;
   }
 
-  /// Başlık validator
-  /// 
-  /// Kontroller:
-  /// - Boş olmamalı
-  /// - En az 3 karakter olmalı
-  /// - En fazla 100 karakter olmalı
-  static String? title(String? value) {
+  static String? title(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return 'Başlık zorunludur';
+      return l10n.validationTitleRequired;
     }
 
     final trimmedValue = value.trim();
 
     if (trimmedValue.length < 3) {
-      return 'Başlık en az 3 karakter olmalıdır';
+      return l10n.validationTitleMinLength;
     }
 
     if (trimmedValue.length > 100) {
-      return 'Başlık en fazla 100 karakter olabilir';
+      return l10n.validationTitleMaxLength;
     }
 
     return null;
   }
 
-  /// Açıklama validator
-  /// 
-  /// Kontroller:
-  /// - Boş olmamalı
-  /// - En az 10 karakter olmalı
-  /// - En fazla 2000 karakter olmalı
-  static String? description(String? value) {
+  static String? description(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return 'Açıklama zorunludur';
+      return l10n.validationDescriptionRequired;
     }
 
     final trimmedValue = value.trim();
 
     if (trimmedValue.length < 10) {
-      return 'Açıklama en az 10 karakter olmalıdır';
+      return l10n.validationDescriptionMinLength;
     }
 
     if (trimmedValue.length > 2000) {
-      return 'Açıklama en fazla 2000 karakter olabilir';
+      return l10n.validationDescriptionMaxLength;
     }
 
     return null;
   }
 
-  /// Adres validator
-  /// 
-  /// Kontroller:
-  /// - Boş olmamalı
-  /// - En az 5 karakter olmalı
-  static String? address(String? value) {
+  static String? address(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return 'Adres zorunludur';
+      return l10n.validationAddressRequired;
     }
 
     if (value.trim().length < 5) {
-      return 'Adres en az 5 karakter olmalıdır';
+      return l10n.validationAddressMinLength;
     }
 
     return null;
   }
 
-  /// Kotası validator
-  /// 
-  /// Kontroller:
-  /// - Boş olmamalı
-  /// - Geçerli bir sayı olmalı
-  /// - En az 1 olmalı
-  /// - En fazla 1000 olmalı
-  static String? quota(String? value) {
+  static String? quota(String? value, AppLocalizations l10n) {
     if (value == null || value.trim().isEmpty) {
-      return 'Kota zorunludur';
+      return l10n.validationQuotaRequired;
     }
 
     final quotaValue = int.tryParse(value.trim());
     if (quotaValue == null) {
-      return 'Geçerli bir sayı giriniz';
+      return l10n.validationQuotaInvalid;
     }
 
     if (quotaValue < 1) {
-      return 'Kota en az 1 olmalıdır';
+      return l10n.validationQuotaMin;
     }
 
     if (quotaValue > 1000) {
-      return 'Kota en fazla 1000 olabilir';
+      return l10n.validationQuotaMax;
     }
 
     return null;
   }
 
-  /// Genel required validator
-  /// 
-  /// Herhangi bir alan için basit boş kontrolü
-  static String? required(String? value, {String fieldName = 'Bu alan'}) {
+  static String? required(
+    String? value, {
+    required AppLocalizations l10n,
+    required String fieldName,
+  }) {
     if (value == null || !ValidationLogic.isNotEmpty(value)) {
-      return '$fieldName zorunludur';
+      return l10n.validationFieldRequired(fieldName);
     }
     return null;
   }
 
-  /// Minimum uzunluk validator
-  /// 
-  /// Belirli bir minimum uzunluk kontrolü
-  static String? minLength(String? value, int minLength, {String fieldName = 'Bu alan'}) {
+  static String? minLength(
+    String? value,
+    int minLength, {
+    required AppLocalizations l10n,
+    required String fieldName,
+  }) {
     if (value == null || value.trim().isEmpty) {
-      return '$fieldName zorunludur';
+      return l10n.validationFieldRequired(fieldName);
     }
 
     if (!ValidationLogic.hasMinLength(value.trim(), minLength)) {
-      return '$fieldName en az $minLength karakter olmalıdır';
+      return l10n.validationFieldMinLength(fieldName, minLength);
     }
 
     return null;
   }
 
-  /// Maksimum uzunluk validator
-  /// 
-  /// Belirli bir maksimum uzunluk kontrolü
-  static String? maxLength(String? value, int maxLength, {String fieldName = 'Bu alan'}) {
+  static String? maxLength(
+    String? value,
+    int maxLength, {
+    required AppLocalizations l10n,
+    required String fieldName,
+  }) {
     if (value == null || value.trim().isEmpty) {
-      return null; // Boş değerler için max length kontrolü yapılmaz
+      return null;
     }
 
     if (!ValidationLogic.hasMaxLength(value, maxLength)) {
-      return '$fieldName en fazla $maxLength karakter olabilir';
+      return l10n.validationFieldMaxLength(fieldName, maxLength);
     }
 
     return null;
   }
 }
-

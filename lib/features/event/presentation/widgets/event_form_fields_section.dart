@@ -26,6 +26,8 @@ class EventFormFieldsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = l10n ?? AppLocalizations.of(context)!;
+
     return GlassContainer(
       borderRadius: AppTheme.radiusLg,
       padding: const EdgeInsets.symmetric(
@@ -38,7 +40,7 @@ class EventFormFieldsSection extends StatelessWidget {
             controller: titleController,
             label: l10n?.eventTitle ?? 'Event Title',
             textInputAction: TextInputAction.next,
-            validator: FormValidators.title,
+            validator: (value) => FormValidators.title(value, localizations),
             prefixIcon: Icon(Icons.title, color: AppColorConfig.primaryColor),
           ),
           const SizedBox(height: AppTheme.spacingMd),
@@ -47,7 +49,7 @@ class EventFormFieldsSection extends StatelessWidget {
             label: l10n?.eventDescription ?? 'Description',
             textInputAction: TextInputAction.next,
             maxLines: 3,
-            validator: FormValidators.description,
+            validator: (value) => FormValidators.description(value, localizations),
             prefixIcon: Icon(Icons.description, color: AppColorConfig.secondaryColor),
           ),
           const SizedBox(height: AppTheme.spacingMd),
@@ -55,7 +57,7 @@ class EventFormFieldsSection extends StatelessWidget {
             controller: addressController,
             label: l10n?.eventAddress ?? 'Address',
             textInputAction: TextInputAction.next,
-            validator: FormValidators.address,
+            validator: (value) => FormValidators.address(value, localizations),
             prefixIcon: Icon(Icons.location_on, color: AppColorConfig.tertiaryColor),
           ),
           const SizedBox(height: AppTheme.spacingMd),
@@ -64,7 +66,7 @@ class EventFormFieldsSection extends StatelessWidget {
             label: l10n?.eventQuota ?? 'Quota',
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.number,
-            validator: FormValidators.quota,
+            validator: (value) => FormValidators.quota(value, localizations),
             prefixIcon: Icon(Icons.people, color: AppColorConfig.primaryColor),
           ),
         ],

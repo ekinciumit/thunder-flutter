@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../../core/theme/app_color_config.dart';
+import '../theme/app_color_config.dart';
 
 class AppCard extends StatefulWidget {
   final Widget child;
@@ -74,48 +74,47 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
-    
-    // Dark mode'da otomatik glassmorphism, light mode'da normal veya manuel glassmorphism
+
     if (widget.enableGlassmorphism || brightness == Brightness.dark) {
       return _buildGlassCard();
     }
-    
-    // Light mode normal kart
+
     Widget cardContent = Container(
       width: widget.width,
       height: widget.height,
       margin: widget.margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: widget.padding ?? const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: widget.gradientColors != null 
-          ? LinearGradient(
-              colors: widget.gradientColors!,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            )
-          : LinearGradient(
-              colors: [
-                theme.colorScheme.surface,
-                theme.colorScheme.surfaceContainerHighest,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+        gradient: widget.gradientColors != null
+            ? LinearGradient(
+                colors: widget.gradientColors!,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : LinearGradient(
+                colors: [
+                  theme.colorScheme.surface,
+                  theme.colorScheme.surfaceContainerHighest,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(widget.borderRadius),
-        boxShadow: widget.boxShadow ?? [
-          BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-            spreadRadius: 0,
-          ),
-        ],
+        boxShadow: widget.boxShadow ??
+            [
+              BoxShadow(
+                color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                spreadRadius: 0,
+              ),
+              BoxShadow(
+                color: theme.colorScheme.shadow.withValues(alpha: 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+                spreadRadius: 0,
+              ),
+            ],
       ),
       child: widget.child,
     );
@@ -145,7 +144,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
     final isDark = brightness == Brightness.dark;
-    
+
     Widget glassContent = Container(
       width: widget.width,
       height: widget.height,
@@ -153,7 +152,6 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(widget.borderRadius),
         child: BackdropFilter(
-          // iOS 16 tarzı güçlü blur
           filter: ImageFilter.blur(
             sigmaX: isDark ? 20 : widget.blurStrength,
             sigmaY: isDark ? 20 : widget.blurStrength,
@@ -162,11 +160,9 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
             padding: widget.padding ?? const EdgeInsets.all(20),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(widget.borderRadius),
-              // iOS 16 tarzı şeffaf glassmorphism
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.05) // Çok şeffaf
+                  ? Colors.white.withValues(alpha: 0.05)
                   : Colors.white.withValues(alpha: 0.15),
-              // İnce, şeffaf border
               border: Border.all(
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.15)
@@ -180,17 +176,18 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
       ),
     );
 
-    // Dış gölge için sarmalayıcı - hafif gölge (ChatGPT önerisi)
     glassContent = Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(widget.borderRadius),
-        boxShadow: widget.boxShadow ?? [
-          BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: brightness == Brightness.dark ? 0.4 : 0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: widget.boxShadow ??
+            [
+              BoxShadow(
+                color: theme.colorScheme.shadow
+                    .withValues(alpha: brightness == Brightness.dark ? 0.4 : 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
       ),
       child: glassContent,
     );
@@ -215,4 +212,4 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
 
     return glassContent;
   }
-} 
+}

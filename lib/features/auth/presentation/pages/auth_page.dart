@@ -7,8 +7,8 @@ import '../../../../core/widgets/responsive_widgets.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/modern_components.dart';
-import '../../../../views/widgets/app_card.dart';
-import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/app_gradient_container.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -97,7 +97,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                     hint: 'ornek@email.com',
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    validator: FormValidators.email,
+                    validator: (value) => FormValidators.email(value, l10n),
                     prefixIcon: Icon(
                       Icons.email_outlined,
                       color: theme.colorScheme.primary,
@@ -111,9 +111,13 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                     keyboardType: TextInputType.visiblePassword,
                     textInputAction: isLogin ? TextInputAction.done : TextInputAction.next,
                     obscureText: true,
-                    validator: isLogin 
-                        ? (value) => FormValidators.required(value, fieldName: 'Şifre')
-                        : FormValidators.password,
+                    validator: isLogin
+                        ? (value) => FormValidators.required(
+                              value,
+                              l10n: l10n,
+                              fieldName: l10n.password,
+                            )
+                        : (value) => FormValidators.password(value, l10n),
                     onFieldSubmitted: (_) {
                       if (_formKey.currentState!.validate()) {
                         _handleSubmit(authViewModel);

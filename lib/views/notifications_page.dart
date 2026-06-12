@@ -8,7 +8,7 @@ import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import '../services/user_service.dart';
-import 'widgets/app_gradient_container.dart';
+import '../core/widgets/app_gradient_container.dart';
 import 'widgets/notification_item.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';

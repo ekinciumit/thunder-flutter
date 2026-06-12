@@ -6,7 +6,7 @@ import '../../domain/entities/event_entity.dart';
 import '../viewmodels/event_viewmodel.dart';
 import '../../../../core/widgets/modern_components.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../core/widgets/modern_loading_widget.dart';
 
 /// Dialog for editing an event
 class EventEditDialog {
@@ -76,7 +76,7 @@ class EventEditDialog {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
                       SnackBar(
-                        content: const Text('Fotoğraf yüklendi'),
+                        content: Text(l10n.photoUploaded),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -84,8 +84,8 @@ class EventEditDialog {
                 } else {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(
-                        content: Text('Fotoğraf yüklenemedi'),
+                      SnackBar(
+                        content: Text(l10n.photoUploadFailed),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -96,7 +96,7 @@ class EventEditDialog {
                 if (dialogContext.mounted) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(
-                      content: Text('Fotoğraf yükleme hatası: ${e.toString()}'),
+                      content: Text(l10n.photoUploadError(e.toString())),
                       backgroundColor: Colors.red,
                     ),
                   );

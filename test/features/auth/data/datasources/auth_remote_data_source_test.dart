@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -17,6 +18,7 @@ import 'auth_remote_data_source_test.mocks.dart';
   UserCredential,
   User,
   FirebaseFirestore,
+  FirebaseStorage,
   DocumentReference,
   DocumentSnapshot,
 ])
@@ -24,18 +26,21 @@ void main() {
   late AuthRemoteDataSourceImpl dataSource;
   late MockFirebaseAuth mockAuth;
   late MockFirebaseFirestore mockFirestore;
+  late MockFirebaseStorage mockStorage;
   late MockUserCredential mockCredential;
   late MockUser mockUser;
 
   setUp(() {
     mockAuth = MockFirebaseAuth();
     mockFirestore = MockFirebaseFirestore();
+    mockStorage = MockFirebaseStorage();
     mockCredential = MockUserCredential();
     mockUser = MockUser();
 
     dataSource = AuthRemoteDataSourceImpl(
       auth: mockAuth,
       firestore: mockFirestore,
+      storage: mockStorage,
     );
   });
 

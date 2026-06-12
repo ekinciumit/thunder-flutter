@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import '../../../../features/event/domain/entities/event_entity.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/theme/app_color_config.dart';
 import '../../../../core/navigation/app_navigation.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -112,7 +111,7 @@ class ProfileEventsSection extends StatelessWidget {
                             event.title,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColorConfig.cardColor,
+                              color: theme.colorScheme.onSurface,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

@@ -1,16 +1,27 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 import 'package:thunder/features/event/data/datasources/event_remote_data_source.dart';
 import 'package:thunder/features/event/data/models/event_model.dart';
 
+import 'event_remote_data_source_test.mocks.dart';
+
+@GenerateMocks([FirebaseStorage])
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
+  late MockFirebaseStorage mockStorage;
   late EventRemoteDataSourceImpl dataSource;
 
   setUp(() {
     fakeFirestore = FakeFirebaseFirestore();
-    dataSource = EventRemoteDataSourceImpl(firestore: fakeFirestore);
+    mockStorage = MockFirebaseStorage();
+    dataSource = EventRemoteDataSourceImpl(
+      firestore: fakeFirestore,
+      storage: mockStorage,
+    );
   });
 
   group('EventRemoteDataSourceImpl', () {

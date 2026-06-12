@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/event_entity.dart';
 import '../viewmodels/event_viewmodel.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../core/widgets/modern_loading_widget.dart';
 
 /// Dialog for deleting an event
 class EventDeleteDialog {

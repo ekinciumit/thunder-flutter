@@ -329,5 +329,32 @@ class AppColorConfig {
   static Color getErrorContainerText(Brightness brightness) {
     return brightness == Brightness.dark ? errorContainerTextDark : errorContainerText;
   }
+
+  // ============================================================================
+  // 🖼️ GRADIENT / GÖRSEL ARKA PLAN ÜZERİNDE İÇERİK RENKLERİ
+  // ============================================================================
+
+  /// Gradient veya arka plan görseli üzerindeki ana metin rengi.
+  /// Light: koyu metin, Dark: açık metin.
+  static Color getOverlayTextPrimary(Brightness brightness) {
+    return getTextPrimary(brightness);
+  }
+
+  /// Gradient veya arka plan görseli üzerindeki ikincil metin rengi.
+  static Color getOverlayTextSecondary(Brightness brightness) {
+    return getTextSecondary(brightness);
+  }
+
+  /// Gradient/görsel üzerinde vurgu rengi (buton kenarlığı, ikon).
+  static Color getOverlayAccent(Brightness brightness) {
+    return brightness == Brightness.dark ? const Color(0xFFFFFFFF) : primaryColor;
+  }
+
+  /// Gradient/görsel üzerinde outline buton kenarlığı.
+  static Color getOverlayBorder(Brightness brightness) {
+    return getOverlayAccent(brightness).withValues(
+      alpha: brightness == Brightness.dark ? 0.7 : 0.55,
+    );
+  }
 }
 

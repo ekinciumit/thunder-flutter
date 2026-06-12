@@ -3,252 +3,389 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Kullanıcılar koleksiyonu için kurallar
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function chatIdContainsUser(chatId) {
+      return chatId.matches('.*' + request.auth.uid + '.*');
+    }
+
+    function uidAddedToList(field) {
+      let before = resource.data.get(field, []);
+      let after = request.resource.data.get(field, []);
+      return after.size() == before.size() + 1
+        && after.hasAll(before)
+        && after.hasAny([request.auth.uid]);
+    }
+
+    function uidRemovedFromList(field) {
+      let before = resource.data.get(field, []);
+      let after = request.resource.data.get(field, []);
+      return before.size() == after.size() + 1
+        && before.hasAll(after)
+        && before.hasAny([request.auth.uid]);
+    }
+
+    function uidToggledInList(field) {
+      return uidAddedToList(field) || uidRemovedFromList(field);
+    }
+
+    function isChatParticipant(chatId) {
+      return exists(/databases/$(database)/documents/chats/$(chatId))
+        && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+    }
+
+    function canAccessChat(chatId) {
+      return isChatParticipant(chatId) || chatIdContainsUser(chatId);
+    }
+
+    function isChatParticipantFromResource() {
+      return resource.data.participants != null
+        && request.auth.uid in resource.data.participants;
+    }
+
+    function canAccessChatFromResource() {
+      return isChatParticipantFromResource() || chatIdContainsUser(resource.id);
+    }
+
+    function isChatAdmin() {
+      return resource.data.get('createdBy', '') == request.auth.uid
+        || (resource.data.get('admins', []) is list
+            && request.auth.uid in resource.data.admins);
+    }
+
+    function ownUserUpdateAllowed() {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return keys.hasOnly(['displayName'])
+        || keys.hasOnly(['username'])
+        || keys.hasOnly(['bio'])
+        || keys.hasOnly(['photoUrl'])
+        || keys.hasOnly(['email'])
+        || keys.hasOnly(['isPrivate'])
+        || keys.hasOnly(['showLocation'])
+        || keys.hasOnly(['showOnlineStatus'])
+        || keys.hasOnly(['fcmTokens'])
+        || keys.hasOnly(['blockedUsers'])
+        || keys.hasOnly(['sentFollowRequests'])
+        || keys.hasOnly(['following'])
+        || keys.hasOnly(['pendingFollowRequests'])
+        || keys.hasOnly(['followers', 'pendingFollowRequests'])
+        || keys.hasOnly(['following', 'sentFollowRequests', 'blockedUsers'])
+        || keys.hasOnly(['followers', 'following', 'sentFollowRequests'])
+        || keys.hasOnly([
+          'displayName', 'username', 'bio', 'photoUrl', 'email',
+          'isPrivate', 'showLocation', 'showOnlineStatus',
+        ])
+        || keys.hasOnly([
+          'displayName', 'username', 'bio', 'photoUrl', 'email',
+          'isPrivate', 'showLocation', 'showOnlineStatus', 'fcmTokens',
+          'followers', 'following', 'pendingFollowRequests', 'sentFollowRequests', 'blockedUsers',
+        ]);
+    }
+
+    function otherUserSocialUpdateAllowed() {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return (keys.hasOnly(['pendingFollowRequests']) && uidToggledInList('pendingFollowRequests'))
+        || (keys.hasOnly(['followers']) && uidToggledInList('followers'))
+        || (keys.hasOnly(['following']) && uidToggledInList('following'))
+        || (keys.hasOnly(['following', 'sentFollowRequests'])
+            && uidAddedToList('following')
+            && uidRemovedFromList('sentFollowRequests'))
+        || keys.hasOnly(['followers', 'following', 'sentFollowRequests']);
+    }
+
+    function clientNotificationTypeAllowed() {
+      return request.resource.data.type in [
+        'follow_request',
+        'follow_request_accepted',
+        'event_invitation',
+        'event_join_request',
+        'event_join_approved',
+        'event_join_rejected',
+        'event_cancelled',
+        'event_updated',
+        'event_reminder',
+        'event_reminder_24h',
+        'event_reminder_2h',
+        'event_check_in',
+        'new_followers',
+        'message',
+        'message_request',
+        'weekly_digest',
+      ];
+    }
+
+    function messageParticipantUpdateAllowed() {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return keys.hasOnly(['status', 'readAt'])
+        || keys.hasOnly(['reactions'])
+        || keys.hasOnly(['isDeleted', 'deletedAt']);
+    }
+
+    function messageSenderUpdateAllowed() {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return keys.hasOnly(['text', 'isEdited', 'editedAt'])
+        || keys.hasOnly(['status'])
+        || keys.hasOnly(['isDeleted', 'deletedAt'])
+        || keys.hasOnly(['reactions']);
+    }
+
+    function chatMetaUpdateAllowed() {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return keys.hasOnly(['lastMessage', 'lastMessageAt'])
+        || keys.hasOnly(['typingStatus'])
+        || keys.hasOnly(['mutedUntil'])
+        || keys.hasOnly(['mutedBy'])
+        || keys.hasOnly(['mutedUntil', 'mutedBy'])
+        || keys.hasOnly(['participantDetails']);
+    }
+
+    function chatGroupInfoUpdateAllowed() {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return keys.hasOnly(['name'])
+        || keys.hasOnly(['description'])
+        || keys.hasOnly(['photoUrl'])
+        || keys.hasOnly(['name', 'description'])
+        || keys.hasOnly(['name', 'photoUrl'])
+        || keys.hasOnly(['description', 'photoUrl'])
+        || keys.hasOnly(['name', 'description', 'photoUrl'])
+        || keys.hasOnly(['admins']);
+    }
+
+    function chatParticipantsUpdateAllowed() {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      let before = resource.data.get('participants', []);
+      let after = request.resource.data.get('participants', []);
+      let participantKeysOnly = keys.hasOnly(['participants'])
+        || keys.hasOnly(['participants', 'participantDetails'])
+        || keys.hasOnly(['participants', 'admins'])
+        || keys.hasOnly(['participants', 'participantDetails', 'admins']);
+      return participantKeysOnly && (
+        (before.size() == after.size() + 1
+          && before.hasAll(after)
+          && before.hasAny([request.auth.uid])
+          && !after.hasAny([request.auth.uid]))
+        || (isChatAdmin() && after.size() == before.size() + 1 && after.hasAll(before))
+        || (isChatAdmin() && before.size() == after.size() + 1 && before.hasAll(after))
+      );
+    }
+
+    // =========================================================================
+    // USERS
+    // =========================================================================
+
     match /users/{userId} {
-      // Herkes yeni kullanıcı oluşturabilir (kayıt olma)
-      allow create: if request.auth != null;
+      allow create: if isSignedIn() && request.auth.uid == userId;
 
-      // Giriş yapmış herkes kullanıcı profillerini okuyabilir (arama için)
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
 
-      // Kullanıcı kendi profilini güncelleyebilir (fcmToken dahil)
-      // Ayrıca takip etme işlemi için başka kullanıcıların followers/following alanlarını güncelleyebilir
-      allow update: if request.auth != null && (
-        request.auth.uid == userId ||
-        // Takip etme işlemi için: sadece followers veya following alanları güncelleniyorsa
-        (request.resource.data.keys().hasAll(['followers', 'following']) &&
-         resource.data.keys().hasAll(['followers', 'following']))
+      allow update: if isSignedIn() && (
+        (isOwner(userId) && ownUserUpdateAllowed())
+        || (!isOwner(userId) && otherUserSocialUpdateAllowed())
       );
 
-      // Kullanıcılar silinemez
       allow delete: if false;
     }
 
-    // Etkinlikler koleksiyonu için kurallar
+    // =========================================================================
+    // EVENTS
+    // =========================================================================
+
     match /events/{eventId} {
-      // Giriş yapmış herkes etkinlikleri okuyabilir
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
 
-      // Giriş yapmış herkes etkinlik oluşturabilir
-      allow create: if request.auth != null;
-
-      // Güncelleme: 
-      // 1. Etkinlik sahibi her şeyi güncelleyebilir (katılımcı çıkarma dahil)
-      // 2. Diğer kullanıcılar:
-      //    - pendingRequests array'ine kendi ID'lerini ekleyip çıkarabilir
-      //    - participants ve approvedParticipants array'lerinden kendi ID'lerini çıkarabilir (ayrılma)
-      allow update: if request.auth != null && (
-        resource.data.createdBy == request.auth.uid ||
-        // Kullanıcı sadece pendingRequests array'ine kendi ID'sini ekleyip çıkarabilir
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pendingRequests']) &&
-         // Eski ve yeni pendingRequests array'lerini karşılaştır - sadece kullanıcının kendi ID'si değişmiş olmalı
-         (request.resource.data.pendingRequests.hasAny([request.auth.uid]) != resource.data.pendingRequests.hasAny([request.auth.uid]))) ||
-        // Kullanıcı participants ve approvedParticipants array'lerinden kendi ID'sini çıkarabilir (ayrılma)
-        // Eski array'lerde kullanıcı var mı ve yeni array'lerde yok mu kontrol et
-        ((resource.data.participants != null && resource.data.participants.hasAny([request.auth.uid])) ||
-         (resource.data.approvedParticipants != null && resource.data.approvedParticipants.hasAny([request.auth.uid]))) &&
-        ((request.resource.data.participants == null || !request.resource.data.participants.hasAny([request.auth.uid])) &&
-         (request.resource.data.approvedParticipants == null || !request.resource.data.approvedParticipants.hasAny([request.auth.uid])))
+      allow update: if isSignedIn() && (
+        resource.data.createdBy == request.auth.uid
+        || (
+          'pendingRequests' in request.resource.data.diff(resource.data).affectedKeys()
+          && 'pendingRequests' in request.resource.data
+          && (
+            request.resource.data.pendingRequests.hasAny([request.auth.uid])
+            != ('pendingRequests' in resource.data
+                && resource.data.pendingRequests != null
+                && resource.data.pendingRequests.hasAny([request.auth.uid]))
+          )
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.datetime == resource.data.datetime
+          && request.resource.data.title == resource.data.title
+        )
+        || (
+          (
+            (resource.data.participants != null && resource.data.participants.hasAny([request.auth.uid]))
+            || (resource.data.approvedParticipants != null
+                && resource.data.approvedParticipants.hasAny([request.auth.uid]))
+          )
+          && (request.resource.data.participants == null
+              || !request.resource.data.participants.hasAny([request.auth.uid]))
+          && (request.resource.data.approvedParticipants == null
+              || !request.resource.data.approvedParticipants.hasAny([request.auth.uid]))
+        )
       );
 
-      // Silme: sadece etkinliği oluşturan kullanıcı
-      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.createdBy == request.auth.uid;
 
-      // Mesajlar (sohbet) alt koleksiyonu için kural
       match /messages/{messageId} {
-        // Helper: Event katılımcısı mı?
         function isEventParticipant() {
           return exists(/databases/$(database)/documents/events/$(eventId)) && (
-            get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
-            get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
-            get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])
+            get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid
+            || get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid])
+            || get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])
           );
         }
-        
-        // Okuma: Event katılımcıları okuyabilir
-        allow read: if request.auth != null && isEventParticipant();
-        
-        // Oluşturma: Sadece event katılımcıları ve senderId kendi ID'si olmalı
-        allow create: if request.auth != null && 
-          isEventParticipant() &&
-          request.resource.data.senderId == request.auth.uid;
-        
-        // Güncelleme: Sadece mesajı gönderen
-        allow update: if request.auth != null && 
-          resource.data.senderId == request.auth.uid;
-        
-        // Silme: Sadece mesajı gönderen (veya event owner - batch delete için)
-        allow delete: if request.auth != null && (
-          resource.data.senderId == request.auth.uid ||
-          (exists(/databases/$(database)/documents/events/$(eventId)) &&
-           get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid)
+
+        allow read: if isSignedIn() && isEventParticipant();
+
+        allow create: if isSignedIn()
+          && isEventParticipant()
+          && request.resource.data.senderId == request.auth.uid;
+
+        allow update: if isSignedIn()
+          && resource.data.senderId == request.auth.uid;
+
+        allow delete: if isSignedIn() && (
+          resource.data.senderId == request.auth.uid
+          || (
+            exists(/databases/$(database)/documents/events/$(eventId))
+            && get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid
+          )
         );
       }
 
-      // Yorumlar (comments) alt koleksiyonu için kural
       match /comments/{commentId} {
-        // Helper: Event sahibi mi?
         function isEventOwner() {
-          return exists(/databases/$(database)/documents/events/$(eventId)) &&
-                 get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid;
+          return exists(/databases/$(database)/documents/events/$(eventId))
+            && get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid;
         }
-        
-        // Helper: Event katılımcısı mı?
+
         function isEventParticipant() {
           return exists(/databases/$(database)/documents/events/$(eventId)) && (
-            get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
-            get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid]) ||
-            get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])
+            get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid
+            || get(/databases/$(database)/documents/events/$(eventId)).data.approvedParticipants.hasAny([request.auth.uid])
+            || get(/databases/$(database)/documents/events/$(eventId)).data.participants.hasAny([request.auth.uid])
           );
         }
-        
-        // Okuma: Etkinlik sahibi, onaylanmış katılımcılar ve normal katılımcılar okuyabilir
-        allow read: if request.auth != null && isEventParticipant();
 
-        // Yazma: Etkinlik sahibi, onaylanmış katılımcılar ve normal katılımcılar yazabilir
-        // Sistem mesajları için özel kontrol (type: 'system' ve userId: 'system')
-        allow create: if request.auth != null && (
-          // Sistem mesajı ise (sadece katılımcılar oluşturabilir)
-          (request.resource.data.type == 'system' && 
-           request.resource.data.userId == 'system' &&
-           isEventParticipant()) ||
-          // Normal mesaj ise (type field'ı yoksa veya type != 'system' ise ve userId kullanıcının kendi ID'si olmalı)
-          ((!('type' in request.resource.data) || request.resource.data.type != 'system') &&
-           request.resource.data.userId == request.auth.uid &&
-           isEventParticipant())
+        allow read: if isSignedIn() && isEventParticipant();
+
+        allow create: if isSignedIn() && (
+          (
+            request.resource.data.type == 'system'
+            && request.resource.data.userId == 'system'
+            && isEventParticipant()
+          )
+          || (
+            (!('type' in request.resource.data) || request.resource.data.type != 'system')
+            && request.resource.data.userId == request.auth.uid
+            && isEventParticipant()
+          )
         );
 
-        // Güncelleme/Silme: 
-        // 1. Yorumu yazan kullanıcı silebilir
-        // 2. Event sahibi tüm yorumları silebilir (event silme işlemi için - batch delete için önemli)
-        // Sistem mesajları silinemez/güncellenemez
-        allow update, delete: if request.auth != null && (
-          // Yorumu yazan kullanıcı silebilir (sistem mesajı değilse)
-          (resource.data.userId == request.auth.uid &&
-           (!('type' in resource.data) || resource.data.type != 'system')) ||
-          // Event sahibi tüm yorumları silebilir (batch delete için - sistem mesajı değilse)
-          (isEventOwner() &&
-           (!('type' in resource.data) || resource.data.type != 'system'))
+        allow update, delete: if isSignedIn() && (
+          (
+            resource.data.userId == request.auth.uid
+            && (!('type' in resource.data) || resource.data.type != 'system')
+          )
+          || (
+            isEventOwner()
+            && (!('type' in resource.data) || resource.data.type != 'system')
+          )
         );
       }
     }
 
-    // Sohbetler koleksiyonu için kurallar - Güncellenmiş
+    // =========================================================================
+    // CHATS
+    // =========================================================================
+
     match /chats/{chatId} {
-      // Helper: ChatId kullanıcının ID'sini içeriyor mu? (private chat formatı: userId1_userId2)
-      function chatIdContainsUser() {
-        return chatId.matches('.*' + request.auth.uid + '.*');
-      }
-      
-      // Helper: Kullanıcı participants listesinde mi?
-      function isInParticipants() {
-        return resource.data.participants != null && 
-               request.auth.uid in resource.data.participants;
-      }
+      allow read: if isSignedIn() && canAccessChatFromResource();
 
-      // Okuma: Participant VEYA chatId'de kendi ID'si olan (private chat için)
-      // Bu sayede yeni oluşturulan chat'leri de okuyabilir
-      allow read: if request.auth != null && 
-        (isInParticipants() || chatIdContainsUser());
+      allow create: if isSignedIn()
+        && request.auth.uid in request.resource.data.participants;
 
-      // Oluşturma: Giriş yapmış ve kendisini participants'a eklemiş
-      allow create: if request.auth != null && 
-        request.auth.uid in request.resource.data.participants;
+      allow update: if isSignedIn()
+        && canAccessChatFromResource()
+        && (
+          chatMetaUpdateAllowed()
+          || (isChatAdmin() && chatGroupInfoUpdateAllowed())
+          || chatParticipantsUpdateAllowed()
+        );
 
-      // Güncelleme: Participant veya chatId'de ID'si olan
-      allow update: if request.auth != null && 
-        (isInParticipants() || chatIdContainsUser());
-
-      // Silme: Sadece chat sahibi (oluşturan) silebilir
-      allow delete: if request.auth != null && 
-        resource.data.get('createdBy', '') == request.auth.uid;
+      allow delete: if isSignedIn()
+        && resource.data.get('createdBy', '') == request.auth.uid;
     }
 
-    // Mesajlar koleksiyonu için kurallar - Basitleştirilmiş
+    // =========================================================================
+    // MESSAGES (top-level)
+    // =========================================================================
+
     match /messages/{messageId} {
-      // Helper: ChatId kullanıcının ID'sini içeriyor mu?
-      function chatIdContainsUser(chatId) {
-        return chatId.matches('.*' + request.auth.uid + '.*');
-      }
-      
-      // Helper: Kullanıcı chat participant'ı mı?
-      // NOT: get() pahalı, sadece gerektiğinde kullan
-      function isChatParticipant(chatId) {
-        return exists(/databases/$(database)/documents/chats/$(chatId)) &&
-               request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-      }
+      allow create: if isSignedIn()
+        && request.auth.uid == request.resource.data.senderId
+        && request.resource.data.chatId != null
+        && canAccessChat(request.resource.data.chatId);
 
-      // Mesaj oluşturma: 
-      // 1. Giriş yapmış olmalı
-      // 2. senderId kendi ID'si olmalı
-      // 3. chatId null olmamalı
-      // 4. Chat participant'ı VEYA chatId kendi ID'sini içermeli (private chat)
-      allow create: if request.auth != null && 
-        request.auth.uid == request.resource.data.senderId &&
-        request.resource.data.chatId != null &&
-        (isChatParticipant(request.resource.data.chatId) || 
-         chatIdContainsUser(request.resource.data.chatId));
-
-      // Mesaj okuma: Kullanıcı sadece kendi chat'lerindeki mesajları okuyabilir
-      // NOT: Query seviyesinde tam kontrol mümkün değil (Firestore limitation)
-      // Bu rule sadece document-level koruma sağlar
-      // Uzun vadede: messages'ı chats/{chatId}/messages/{messageId} alt koleksiyonuna taşı
-      allow read: if request.auth != null && (
-        // Chat participant kontrolü (grup chat için)
-        isChatParticipant(resource.data.chatId) ||
-        // Private chat kontrolü (chatId kullanıcının ID'sini içeriyor mu?)
-        chatIdContainsUser(resource.data.chatId) ||
-        // Gönderen kendi mesajlarını okuyabilir
-        resource.data.senderId == request.auth.uid
+      allow read: if isSignedIn() && (
+        canAccessChat(resource.data.chatId)
+        || resource.data.senderId == request.auth.uid
       );
 
-      // Mesaj güncelleme: Sadece gönderen (güvenlik için)
-      // NOT: Okundu işaretleme için ayrı bir field-level validation eklenebilir
-      allow update: if request.auth != null && 
-        request.auth.uid == resource.data.senderId;
+      allow update: if isSignedIn()
+        && canAccessChat(resource.data.chatId)
+        && (
+          (resource.data.senderId == request.auth.uid && messageSenderUpdateAllowed())
+          || messageParticipantUpdateAllowed()
+        );
 
-      // Mesaj silme: Sadece gönderen
-      allow delete: if request.auth != null && 
-        request.auth.uid == resource.data.senderId;
+      allow delete: if isSignedIn()
+        && resource.data.senderId == request.auth.uid;
     }
 
-    // Bildirimler koleksiyonu için kurallar
+    // =========================================================================
+    // NOTIFICATIONS
+    // =========================================================================
+
     match /notifications/{notificationId} {
-      // Okuma: Sadece kendi bildirimlerini okuyabilir
-      allow read: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
 
-      // Oluşturma: Güvenlik için kısıtlanmış
-      // NOT: Cloud Functions (admin SDK) rules'ı bypass eder, bu yüzden client tarafından oluşturma kısıtlanmış
-      // Client tarafından bildirim oluşturma: Sadece başka kullanıcılara bildirim gönderebilir (kendine değil)
-      // ve sadece belirli tiplerde bildirimler oluşturulabilir
-      allow create: if request.auth != null && 
-        // Bildirimi alan kullanıcı, bildirimi oluşturan kullanıcıdan farklı olmalı
-        request.resource.data.userId != request.auth.uid &&
-        // Sadece belirli bildirim tipleri client tarafından oluşturulabilir
-        request.resource.data.type in [
-          'follow_request', 
-          'event_invitation', 
-          'new_followers',
-          'message',
-          'message_request',
-          'event_reminder_24h',
-          'event_reminder_2h',
-          'event_check_in'
-        ] &&
-        // userId alanı mevcut ve geçerli olmalı
-        request.resource.data.userId is string &&
-        request.resource.data.userId != '';
+      allow create: if isSignedIn()
+        && request.resource.data.userId != request.auth.uid
+        && clientNotificationTypeAllowed()
+        && request.resource.data.userId is string
+        && request.resource.data.userId != '';
 
-      // Güncelleme: Sadece kendi bildirimlerini güncelleyebilir (okundu işaretleme)
-      allow update: if request.auth != null && 
-        resource.data.userId == request.auth.uid &&
-        // Sadece isRead alanı güncellenebilir
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
 
-      // Silme: Bildirimler silinemez
       allow delete: if false;
     }
 
+    // =========================================================================
+    // FEEDBACKS
+    // =========================================================================
+
+    match /feedbacks/{feedbackId} {
+      allow create: if isSignedIn()
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 2000;
+
+      allow read: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+
+      allow update, delete: if false;
+    }
   }
 }

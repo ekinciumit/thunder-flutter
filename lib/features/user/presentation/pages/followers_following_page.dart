@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../../features/user/domain/entities/user_entity.dart';
 import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../../services/user_service.dart';
-import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/app_gradient_container.dart';
 import '../../../../core/widgets/modern_components.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/theme/app_theme.dart';

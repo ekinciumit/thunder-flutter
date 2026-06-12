@@ -4,6 +4,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../../user/domain/entities/user_entity.dart';
+import '../../../user/data/models/user_model.dart';
 import '../../../user/data/mappers/user_mapper.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../datasources/auth_local_data_source.dart';
@@ -61,9 +62,32 @@ class AuthRepositoryImpl implements AuthRepository {
       // Önce remote'dan kayıt ol (DTO alır)
       final userModel = await _remoteDataSource.signUp(email, password);
       
+      // ✅ Yeni kullanıcı profili oluştur ve Firestore'a kaydet
+      // Minimal UserModel'i tam profil olarak kaydet (default değerlerle)
+      final fullUserModel = UserModel(
+        uid: userModel.uid,
+        email: userModel.email,
+        displayName: null, // Profil tamamlama sayfasında doldurulacak
+        username: null,
+        bio: null,
+        photoUrl: null,
+        followers: const [],
+        following: const [],
+        fcmTokens: const [],
+        pendingFollowRequests: const [],
+        sentFollowRequests: const [],
+        isPrivate: false,
+        showLocation: true,
+        showOnlineStatus: true,
+        blockedUsers: const [],
+      );
+      
+      // ✅ Firestore'a kaydet (profil tamamlama sayfasında güncellenecek)
+      await _remoteDataSource.saveUserProfile(fullUserModel);
+      
       // Başarılı olursa cache'e kaydet (cache hatası kritik değil)
       try {
-        await _localDataSource.cacheUser(userModel);
+        await _localDataSource.cacheUser(fullUserModel);
       } on CacheException catch (e) {
         // Cache hatası kritik değil, kullanıcı zaten kayıt oldu
         // Sadece log'a yaz, devam et
@@ -73,7 +97,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       
       // DTO -> Entity dönüşümü
-      return Either.right(UserMapper.toEntity(userModel));
+      return Either.right(UserMapper.toEntity(fullUserModel));
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -216,6 +240,19 @@ class AuthRepositoryImpl implements AuthRepository {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
       return Either.left(UnknownFailure('Şifre sıfırlama emaili gönderilirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteAccount({required String password}) async {
+    try {
+      await _remoteDataSource.deleteAccount(password: password);
+      await _localDataSource.clearCache();
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Hesap silinirken bir hata oluştu: ${e.toString()}'));
     }
   }
 }

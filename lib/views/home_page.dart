@@ -17,7 +17,7 @@ import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../core/utils/fab_position_helper.dart';
 import '../l10n/app_localizations.dart';
-import 'widgets/app_gradient_container.dart';
+import '../core/widgets/app_gradient_container.dart';
 import 'widgets/custom_bottom_navigation_bar.dart';
 import '../core/navigation/app_navigation.dart';
 

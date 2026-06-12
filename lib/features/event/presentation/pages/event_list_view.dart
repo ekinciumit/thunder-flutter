@@ -5,7 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import '../viewmodels/event_viewmodel.dart';
 import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../domain/entities/event_entity.dart';
-import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/app_gradient_container.dart';
 import '../widgets/event_card.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -558,7 +558,15 @@ class _EventListViewState extends State<EventListView> {
             ),
             const SizedBox(height: AppTheme.spacingSm),
             Expanded(
-              child: eventViewModel.isLoading
+              child: eventViewModel.error != null && eventViewModel.events.isEmpty
+                  ? ErrorStateWidget(
+                      message: l10n.error,
+                      error: eventViewModel.error,
+                      retryText: l10n.retry,
+                      onRetry: () => eventViewModel.retryEvents(),
+                      backgroundColor: Colors.transparent,
+                    )
+                  : eventViewModel.isLoading
                   ? const EventListSkeleton()
                   : filteredEvents.isEmpty
                       ? EmptyStateWidget(

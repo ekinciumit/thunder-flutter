@@ -7,7 +7,7 @@ import '../../../../features/user/data/mappers/user_mapper.dart';
 import '../../../../features/user/domain/entities/user_entity.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/navigation/app_navigation.dart';
-import '../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../core/widgets/modern_loading_widget.dart';
 
 /// Widget that displays event participants as chips
 class ParticipantChips extends StatelessWidget {
@@ -30,11 +30,34 @@ class ParticipantChips extends StatelessWidget {
     final eventViewModel = Provider.of<EventViewModel>(context, listen: false);
     
     if (participantUids.isEmpty) {
-      return Text(l10n.noParticipants);
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline_rounded,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l10n.noParticipants,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      );
     }
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 10, // ✅ Daha fazla spacing
+      runSpacing: 10,
       children: participantUids.map((uid) {
         final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
         return FutureBuilder<UserEntity?>(
@@ -70,21 +93,59 @@ class ParticipantChips extends StatelessWidget {
               onTap: () {
                 AppNavigation.toUserProfile(context: context, userId: user.uid);
               },
-              child: Chip(
-                avatar: photoUrl.isNotEmpty
-                    ? CircleAvatar(backgroundImage: NetworkImage(photoUrl))
-                    : CircleAvatar(child: Text(displayName[0].toUpperCase())),
-                label: Text(displayName, overflow: TextOverflow.ellipsis),
-                deleteIcon: canRemove
-                    ? IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        onPressed: () async {
+              child: Container(
+                // ✅ Modern chip tasarımı: Daha büyük, daha güzel border, daha iyi padding
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(20), // ✅ Pill-like
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    width: 1.0,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ✅ Avatar
+                    photoUrl.isNotEmpty
+                        ? CircleAvatar(
+                            radius: 18, // ✅ Daha büyük avatar
+                            backgroundImage: NetworkImage(photoUrl),
+                          )
+                        : CircleAvatar(
+                            radius: 18,
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            child: Text(
+                              displayName[0].toUpperCase(),
+                              style: TextStyle(
+                                color: theme.colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                    const SizedBox(width: 10),
+                    // ✅ Name
+                    Text(
+                      displayName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    // ✅ Remove button (owner için)
+                    if (canRemove) ...[
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () async {
                           // Remove participant onay dialogu
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (context) => AlertDialog(
                               title: Text(l10n.removeParticipant),
-                              content: Text('$displayName etkinlikten çıkarılsın mı?'),
+                              content: Text(l10n.removeParticipantConfirm(displayName)),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.of(context).pop(false),
@@ -114,9 +175,22 @@ class ParticipantChips extends StatelessWidget {
                             }
                           }
                         },
-                      )
-                    : null,
-                onDeleted: null, // Chip'in kendi delete mekanizmasını kullanmıyoruz
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             );
           },

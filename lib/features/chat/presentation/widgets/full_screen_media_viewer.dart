@@ -5,7 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../../../../core/widgets/modern_components.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../../core/widgets/modern_loading_widget.dart';
 
 /// Tam ekran medya görüntüleyici
 /// 

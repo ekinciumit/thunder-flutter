@@ -5,8 +5,8 @@ import 'package:geolocator/geolocator.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
 import '../features/event/domain/entities/event_entity.dart';
 import 'dart:async';
-import 'widgets/app_gradient_container.dart';
-import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/app_gradient_container.dart';
+import '../core/widgets/modern_loading_widget.dart';
 import 'package:flutter/foundation.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
@@ -27,6 +27,7 @@ class _MapViewState extends State<MapView> {
   GoogleMapController? mapController;
   bool iconsLoaded = false;
   double _currentZoom = 13;
+  int _clusterZoomBucket = 3;
   
   // Dark mode için Google Maps style JSON
   static const String _darkMapStyle = '''
@@ -161,7 +162,18 @@ class _MapViewState extends State<MapView> {
   ]
   ''';
 
-  List<Marker> _buildClusteredMarkers(List<EventEntity> events) {
+  int _zoomBucket(double zoom) {
+    if (zoom >= 15) return 4;
+    if (zoom >= 13) return 3;
+    if (zoom >= 11) return 2;
+    if (zoom >= 9) return 1;
+    return 0;
+  }
+
+  List<Marker> _buildClusteredMarkers(
+    List<EventEntity> events,
+    AppLocalizations l10n,
+  ) {
     if (events.isEmpty) return [];
     // Basit grid tabanlı yaklaştırma: zoom seviyesine göre hücre boyutu
     double grid;
@@ -208,7 +220,7 @@ class _MapViewState extends State<MapView> {
             markerId: MarkerId('cluster_$key'),
             position: LatLng(avgLat, avgLng),
             icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueMagenta),
-            infoWindow: InfoWindow(title: '${list.length} etkinlik'),
+            infoWindow: InfoWindow(title: l10n.clusterEventsCount(list.length)),
             consumeTapEvents: true,
             onTap: () {
               // Küme tıklanınca biraz yaklaştır
@@ -231,23 +243,28 @@ class _MapViewState extends State<MapView> {
     _getUserLocation();
     _loadCategoryIcons();
   }
-  
-  // didChangeDependencies kaldırıldı - style parametresi otomatik olarak güncelleniyor
 
+  @override
+  void dispose() {
+    mapController = null;
+    super.dispose();
+  }
 
   Future<void> _getUserLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
+      if (!serviceEnabled || !mounted) return;
       LocationPermission permission = await Geolocator.checkPermission();
+      if (!mounted) return;
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
+        if (permission == LocationPermission.denied || !mounted) return;
       }
-      if (permission == LocationPermission.deniedForever) return;
+      if (permission == LocationPermission.deniedForever || !mounted) return;
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
+      if (!mounted) return;
       setState(() { userPosition = pos; });
     } catch (e) {
       if (kDebugMode) {
@@ -257,6 +274,7 @@ class _MapViewState extends State<MapView> {
   }
 
   Future<void> _loadCategoryIcons() async {
+    if (!mounted) return;
     setState(() {
       iconsLoaded = true;
     });
@@ -318,7 +336,7 @@ class _MapViewState extends State<MapView> {
     final eventViewModel = Provider.of<EventViewModel>(context);
     // ViewModel Entity döndürüyor, UI direkt Entity kullanıyor (Clean Architecture)
     final eventEntities = eventViewModel.events;
-    final markers = _buildClusteredMarkers(eventEntities);
+    final markers = _buildClusteredMarkers(eventEntities, l10n);
 
     // Kullanıcı konumu markerı
     if (userPosition != null) {
@@ -365,8 +383,12 @@ class _MapViewState extends State<MapView> {
                     },
                     onCameraMove: (position) {
                       _currentZoom = position.zoom;
-                      // Zoom değiştikçe yeniden cluster
-                      setState(() {});
+                    },
+                    onCameraIdle: () {
+                      final bucket = _zoomBucket(_currentZoom);
+                      if (bucket != _clusterZoomBucket && mounted) {
+                        setState(() => _clusterZoomBucket = bucket);
+                      }
                     },
                     padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
                   ),
@@ -497,7 +519,7 @@ class _MapViewState extends State<MapView> {
                     AppNavigation.toEventDetail(context: context, event: event);
                   },
                   icon: const Icon(Icons.open_in_new),
-                  label: const Text('Etkinlik Detayına Git'),
+                  label: Text(AppLocalizations.of(context)!.goToEventDetail),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
                       shape: RoundedRectangleBorder(

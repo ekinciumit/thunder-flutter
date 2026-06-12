@@ -47,7 +47,7 @@ class ChatMessageEditDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('İptal'),
+          child: Text(l10n!.cancel),
         ),
         TextButton(
           onPressed: () async {
@@ -59,20 +59,20 @@ class ChatMessageEditDialog extends StatelessWidget {
                   navigator.pop();
                   ModernSnackbar.showSuccess(
                     context,
-                    'Mesaj düzenlendi',
+                    l10n!.messageEdited,
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   ModernSnackbar.showError(
                     context,
-                    'Hata: $e',
+                    l10n!.errorWithDetails(e.toString()),
                   );
                 }
               }
             }
           },
-          child: const Text('Kaydet'),
+          child: Text(l10n!.save),
         ),
       ],
     );

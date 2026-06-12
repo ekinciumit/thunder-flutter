@@ -34,7 +34,8 @@ class ChatModel {
   final List<String> moderators;
   final bool isArchived;
   final bool isMuted;
-  final Map<String, bool> mutedBy; // userId -> is muted
+  final Map<String, bool> mutedBy; // userId -> is muted (deprecated)
+  final Map<String, DateTime?> mutedUntil; // userId -> mute end time (null = unlimited)
   final Map<String, dynamic>? settings;
   final Map<String, dynamic>? metadata;
 
@@ -58,6 +59,7 @@ class ChatModel {
     this.isArchived = false,
     this.isMuted = false,
     this.mutedBy = const {},
+    this.mutedUntil = const {},
     this.settings,
     this.metadata,
   });
@@ -113,6 +115,12 @@ class ChatModel {
       isArchived: map['isArchived'] ?? false,
       isMuted: map['isMuted'] ?? false,
       mutedBy: Map<String, bool>.from(map['mutedBy'] ?? {}),
+      mutedUntil: (map['mutedUntil'] as Map<String, dynamic>?)?.map(
+        (key, value) => MapEntry(
+          key,
+          value != null ? (value as Timestamp).toDate() : null,
+        ),
+      ) ?? {},
       settings: map['settings'],
       metadata: map['metadata'],
     );
@@ -143,6 +151,12 @@ class ChatModel {
       'isArchived': isArchived,
       'isMuted': isMuted,
       'mutedBy': mutedBy,
+      'mutedUntil': mutedUntil.map(
+        (key, value) => MapEntry(
+          key,
+          value != null ? Timestamp.fromDate(value) : null,
+        ),
+      ),
       'settings': settings,
       'metadata': metadata,
     };
@@ -169,6 +183,7 @@ class ChatModel {
     bool? isArchived,
     bool? isMuted,
     Map<String, bool>? mutedBy,
+    Map<String, DateTime?>? mutedUntil,
     Map<String, dynamic>? settings,
     Map<String, dynamic>? metadata,
   }) {
@@ -192,6 +207,7 @@ class ChatModel {
       isArchived: isArchived ?? this.isArchived,
       isMuted: isMuted ?? this.isMuted,
       mutedBy: mutedBy ?? this.mutedBy,
+      mutedUntil: mutedUntil ?? this.mutedUntil,
       settings: settings ?? this.settings,
       metadata: metadata ?? this.metadata,
     );

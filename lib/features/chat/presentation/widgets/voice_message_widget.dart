@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../services/audio_service.dart';
 import '../../../../core/theme/app_color_config.dart';
 import '../../../../core/widgets/modern_components.dart';
-import '../../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../../core/widgets/modern_loading_widget.dart';
 
 class VoiceMessageWidget extends StatefulWidget {
   final String audioUrl;

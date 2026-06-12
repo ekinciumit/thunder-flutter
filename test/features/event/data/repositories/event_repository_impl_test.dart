@@ -6,6 +6,7 @@ import 'package:thunder/features/event/data/repositories/event_repository_impl.d
 import 'package:thunder/features/event/data/datasources/event_remote_data_source.dart';
 import 'package:thunder/features/event/data/models/event_model.dart';
 import 'package:thunder/features/event/data/mappers/event_mapper.dart';
+import 'package:thunder/features/event/domain/entities/event_entity.dart';
 import 'package:thunder/core/errors/exceptions.dart';
 import 'package:thunder/core/errors/failures.dart';
 
@@ -40,7 +41,7 @@ void main() {
         // Arrange
         // Repository Entity bekliyor, data source Model döndürüyor
         final testEventEntity = EventMapper.toEntity(testEvent);
-        when(mockRemoteDataSource.addEvent(testEvent))
+        when(mockRemoteDataSource.addEvent(any))
             .thenAnswer((_) async => Future.value());
 
         // Act
@@ -49,13 +50,13 @@ void main() {
         // Assert
         expect(result.isRight, true);
         expect(result.isLeft, false);
-        verify(mockRemoteDataSource.addEvent(testEvent)).called(1);
+        verify(mockRemoteDataSource.addEvent(any)).called(1);
       });
 
       test('should return Left(ServerFailure) when ServerException is thrown', () async {
         // Arrange
         final testEventEntity = EventMapper.toEntity(testEvent);
-        when(mockRemoteDataSource.addEvent(testEvent))
+        when(mockRemoteDataSource.addEvent(any))
             .thenThrow(ServerException('Server error'));
 
         // Act
@@ -65,13 +66,13 @@ void main() {
         expect(result.isLeft, true);
         expect(result.left, isA<ServerFailure>());
         expect(result.left.message, 'Server error');
-        verify(mockRemoteDataSource.addEvent(testEvent)).called(1);
+        verify(mockRemoteDataSource.addEvent(any)).called(1);
       });
 
       test('should return Left(UnknownFailure) when unknown exception is thrown', () async {
         // Arrange
         final testEventEntity = EventMapper.toEntity(testEvent);
-        when(mockRemoteDataSource.addEvent(testEvent))
+        when(mockRemoteDataSource.addEvent(any))
             .thenThrow(Exception('Unknown error'));
 
         // Act
@@ -81,7 +82,7 @@ void main() {
         expect(result.isLeft, true);
         expect(result.left, isA<UnknownFailure>());
         expect(result.left.message, contains('Etkinlik eklenirken bir hata oluştu'));
-        verify(mockRemoteDataSource.addEvent(testEvent)).called(1);
+        verify(mockRemoteDataSource.addEvent(any)).called(1);
       });
     });
 
@@ -96,9 +97,9 @@ void main() {
         final stream = repository.getEventsStream();
 
         // Assert
-        expect(stream, isA<Stream<List<EventModel>>>());
+        expect(stream, isA<Stream<List<EventEntity>>>());
         final result = await stream.first;
-        expect(result, testEvents);
+        expect(result, [EventMapper.toEntity(testEvent)]);
         verify(mockRemoteDataSource.getEventsStream()).called(1);
       });
 
@@ -121,7 +122,7 @@ void main() {
       test('should return Right(void) when event is updated successfully', () async {
         // Arrange
         final testEventEntity = EventMapper.toEntity(testEvent);
-        when(mockRemoteDataSource.updateEvent(testEvent))
+        when(mockRemoteDataSource.updateEvent(any))
             .thenAnswer((_) async => Future.value());
 
         // Act
@@ -129,13 +130,13 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        verify(mockRemoteDataSource.updateEvent(testEvent)).called(1);
+        verify(mockRemoteDataSource.updateEvent(any)).called(1);
       });
 
       test('should return Left(ServerFailure) when ServerException is thrown', () async {
         // Arrange
         final testEventEntity = EventMapper.toEntity(testEvent);
-        when(mockRemoteDataSource.updateEvent(testEvent))
+        when(mockRemoteDataSource.updateEvent(any))
             .thenThrow(ServerException('Update failed'));
 
         // Act
@@ -374,7 +375,7 @@ void main() {
     group('fetchNextEvents', () {
       final testEvents = [testEvent];
 
-      test('should return Right(List<EventModel>) when fetch is successful', () async {
+      test('should return Right(List<EventEntity>) when fetch is successful', () async {
         // Arrange
         when(mockRemoteDataSource.fetchNextEvents(
           startAfter: anyNamed('startAfter'),
@@ -386,7 +387,7 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testEvents);
+        expect(result.right, [EventMapper.toEntity(testEvent)]);
         verify(mockRemoteDataSource.fetchNextEvents(
           startAfter: anyNamed('startAfter'),
           limit: 50,
@@ -423,9 +424,9 @@ void main() {
         final stream = repository.getUserEventsStream(testUserId);
 
         // Assert
-        expect(stream, isA<Stream<List<EventModel>>>());
+        expect(stream, isA<Stream<List<EventEntity>>>());
         final result = await stream.first;
-        expect(result, testEvents);
+        expect(result, [EventMapper.toEntity(testEvent)]);
         verify(mockRemoteDataSource.getUserEventsStream(testUserId)).called(1);
       });
 

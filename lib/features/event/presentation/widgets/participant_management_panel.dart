@@ -205,7 +205,7 @@ class ParticipantManagementPanel {
                           context: context,
                           builder: (context) => AlertDialog(
                             title: Text(l10n.removeParticipant),
-                            content: Text('$displayName etkinlikten çıkarılsın mı?'),
+                            content: Text(l10n.removeParticipantConfirm(displayName)),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.of(context).pop(false),

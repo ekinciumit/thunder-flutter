@@ -74,7 +74,7 @@ class ChatMediaHandler {
 
       // Clean Architecture: ChatViewModel üzerinden yükleme
       final ext = isVideo ? 'mp4' : 'jpg';
-      final storagePath = 'chat_media/${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final storagePath = 'chat_media/$chatId/${DateTime.now().millisecondsSinceEpoch}.$ext';
       final contentType = isVideo ? 'video/mp4' : 'image/jpeg';
 
       await showMediaUploadProgress(

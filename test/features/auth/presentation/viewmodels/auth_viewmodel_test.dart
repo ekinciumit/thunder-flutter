@@ -18,6 +18,12 @@ void main() {
     mockRepository = MockAuthRepository();
     // getCurrentUser her zaman çağrılıyor (constructor'da)
     when(mockRepository.getCurrentUser()).thenReturn(null);
+    when(mockRepository.fetchUserProfile(any)).thenAnswer(
+      (_) async => Either.left(ServerFailure('Profile not found')),
+    );
+    when(mockRepository.saveUserProfile(any)).thenAnswer(
+      (_) async => Either.right(null),
+    );
     viewModel = AuthViewModel(authRepository: mockRepository);
   });
 
@@ -32,6 +38,9 @@ void main() {
         final testUser = UserEntity(uid: 'test-uid', email: 'test@test.com');
         final testMockRepository = MockAuthRepository();
         when(testMockRepository.getCurrentUser()).thenReturn(testUser);
+        when(testMockRepository.fetchUserProfile(any)).thenAnswer(
+          (_) async => Either.left(ServerFailure('Profile not found')),
+        );
 
         // Act
         final newViewModel = AuthViewModel(authRepository: testMockRepository);

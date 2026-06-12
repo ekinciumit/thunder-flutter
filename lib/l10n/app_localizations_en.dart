@@ -494,6 +494,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commentsChat => 'Comments / Chat';
 
   @override
+  String get goToGroupChat => 'Go to Group Chat';
+
+  @override
+  String get createGroupChat => 'Create Group Chat';
+
+  @override
   String get mustJoinToChat =>
       'You must join the event to see and participate in the chat.';
 
@@ -891,4 +897,466 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get participantManagement => 'Participant Management';
+
+  @override
+  String get notLoggedIn => 'User not logged in';
+
+  @override
+  String get groupChatNotFound => 'Group chat not found';
+
+  @override
+  String get groupInfo => 'Group Info';
+
+  @override
+  String get noDescription => 'No description';
+
+  @override
+  String get noParticipantsFound => 'No participants found';
+
+  @override
+  String get unnamed => 'Unnamed';
+
+  @override
+  String get creator => 'Creator';
+
+  @override
+  String get admin => 'Admin';
+
+  @override
+  String get you => 'You';
+
+  @override
+  String get demoteAdmin => 'Remove Admin';
+
+  @override
+  String get promoteAdmin => 'Make Admin';
+
+  @override
+  String adminPromoted(String name) {
+    return '$name is now an admin';
+  }
+
+  @override
+  String adminDemoted(String name) {
+    return '$name is no longer an admin';
+  }
+
+  @override
+  String get groupPhotoUpdated => 'Group photo updated';
+
+  @override
+  String groupPhotoUploadError(String error) {
+    return 'Error uploading photo: $error';
+  }
+
+  @override
+  String get editGroupName => 'Edit Group Name';
+
+  @override
+  String get groupName => 'Group Name';
+
+  @override
+  String get groupNameHint => 'Enter group name';
+
+  @override
+  String get groupNameUpdated => 'Group name updated';
+
+  @override
+  String groupNameUpdateError(String error) {
+    return 'Error updating group name: $error';
+  }
+
+  @override
+  String get editDescription => 'Edit Description';
+
+  @override
+  String get descriptionHint => 'Enter group description';
+
+  @override
+  String get descriptionUpdated => 'Description updated';
+
+  @override
+  String descriptionUpdateError(String error) {
+    return 'Error updating description: $error';
+  }
+
+  @override
+  String removeParticipantConfirm(String name) {
+    return 'Remove $name from the event?';
+  }
+
+  @override
+  String userLabel(String id) {
+    return 'User: $id';
+  }
+
+  @override
+  String get view => 'View';
+
+  @override
+  String get manage => 'Manage';
+
+  @override
+  String get goToEventDetail => 'Go to Event Details';
+
+  @override
+  String chatsLoadError(String error) {
+    return 'Error loading chats: $error';
+  }
+
+  @override
+  String get messageForwardedSuccess => 'Message forwarded successfully';
+
+  @override
+  String messageForwardFailed(String error) {
+    return 'Failed to forward message: $error';
+  }
+
+  @override
+  String commentSendFailed(String error) {
+    return 'Failed to send comment: $error';
+  }
+
+  @override
+  String get photoUploadFailed => 'Failed to upload photo';
+
+  @override
+  String get photoUploaded => 'Photo uploaded';
+
+  @override
+  String photoUploadError(String error) {
+    return 'Photo upload error: $error';
+  }
+
+  @override
+  String filePickError(String error) {
+    return 'File selection error: $error';
+  }
+
+  @override
+  String logoutError(String error) {
+    return 'Error signing out: $error';
+  }
+
+  @override
+  String get themeSelection => 'Theme';
+
+  @override
+  String get lightMode => 'Light Mode';
+
+  @override
+  String get lightThemeSubtitle => 'Light color theme';
+
+  @override
+  String get darkThemeSubtitle => 'Dark color theme';
+
+  @override
+  String get systemMode => 'System';
+
+  @override
+  String get systemThemeSubtitle => 'Follow system setting';
+
+  @override
+  String get turkish => 'Turkish';
+
+  @override
+  String get english => 'English';
+
+  @override
+  String get crashTestTitle => 'Test crash?';
+
+  @override
+  String get crashTestMessage =>
+      'The app will crash. Use only for Crashlytics testing.';
+
+  @override
+  String get crashTestButton => 'Crash';
+
+  @override
+  String get crashlyticsTestTitle => 'Crashlytics Test (crash)';
+
+  @override
+  String get crashlyticsTestSubtitle => 'Intentionally crash the app';
+
+  @override
+  String get bioOptional => 'Bio (Optional)';
+
+  @override
+  String get completeProfileSubtitle =>
+      'A few more details to personalize your account';
+
+  @override
+  String get nameHint => 'Your first and last name';
+
+  @override
+  String get bioHint => 'Write a short bio about yourself';
+
+  @override
+  String get nameRequired => 'Name cannot be empty';
+
+  @override
+  String profileSaveFailed(String error) {
+    return 'Failed to save profile: $error';
+  }
+
+  @override
+  String get devPreviewTitle => '📱 Screen Previews';
+
+  @override
+  String get screenPreviewsSubtitle => 'View all screens with mock data';
+
+  @override
+  String get selectFile => 'Select File';
+
+  @override
+  String get allFiles => 'All Files';
+
+  @override
+  String get fileTypeWord => 'Word';
+
+  @override
+  String get fileTypeExcel => 'Excel';
+
+  @override
+  String get fileTypePowerPoint => 'PowerPoint';
+
+  @override
+  String get fileTypeArchive => 'ZIP/RAR';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get fileSentSuccess => 'File sent';
+
+  @override
+  String get myEvents => 'My Events';
+
+  @override
+  String get past => 'Past';
+
+  @override
+  String get addMembers => 'Add Members';
+
+  @override
+  String get removeMember => 'Remove from Group';
+
+  @override
+  String removeMemberConfirm(String name) {
+    return 'Remove $name from the group?';
+  }
+
+  @override
+  String get membersAdded => 'Members added';
+
+  @override
+  String get memberRemoved => 'Member removed from group';
+
+  @override
+  String get leaveGroup => 'Leave Group';
+
+  @override
+  String get leaveGroupConfirm => 'Are you sure you want to leave this group?';
+
+  @override
+  String get leftGroup => 'You left the group';
+
+  @override
+  String get creatorCannotLeave => 'The group creator cannot leave the group';
+
+  @override
+  String get selectMembersToAdd => 'Select people to add';
+
+  @override
+  String get deleteAccount => 'Delete Account';
+
+  @override
+  String get deleteAccountSubtitle =>
+      'All your data will be permanently deleted';
+
+  @override
+  String get deleteAccountConfirm =>
+      'Are you sure you want to delete your account?';
+
+  @override
+  String get deleteAccountWarning =>
+      'This action cannot be undone. Your profile, messages, and events will be deleted.';
+
+  @override
+  String get deleteAccountPasswordPrompt => 'Enter your password to confirm';
+
+  @override
+  String get accountDeleted => 'Your account has been deleted';
+
+  @override
+  String deleteAccountError(String error) {
+    return 'Failed to delete account: $error';
+  }
+
+  @override
+  String participantsCount(int count) {
+    return 'Participants ($count)';
+  }
+
+  @override
+  String fileUploadingNamed(String fileName) {
+    return 'Uploading $fileName...';
+  }
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get theme => 'Theme';
+
+  @override
+  String get active => 'Active';
+
+  @override
+  String get groupNameRequired => 'Group name is required';
+
+  @override
+  String get groupNameExampleHint => 'e.g. Friends, Work Team';
+
+  @override
+  String get groupDescriptionOptional => 'Description (Optional)';
+
+  @override
+  String get groupDescriptionShortHint => 'A short description about the group';
+
+  @override
+  String get selectParticipants => 'Select Participants *';
+
+  @override
+  String participantsSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get selectAtLeastOneParticipant => 'Select at least one person';
+
+  @override
+  String get groupChatCreated => 'Group chat created';
+
+  @override
+  String get groupChatCreateFailed => 'Could not create group chat';
+
+  @override
+  String get usersLoadFailed => 'Could not load users';
+
+  @override
+  String get noOtherUsersYet => 'No other users yet';
+
+  @override
+  String get noSearchResults => 'No search results';
+
+  @override
+  String get tryDifferentSearchTerm => 'Try a different search term';
+
+  @override
+  String clusterEventsCount(int count) {
+    return '$count events';
+  }
+
+  @override
+  String get developerSection => 'Developer';
+
+  @override
+  String get crashlyticsNonFatalTest => 'Crashlytics Test (non-fatal)';
+
+  @override
+  String get crashlyticsNonFatalSubtitle =>
+      'Creates an error record in Firebase Console';
+
+  @override
+  String get nonFatalTestSent => 'Non-fatal test record sent';
+
+  @override
+  String get searchUsersShort => 'Search users...';
+
+  @override
+  String get validationEmailRequired => 'Email is required';
+
+  @override
+  String get validationEmailInvalid => 'Enter a valid email address';
+
+  @override
+  String get validationPasswordRequired => 'Password is required';
+
+  @override
+  String get validationPasswordMinLength =>
+      'Password must be at least 6 characters';
+
+  @override
+  String get validationPasswordStrength =>
+      'Password must contain at least one letter and one number';
+
+  @override
+  String get validationNameRequired => 'Name is required';
+
+  @override
+  String get validationNameMinLength => 'Name must be at least 2 characters';
+
+  @override
+  String get validationNameInvalid =>
+      'Name can only contain letters and spaces';
+
+  @override
+  String get validationBioMaxLength => 'Bio can be at most 500 characters';
+
+  @override
+  String get validationTitleRequired => 'Title is required';
+
+  @override
+  String get validationTitleMinLength => 'Title must be at least 3 characters';
+
+  @override
+  String get validationTitleMaxLength => 'Title can be at most 100 characters';
+
+  @override
+  String get validationDescriptionRequired => 'Description is required';
+
+  @override
+  String get validationDescriptionMinLength =>
+      'Description must be at least 10 characters';
+
+  @override
+  String get validationDescriptionMaxLength =>
+      'Description can be at most 2000 characters';
+
+  @override
+  String get validationAddressRequired => 'Address is required';
+
+  @override
+  String get validationAddressMinLength =>
+      'Address must be at least 5 characters';
+
+  @override
+  String get validationQuotaRequired => 'Quota is required';
+
+  @override
+  String get validationQuotaInvalid => 'Enter a valid number';
+
+  @override
+  String get validationQuotaMin => 'Quota must be at least 1';
+
+  @override
+  String get validationQuotaMax => 'Quota can be at most 1000';
+
+  @override
+  String validationFieldRequired(String fieldName) {
+    return '$fieldName is required';
+  }
+
+  @override
+  String validationFieldMinLength(String fieldName, int minLength) {
+    return '$fieldName must be at least $minLength characters';
+  }
+
+  @override
+  String validationFieldMaxLength(String fieldName, int maxLength) {
+    return '$fieldName can be at most $maxLength characters';
+  }
 }

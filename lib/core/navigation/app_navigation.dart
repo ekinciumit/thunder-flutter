@@ -83,11 +83,6 @@ class AppNavigation {
     }
   }
 
-  /// Navigate to my events page
-  static void toMyEvents(BuildContext context) {
-    context.push('/events/my');
-  }
-
   /// Navigate to user profile page
   static void toUserProfile({
     required BuildContext context,

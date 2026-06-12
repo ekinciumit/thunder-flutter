@@ -43,6 +43,20 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Stream<ChatEntity?> getChatStream(String chatId) {
+    try {
+      // DTO stream'i -> Entity stream'e çevir
+      return _remoteDataSource.getChatStream(chatId).map((chatModel) {
+        if (chatModel == null) return null;
+        return ChatMapper.toEntity(chatModel);
+      });
+    } catch (e) {
+      // Stream'ler için hata durumunda null stream döndür
+      return Stream.value(null);
+    }
+  }
+
+  @override
   Future<Either<Failure, ChatEntity>> getOrCreatePrivateChat(String userA, String userB) async {
     try {
       final chatModel = await _remoteDataSource.getOrCreatePrivateChat(userA, userB);
@@ -403,6 +417,138 @@ class ChatRepositoryImpl implements ChatRepository {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
       return Either.left(UnknownFailure('Medya dosyası yüklenirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateGroupInfo({
+    required String chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  }) async {
+    try {
+      await _remoteDataSource.updateGroupInfo(
+        chatId: chatId,
+        name: name,
+        description: description,
+        photoUrl: photoUrl,
+      );
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Grup bilgileri güncellenirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> addAdmin({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _remoteDataSource.addAdmin(
+        chatId: chatId,
+        userId: userId,
+      );
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Yönetici eklenirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removeAdmin({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _remoteDataSource.removeAdmin(
+        chatId: chatId,
+        userId: userId,
+      );
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Yönetici çıkarılırken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> addGroupParticipants({
+    required String chatId,
+    required List<String> userIds,
+  }) async {
+    try {
+      await _remoteDataSource.addGroupParticipants(
+        chatId: chatId,
+        userIds: userIds,
+      );
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Üye eklenirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removeGroupParticipant({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _remoteDataSource.removeGroupParticipant(
+        chatId: chatId,
+        userId: userId,
+      );
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Üye çıkarılırken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> muteChat({
+    required String chatId,
+    required String userId,
+    DateTime? muteUntil,
+  }) async {
+    try {
+      await _remoteDataSource.muteChat(
+        chatId: chatId,
+        userId: userId,
+        muteUntil: muteUntil,
+      );
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Sohbet sessize alınırken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> unmuteChat({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _remoteDataSource.unmuteChat(
+        chatId: chatId,
+        userId: userId,
+      );
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Sohbet sessize alma kaldırılırken bir hata oluştu: ${e.toString()}'));
     }
   }
 }

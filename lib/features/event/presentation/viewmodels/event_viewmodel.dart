@@ -112,6 +112,7 @@ class EventViewModel extends ChangeNotifier {
     if (_isListening) return;
     _eventsSub = _getEventsUseCase().listen((eventList) {
       events = eventList;
+      error = null;
       // Eğer ilk sayfa limit kadar geldiyse devamı olabilir
       canLoadMore = eventList.length >= 50;
       _invalidateCache(); // Events değişti, cache'i temizle
@@ -121,6 +122,19 @@ class EventViewModel extends ChangeNotifier {
       notifyListeners();
     });
     _isListening = true;
+  }
+
+  /// Etkinlik listesini yeniden yükler (hata sonrası tekrar dene).
+  Future<void> retryEvents() async {
+    error = null;
+    isLoading = true;
+    notifyListeners();
+    await _eventsSub?.cancel();
+    _eventsSub = null;
+    _isListening = false;
+    listenEvents();
+    isLoading = false;
+    notifyListeners();
   }
 
   /// Kullanıcının etkinliklerini stream olarak getir

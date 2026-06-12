@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_color_config.dart';
+import '../theme/app_color_config.dart';
 
 class AppGradientContainer extends StatelessWidget {
   final Widget child;
@@ -31,12 +31,11 @@ class AppGradientContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brightness = theme.brightness;
-    
-    // Görsel arka plan varsa onu kullan
+
     if (backgroundImagePath != null) {
       return AnimatedContainer(
-        duration: enableAnimatedGradient 
-            ? animationDuration 
+        duration: enableAnimatedGradient
+            ? animationDuration
             : const Duration(milliseconds: 300),
         padding: padding,
         decoration: BoxDecoration(
@@ -49,25 +48,22 @@ class AppGradientContainer extends StatelessWidget {
         child: child,
       );
     }
-    
-    // Dark mode için düz siyah, light mode için gradient
+
     if (brightness == Brightness.dark && gradientColors == null) {
-      // Dark mode: Düz siyah arka plan (gradient yok)
       return AnimatedContainer(
-        duration: enableAnimatedGradient 
-            ? animationDuration 
+        duration: enableAnimatedGradient
+            ? animationDuration
             : const Duration(milliseconds: 300),
         padding: padding,
-        color: AppColorConfig.surfaceColorDark, // Düz siyah
+        color: AppColorConfig.surfaceColorDark,
         child: child,
       );
     }
-    
-    // Light mode veya custom gradient için
-    final defaultGradient = gradientColors ?? 
-        AppColorConfig.getGradientPrimaryLight(brightness).map((color) => 
-          color.withAlpha(180) // Light mode için alpha uygula
-    ).toList();
+
+    final defaultGradient = gradientColors ??
+        AppColorConfig.getGradientPrimaryLight(brightness)
+            .map((color) => color.withAlpha(180))
+            .toList();
 
     final colors = gradientColors ?? defaultGradient;
     final stops = List.generate(
@@ -75,10 +71,9 @@ class AppGradientContainer extends StatelessWidget {
       (index) => index / (colors.length - 1),
     );
 
-    // Theme değişikliklerine duyarlı olması için AnimatedContainer kullan
     return AnimatedContainer(
-      duration: enableAnimatedGradient 
-          ? animationDuration 
+      duration: enableAnimatedGradient
+          ? animationDuration
           : const Duration(milliseconds: 300),
       padding: padding,
       decoration: BoxDecoration(
@@ -92,4 +87,4 @@ class AppGradientContainer extends StatelessWidget {
       child: child,
     );
   }
-} 
+}

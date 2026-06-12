@@ -4,7 +4,7 @@ import '../../domain/entities/message_entity.dart';
 import '../../../../core/theme/app_color_config.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'message_reactions.dart';
-import '../../../../../views/widgets/modern_loading_widget.dart';
+import '../../../../../core/widgets/modern_loading_widget.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 

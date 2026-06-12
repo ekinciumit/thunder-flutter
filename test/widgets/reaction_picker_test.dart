@@ -112,8 +112,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
+      // ✅ onReactionSelected çağrılmalı
       expect(selectedEmoji, '😀');
-      expect(closeCalled, true);
+      // ✅ onClose artık otomatik çağrılmıyor (onReactionSelected içinde Navigator.pop var)
+      // expect(closeCalled, true); // Kaldırıldı
     });
 
     testWidgets('ReactionPicker - Farklı emoji tıklanınca doğru callback çağrılıyor', (WidgetTester tester) async {
@@ -142,9 +144,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // Assert
+        // ✅ onReactionSelected çağrılmalı
         expect(selectedEmoji, isNotNull);
         expect(selectedEmoji, '😀');
-        expect(closeCalled, true);
+        // ✅ onClose artık otomatik çağrılmıyor (onReactionSelected içinde Navigator.pop var)
+        // expect(closeCalled, true); // Kaldırıldı
       } else {
         // Emoji scroll içinde olabilir, bu test için widget'ın render edildiğini kontrol et yeterli
         expect(find.byType(ReactionPicker), findsOneWidget);

@@ -13,6 +13,9 @@ abstract class ChatRepository {
   /// Chat'i ID'ye göre getir
   Future<Either<Failure, ChatEntity?>> getChatById(String chatId);
   
+  /// Chat'i stream olarak getir
+  Stream<ChatEntity?> getChatStream(String chatId);
+  
   /// Özel sohbet oluştur veya getir
   Future<Either<Failure, ChatEntity>> getOrCreatePrivateChat(String userA, String userB);
   
@@ -131,5 +134,50 @@ abstract class ChatRepository {
   /// Chat medya (image/video) dosyasını Firebase Storage'a yükler
   /// Progress callback ile progress güncellemesi yapılabilir
   Future<Either<Failure, String>> uploadChatMedia(String filePath, String storagePath, {String? contentType, void Function(double progress)? onProgress});
+  
+  /// Grup bilgilerini güncelle (sadece yöneticiler)
+  Future<Either<Failure, void>> updateGroupInfo({
+    required String chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  });
+  
+  /// Kullanıcıyı yönetici yap (sadece yöneticiler)
+  Future<Either<Failure, void>> addAdmin({
+    required String chatId,
+    required String userId,
+  });
+  
+  /// Kullanıcıyı yöneticilikten çıkar (sadece yöneticiler)
+  Future<Either<Failure, void>> removeAdmin({
+    required String chatId,
+    required String userId,
+  });
+
+  /// Gruba üye ekle (sadece yöneticiler)
+  Future<Either<Failure, void>> addGroupParticipants({
+    required String chatId,
+    required List<String> userIds,
+  });
+
+  /// Gruptan üye çıkar
+  Future<Either<Failure, void>> removeGroupParticipant({
+    required String chatId,
+    required String userId,
+  });
+
+  /// Sohbeti sessize al
+  Future<Either<Failure, void>> muteChat({
+    required String chatId,
+    required String userId,
+    DateTime? muteUntil,
+  });
+
+  /// Sohbet sessize almayı kaldır
+  Future<Either<Failure, void>> unmuteChat({
+    required String chatId,
+    required String userId,
+  });
 }
 

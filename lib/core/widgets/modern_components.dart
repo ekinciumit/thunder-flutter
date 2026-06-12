@@ -49,6 +49,74 @@ class ModernSnackbar {
         ? Colors.black 
         : Colors.white;
     
+    // ✅ Üstten göster: OverlayEntry kullanarak özel bir top snackbar
+    _showTopSnackbar(
+      context: context,
+      message: message,
+      color: color,
+      icon: icon,
+      textColor: textColor,
+      iconColor: iconColor,
+    );
+  }
+
+  /// Üstten gösterilen snackbar (basit slide-down animasyon ile)
+  static void _showTopSnackbar({
+    required BuildContext context,
+    required String message,
+    required Color color,
+    required IconData icon,
+    required Color textColor,
+    required Color iconColor,
+  }) {
+    try {
+      // ✅ Context kontrolü
+      if (!context.mounted) return;
+      
+      final overlay = Overlay.maybeOf(context);
+      if (overlay == null) {
+        // ✅ Fallback: Eğer Overlay bulunamazsa normal SnackBar kullan
+        _showFallbackSnackbar(context, message, color, icon, textColor, iconColor);
+        return;
+      }
+      
+      late OverlayEntry overlayEntry;
+      
+      overlayEntry = OverlayEntry(
+        builder: (context) => _TopSnackbarWidget(
+          message: message,
+          color: color,
+          icon: icon,
+          textColor: textColor,
+          iconColor: iconColor,
+          onDismiss: () {
+            try {
+              overlayEntry.remove();
+            } catch (_) {
+              // OverlayEntry zaten kaldırılmış, sessizce devam et
+            }
+          },
+        ),
+      );
+
+      overlay.insert(overlayEntry);
+    } catch (e) {
+      // ✅ Hata durumunda fallback kullan
+      if (context.mounted) {
+        _showFallbackSnackbar(context, message, color, icon, textColor, iconColor);
+      }
+    }
+  }
+
+  /// Fallback: Normal SnackBar (Overlay kullanılamazsa)
+  static void _showFallbackSnackbar(
+    BuildContext context,
+    String message,
+    Color color,
+    IconData icon,
+    Color textColor,
+    Color iconColor,
+  ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -75,11 +143,142 @@ class ModernSnackbar {
         margin: EdgeInsets.only(
           left: AppTheme.spacingLg,
           right: AppTheme.spacingLg,
-          top: AppTheme.spacingLg,
-          bottom: 100.0 + AppTheme.spacingLg, // Bottom nav bar için alan bırak (yaklaşık 92px + padding)
+          top: MediaQuery.of(context).padding.top + AppTheme.spacingMd, // ✅ Üstten göster
+          bottom: 100.0 + AppTheme.spacingLg,
         ),
         duration: const Duration(seconds: 3),
         elevation: 4,
+      ),
+    );
+  }
+}
+
+/// Üstten gösterilen snackbar widget (animasyon ile)
+class _TopSnackbarWidget extends StatefulWidget {
+  final String message;
+  final Color color;
+  final IconData icon;
+  final Color textColor;
+  final Color iconColor;
+  final VoidCallback onDismiss;
+
+  const _TopSnackbarWidget({
+    required this.message,
+    required this.color,
+    required this.icon,
+    required this.textColor,
+    required this.iconColor,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_TopSnackbarWidget> createState() => _TopSnackbarWidgetState();
+}
+
+class _TopSnackbarWidgetState extends State<_TopSnackbarWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ Slide-down animasyon controller
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      reverseDuration: const Duration(milliseconds: 250),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, -1.5), // Üstten başla (görünmez)
+      end: Offset.zero, // Normal pozisyon
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic, // ✅ Smooth animasyon
+      reverseCurve: Curves.easeInCubic,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    ));
+
+    // ✅ Animasyonu başlat
+    _animationController.forward();
+
+    // ✅ 3 saniye sonra kapat (animasyon ile)
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && (_animationController.isAnimating || _animationController.isCompleted)) {
+        _animationController.reverse().then((_) {
+          if (mounted) {
+            widget.onDismiss();
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + AppTheme.spacingMd, // ✅ Status bar'dan hemen sonra
+      left: AppTheme.spacingLg,
+      right: AppTheme.spacingLg,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Material(
+            color: Colors.transparent,
+            elevation: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingMd,
+                vertical: AppTheme.spacingMd,
+              ),
+              decoration: BoxDecoration(
+                color: widget.color,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(widget.icon, color: widget.iconColor, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.message,
+                      style: TextStyle(
+                        color: widget.textColor,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

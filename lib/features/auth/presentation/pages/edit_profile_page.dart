@@ -9,7 +9,7 @@ import '../../../../core/theme/app_color_config.dart';
 import '../../../../core/widgets/modern_components.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/app_gradient_container.dart';
 
 /// Modern Profil Düzenleme Sayfası
 /// 
@@ -213,6 +213,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final overlayText = AppColorConfig.getOverlayTextPrimary(brightness);
+    final overlayTextSecondary = AppColorConfig.getOverlayTextSecondary(brightness);
     final l10n = AppLocalizations.of(context);
     final authViewModel = Provider.of<AuthViewModel>(context);
     final user = authViewModel.user;
@@ -239,11 +242,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
               l10n?.editProfile ?? 'Edit Profile',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: AppColorConfig.cardColor,
+                color: overlayText,
               ),
             ),
             leading: IconButton(
-              icon: Icon(Icons.close, color: AppColorConfig.cardColor),
+              icon: Icon(Icons.close, color: overlayText),
               onPressed: () async {
                 if (!mounted) return;
                 final navigator = Navigator.of(context);
@@ -297,14 +300,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         l10n?.photo ?? 'Profile Photo',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColorConfig.cardColor,
+                          color: overlayText,
                         ),
                       ),
                       const SizedBox(height: AppTheme.spacingSm),
                       Text(
                         'Choose a photo that represents you',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColorConfig.cardColor.withAlpha(180),
+                          color: overlayTextSecondary,
                         ),
                       ),
                       const SizedBox(height: AppTheme.spacingLg),
@@ -439,14 +442,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         l10n?.account ?? 'Personal Information',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColorConfig.cardColor,
+                          color: overlayText,
                         ),
                       ),
                       const SizedBox(height: AppTheme.spacingSm),
                       Text(
                         'Update your personal details',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColorConfig.cardColor.withAlpha(180),
+                          color: overlayTextSecondary,
                         ),
                       ),
                       const SizedBox(height: AppTheme.spacingLg),
@@ -485,14 +488,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         l10n?.bio ?? 'Bio',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColorConfig.cardColor,
+                          color: overlayText,
                         ),
                       ),
                       const SizedBox(height: AppTheme.spacingSm),
                       Text(
                         'Tell others about yourself',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColorConfig.cardColor.withAlpha(180),
+                          color: overlayTextSecondary,
                         ),
                       ),
                       const SizedBox(height: AppTheme.spacingLg),
@@ -526,6 +529,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     int? maxLength,
   }) {
     final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final overlayText = AppColorConfig.getOverlayTextPrimary(brightness);
+    final overlayTextSecondary = AppColorConfig.getOverlayTextSecondary(brightness);
+    final borderColor = AppColorConfig.getBorderColorInput(brightness);
+    final fieldFill = AppColorConfig.getCardColor(brightness).withValues(alpha: 0.85);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,7 +546,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColorConfig.cardColor,
+                color: overlayText,
               ),
             ),
           ],
@@ -548,25 +556,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
           controller: controller,
           maxLines: maxLines,
           maxLength: maxLength,
-          style: TextStyle(color: AppColorConfig.cardColor),
+          style: TextStyle(color: overlayText),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(
-              color: AppColorConfig.cardColor.withAlpha(100),
-            ),
+            hintStyle: TextStyle(color: overlayTextSecondary),
             filled: true,
-            fillColor: Colors.white.withAlpha(10),
+            fillColor: fieldFill,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-              borderSide: BorderSide(
-                color: Colors.white.withAlpha(30),
-              ),
+              borderSide: BorderSide(color: borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-              borderSide: BorderSide(
-                color: Colors.white.withAlpha(30),
-              ),
+              borderSide: BorderSide(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -576,9 +578,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
             ),
             contentPadding: const EdgeInsets.all(AppTheme.spacingMd),
-            counterStyle: TextStyle(
-              color: AppColorConfig.cardColor.withAlpha(150),
-            ),
+            counterStyle: TextStyle(color: overlayTextSecondary),
           ),
         ),
       ],
@@ -591,6 +591,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     required IconData icon,
   }) {
     final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final overlayText = AppColorConfig.getOverlayTextPrimary(brightness);
+    final overlayTextSecondary = AppColorConfig.getOverlayTextSecondary(brightness);
+    final borderColor = AppColorConfig.getBorderColorInput(brightness);
+    final fieldFill = AppColorConfig.getCardColor(brightness).withValues(alpha: 0.85);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,14 +608,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColorConfig.cardColor,
+                color: overlayText,
               ),
             ),
             const Spacer(),
             Icon(
               Icons.lock_outline,
               size: 14,
-              color: AppColorConfig.cardColor.withAlpha(100),
+              color: overlayTextSecondary,
             ),
           ],
         ),
@@ -618,20 +623,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
         Container(
           padding: const EdgeInsets.all(AppTheme.spacingMd),
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(5),
+            color: fieldFill,
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            border: Border.all(
-              color: Colors.white.withAlpha(15),
-            ),
+            border: Border.all(color: borderColor),
           ),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   value,
-                  style: TextStyle(
-                    color: AppColorConfig.cardColor.withAlpha(150),
-                  ),
+                  style: TextStyle(color: overlayTextSecondary),
                 ),
               ),
             ],

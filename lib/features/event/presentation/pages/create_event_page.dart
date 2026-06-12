@@ -11,7 +11,7 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/modern_components.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/app_gradient_container.dart';
 import '../widgets/event_cover_photo_picker.dart';
 import '../widgets/location_picker_dialog.dart';
 import '../../../../core/utils/category_utils.dart';
@@ -297,9 +297,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
       } else {
         setState(() { isUploading = false; });
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fotoğraf yüklenemedi'),
+            SnackBar(
+              content: Text(l10n.photoUploadFailed),
               backgroundColor: Colors.red,
             ),
           );
@@ -310,7 +311,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fotoğraf yükleme hatası: ${e.toString()}'),
+            content: Text(AppLocalizations.of(context)!.photoUploadError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );

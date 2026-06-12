@@ -5,6 +5,8 @@ import 'package:thunder/features/auth/data/repositories/auth_repository_impl.dar
 import 'package:thunder/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:thunder/features/auth/data/datasources/auth_local_data_source.dart';
 import 'package:thunder/features/user/data/models/user_model.dart';
+import 'package:thunder/features/user/data/mappers/user_mapper.dart';
+import 'package:thunder/features/user/domain/entities/user_entity.dart';
 import 'package:thunder/core/errors/exceptions.dart';
 import 'package:thunder/core/errors/failures.dart';
 
@@ -36,8 +38,9 @@ void main() {
       uid: 'test-uid-123',
       email: testEmail,
     );
+    final testUserEntity = UserMapper.toEntity(testUser);
 
-    test('should return Right(UserModel) when sign in is successful', () async {
+    test('should return Right(UserEntity) when sign in is successful', () async {
       // Arrange
       when(mockRemoteDataSource.signIn(testEmail, testPassword))
           .thenAnswer((_) async => testUser);
@@ -50,7 +53,11 @@ void main() {
       // Assert
       expect(result.isRight, true);
       expect(result.isLeft, false);
-      expect(result.right, testUser);
+      // ✅ Repository UserEntity döndürüyor (Clean Architecture)
+      final userEntity = result.right;
+      expect(userEntity, isA<UserEntity>());
+      expect(userEntity.uid, testUserEntity.uid);
+      expect(userEntity.email, testUserEntity.email);
       verify(mockRemoteDataSource.signIn(testEmail, testPassword)).called(1);
       verify(mockLocalDataSource.cacheUser(testUser)).called(1);
     });
@@ -71,7 +78,7 @@ void main() {
       verifyNever(mockLocalDataSource.cacheUser(any));
     });
 
-    test('should return Right(UserModel) when cache fails but sign in succeeds (cache error is non-critical)', () async {
+    test('should return Right(UserEntity) when cache fails but sign in succeeds (cache error is non-critical)', () async {
       // Arrange
       when(mockRemoteDataSource.signIn(testEmail, testPassword))
           .thenAnswer((_) async => testUser);
@@ -83,9 +90,11 @@ void main() {
 
       // Assert
       // Cache hatası kritik değil, kullanıcı zaten giriş yaptı
-      // Bu yüzden Right(UserModel) döndürmeli
+      // Bu yüzden Right(UserEntity) döndürmeli
       expect(result.isRight, true);
-      expect(result.right, testUser);
+      expect(result.right, isA<UserEntity>());
+      expect(result.right.uid, testUserEntity.uid);
+      expect(result.right.email, testUserEntity.email);
       verify(mockRemoteDataSource.signIn(testEmail, testPassword)).called(1);
       verify(mockLocalDataSource.cacheUser(testUser)).called(1);
     });
@@ -98,12 +107,15 @@ void main() {
       uid: 'test-uid-123',
       email: testEmail,
     );
+    final testUserEntity = UserMapper.toEntity(testUser);
 
-    test('should return Right(UserModel) when sign up is successful', () async {
+    test('should return Right(UserEntity) when sign up is successful', () async {
       // Arrange
       when(mockRemoteDataSource.signUp(testEmail, testPassword))
           .thenAnswer((_) async => testUser);
-      when(mockLocalDataSource.cacheUser(testUser))
+      when(mockRemoteDataSource.saveUserProfile(any))
+          .thenAnswer((_) async => Future.value());
+      when(mockLocalDataSource.cacheUser(any))
           .thenAnswer((_) async => Future.value());
 
       // Act
@@ -111,9 +123,13 @@ void main() {
 
       // Assert
       expect(result.isRight, true);
-      expect(result.right, testUser);
+      final userEntity = result.right; // isRight true olduğu için null olamaz
+      expect(userEntity, isA<UserEntity>());
+      expect(userEntity.uid, testUserEntity.uid);
+      expect(userEntity.email, testUserEntity.email);
       verify(mockRemoteDataSource.signUp(testEmail, testPassword)).called(1);
-      verify(mockLocalDataSource.cacheUser(testUser)).called(1);
+      verify(mockRemoteDataSource.saveUserProfile(any)).called(1);
+      verify(mockLocalDataSource.cacheUser(any)).called(1);
     });
 
     test('should return Left(ServerFailure) when remote sign up fails', () async {
@@ -168,8 +184,9 @@ void main() {
       uid: testUid,
       email: 'test@example.com',
     );
+    final testUserEntity = UserMapper.toEntity(testUser);
 
-    test('should return Right(UserModel) from cache when available', () async {
+    test('should return Right(UserEntity) from cache when available', () async {
       // Arrange
       when(mockLocalDataSource.getCachedUser())
           .thenAnswer((_) async => testUser);
@@ -179,12 +196,15 @@ void main() {
 
       // Assert
       expect(result.isRight, true);
-      expect(result.right, testUser);
+      final userEntity = result.right!; // isRight true olduğu için null olamaz
+      expect(userEntity, isA<UserEntity>());
+      expect(userEntity.uid, testUserEntity.uid);
+      expect(userEntity.email, testUserEntity.email);
       verify(mockLocalDataSource.getCachedUser()).called(1);
       verifyNever(mockRemoteDataSource.fetchUserProfile(any));
     });
 
-    test('should return Right(UserModel) from remote when cache is empty', () async {
+    test('should return Right(UserEntity) from remote when cache is empty', () async {
       // Arrange
       when(mockLocalDataSource.getCachedUser())
           .thenAnswer((_) async => null);
@@ -198,7 +218,10 @@ void main() {
 
       // Assert
       expect(result.isRight, true);
-      expect(result.right, testUser);
+      final userEntity = result.right!; // isRight true olduğu için null olamaz
+      expect(userEntity, isA<UserEntity>());
+      expect(userEntity.uid, testUserEntity.uid);
+      expect(userEntity.email, testUserEntity.email);
       verify(mockLocalDataSource.getCachedUser()).called(1);
       verify(mockRemoteDataSource.fetchUserProfile(testUid)).called(1);
       verify(mockLocalDataSource.cacheUser(testUser)).called(1);
@@ -230,15 +253,18 @@ void main() {
       email: 'test@example.com',
     );
 
-    test('should return UserModel when user is logged in', () {
+    test('should return UserEntity when user is logged in', () {
       // Arrange
+      final testUserEntity = UserMapper.toEntity(testUser);
       when(mockRemoteDataSource.getCurrentUser()).thenReturn(testUser);
 
       // Act
       final result = repository.getCurrentUser();
 
       // Assert
-      expect(result, testUser);
+      expect(result, isA<UserEntity>());
+      expect(result?.uid, testUserEntity.uid);
+      expect(result?.email, testUserEntity.email);
       verify(mockRemoteDataSource.getCurrentUser()).called(1);
     });
 

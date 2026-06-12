@@ -38,7 +38,7 @@ class ChatMessageDeleteDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('İptal'),
+          child: Text(l10n!.cancel),
         ),
         TextButton(
           onPressed: () async {
@@ -49,20 +49,20 @@ class ChatMessageDeleteDialog extends StatelessWidget {
                 navigator.pop();
                 ModernSnackbar.showSuccess(
                   context,
-                  'Mesaj silindi',
+                  l10n!.messageDeleted,
                 );
               }
             } catch (e) {
               if (context.mounted) {
                 ModernSnackbar.showError(
                   context,
-                  'Hata: $e',
+                  l10n!.errorWithDetails(e.toString()),
                 );
               }
             }
           },
           style: TextButton.styleFrom(foregroundColor: Colors.red),
-          child: const Text('Sil'),
+          child: Text(l10n!.delete),
         ),
       ],
     );

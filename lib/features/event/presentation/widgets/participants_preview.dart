@@ -65,7 +65,7 @@ class ParticipantsPreview extends StatelessWidget {
               future: authViewModel.fetchUserProfile(uid),
               builder: (context, snapshot) {
                 if (!snapshot.hasData || snapshot.data == null) {
-                  return ListTile(title: Text('Kullanıcı: $uid'));
+                  return ListTile(title: Text(AppLocalizations.of(context)!.userLabel(uid)));
                 }
                 final userEntity = snapshot.data!;
                 final user = UserMapper.toModel(userEntity);

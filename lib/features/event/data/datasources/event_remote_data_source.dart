@@ -337,8 +337,8 @@ class EventRemoteDataSourceImpl implements EventRemoteDataSource {
       // Cost Optimization: Compress image before upload (70-80% storage savings)
       final compressedFile = await ImageCompressor.compressEventCover(photoFile);
 
-      final fileName = 'event_${eventId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storageRef = _storage.ref().child('event_photos').child(fileName);
+      final fileId = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef = _storage.ref().child('event_photos').child(eventId).child(fileId);
 
       final uploadTask = storageRef.putFile(compressedFile);
       final snapshot = await uploadTask;

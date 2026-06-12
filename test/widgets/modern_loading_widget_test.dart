@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:thunder/views/widgets/modern_loading_widget.dart';
+import 'package:thunder/core/widgets/modern_loading_widget.dart';
 
 void main() {
   group('ModernLoadingWidget Widget Tests', () {

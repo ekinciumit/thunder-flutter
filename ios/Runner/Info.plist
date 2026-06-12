@@ -48,7 +48,18 @@
 		<key>GMSApiKey</key>
 		<string>AIzaSyA9MjHLvSgrrjxfQQ797fnjBZkhnVViHiE</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Harita için konumunuza ihtiyacımız var.</string>
+		<string>Harita ve yakındaki etkinlikler için konumunuza ihtiyacımız var.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Sesli mesaj göndermek için mikrofon erişimi gerekir.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Profil fotoğrafı ve sohbet medyası için kamera erişimi gerekir.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Fotoğraf ve video paylaşmak için galeri erişimi gerekir.</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>fetch</string>
+			<string>remote-notification</string>
+		</array>
 		<key>io.flutter.embedded_views_preview</key>
 		<true/>
 		<key>UIStatusBarHidden</key>

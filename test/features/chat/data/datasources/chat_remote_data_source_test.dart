@@ -1,18 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/data/datasources/chat_remote_data_source.dart';
 import 'package:thunder/features/chat/data/models/chat_model.dart';
 import 'package:thunder/features/chat/data/models/message_model.dart';
 import 'package:thunder/core/errors/exceptions.dart';
 
+import 'chat_remote_data_source_test.mocks.dart';
+
+@GenerateMocks([FirebaseStorage])
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
+  late MockFirebaseStorage mockStorage;
   late ChatRemoteDataSourceImpl dataSource;
 
   setUp(() {
     fakeFirestore = FakeFirebaseFirestore();
-    dataSource = ChatRemoteDataSourceImpl(firestore: fakeFirestore);
+    mockStorage = MockFirebaseStorage();
+    dataSource = ChatRemoteDataSourceImpl(
+      firestore: fakeFirestore,
+      storage: mockStorage,
+    );
   });
 
   group('ChatRemoteDataSourceImpl', () {

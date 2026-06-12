@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 import '../../../../features/user/domain/entities/user_entity.dart';
 import '../../../../features/event/domain/entities/event_entity.dart';
 import '../widgets/user_suggestions_widget.dart';
-import '../../../../views/widgets/app_gradient_container.dart';
+import '../../../../core/widgets/app_gradient_container.dart';
 import '../../../../core/widgets/modern_components.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_color_config.dart';
@@ -164,6 +164,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final overlayText = AppColorConfig.getOverlayTextPrimary(brightness);
+    final overlayTextSecondary = AppColorConfig.getOverlayTextSecondary(brightness);
+    final overlayAccent = AppColorConfig.getOverlayAccent(brightness);
+    final overlayBorder = AppColorConfig.getOverlayBorder(brightness);
     final l10n = AppLocalizations.of(context)!;
 
     return AppGradientContainer(
@@ -208,9 +213,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ),
                       child: Icon(
                         Icons.arrow_back_rounded,
-                        color: theme.brightness == Brightness.dark
-                            ? AppColorConfig.cardColor
-                            : Colors.black,
+                        color: overlayText,
                         size: 20,
                       ),
                     ),
@@ -318,7 +321,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         widget.user.displayName ?? l10n.user,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColorConfig.cardColor,
+                          color: overlayText,
                         ),
                       ),
                       const SizedBox(height: AppTheme.spacingXs),
@@ -326,7 +329,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         Text(
                           widget.user.bio!,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColorConfig.cardColor.withValues(alpha: 0.78),
+                            color: overlayTextSecondary,
                           ),
                         ),
                     ],
@@ -352,8 +355,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
                           label: Text(l10n.startChat),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColorConfig.cardColor,
-                            side: const BorderSide(color: AppColorConfig.cardColor, width: 1.5),
+                            foregroundColor: overlayAccent,
+                            side: BorderSide(color: overlayBorder, width: 1.5),
                             padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -421,7 +424,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                 'Keşfet',
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColorConfig.cardColor,
+                                  color: overlayText,
                                 ),
                               ),
                             ),
@@ -446,7 +449,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             },
                             icon: Icon(
                               Icons.close_rounded,
-                              color: AppColorConfig.cardColor,
+                              color: overlayText,
                               size: 20,
                             ),
                             padding: EdgeInsets.zero,
@@ -567,7 +570,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                         event.title,
                                         style: theme.textTheme.titleMedium?.copyWith(
                                           fontWeight: FontWeight.bold,
-                                          color: AppColorConfig.cardColor,
+                                          color: theme.colorScheme.onSurface,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -633,6 +636,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   Widget _buildStatColumn(String label, int count, ThemeData theme, VoidCallback? onTap) {
+    final overlayText = AppColorConfig.getOverlayTextPrimary(theme.brightness);
+    final overlayTextSecondary = AppColorConfig.getOverlayTextSecondary(theme.brightness);
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -642,14 +647,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
             '$count',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColorConfig.cardColor,
+              color: overlayText,
             ),
           ),
           const SizedBox(height: AppTheme.spacingXs),
           Text(
             label,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColorConfig.cardColor.withValues(alpha: 0.78),
+              color: overlayTextSecondary,
             ),
           ),
         ],
