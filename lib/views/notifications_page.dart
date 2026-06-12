@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import '../models/notification_model.dart';
-import '../models/user_model.dart';
-import '../models/event_model.dart';
+import '../features/notification/domain/entities/notification_entity.dart';
+import '../features/notification/data/mappers/notification_mapper.dart';
+import '../features/user/domain/entities/user_entity.dart';
+import '../features/event/domain/entities/event_entity.dart';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../features/event/presentation/viewmodels/event_viewmodel.dart';
+import '../features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import '../services/user_service.dart';
-import 'user_profile_page.dart';
-import 'event_detail_page.dart';
-import 'private_chat_page.dart';
-import 'widgets/app_gradient_container.dart';
-import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/app_gradient_container.dart';
+import 'widgets/notification_item.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
-import '../core/theme/app_color_config.dart';
+import '../core/widgets/skeleton_widgets.dart';
 import '../l10n/app_localizations.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:intl/intl.dart';
+import '../core/navigation/app_navigation.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -27,42 +25,30 @@ class NotificationsPage extends StatefulWidget {
 
 class _NotificationsPageState extends State<NotificationsPage> {
   final UserService _userService = UserService();
-  final _notificationsRef = FirebaseFirestore.instance.collection('notifications');
 
-  Stream<List<NotificationModel>> _getNotificationsStream(String userId) {
-    return _notificationsRef
-        .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
-        .limit(50)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => NotificationModel.fromMap(doc.data(), doc.id))
-            .toList());
+  Stream<List<NotificationEntity>> _getNotificationsStream(String userId) {
+    // Clean Architecture: UserService üzerinden notifications stream
+    // UserService Map döndürüyor, NotificationMapper ile direkt Entity'ye dönüştürüyoruz
+    return _userService.getNotificationsStream(userId).map((list) {
+      return list.map((data) {
+        return NotificationMapper.fromMap(data, data['id'] as String);
+      }).toList();
+    });
   }
 
-  Future<UserModel?> _getUserById(String userId) async {
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
-    if (doc.exists) {
-      return UserModel.fromMap(doc.data()!, doc.id);
-    }
-    return null;
+  Future<UserEntity?> _getUserById(String userId) async {
+    // Clean Architecture: AuthViewModel üzerinden user getir
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    return await authViewModel.fetchUserProfile(userId);
   }
 
-  Future<EventModel?> _getEventById(String eventId) async {
-    final doc = await FirebaseFirestore.instance
-        .collection('events')
-        .doc(eventId)
-        .get();
-    if (doc.exists) {
-      return EventModel.fromMap(doc.data()!, doc.id);
-    }
-    return null;
+  Future<EventEntity?> _getEventById(String eventId) async {
+    // Clean Architecture: EventViewModel üzerinden event stream'den ilk değeri al
+    final eventViewModel = Provider.of<EventViewModel>(context, listen: false);
+    return await eventViewModel.getEventStream(eventId).first;
   }
 
-  Future<void> _handleNotificationTap(NotificationModel notification) async {
+  Future<void> _handleNotificationTap(NotificationEntity notification) async {
     // Context'i async öncesi sakla
     if (!mounted) return;
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
@@ -79,34 +65,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (['follow', 'follow_request', 'follow_request_accepted'].contains(notification.type) && notification.relatedUserId != null) {
       final user = await _getUserById(notification.relatedUserId!);
       if (user != null && mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => UserProfilePage(
-              user: user,
-              currentUserId: currentUserId,
-            ),
-          ),
-        );
+        AppNavigation.toUserProfile(context: context, userId: user.uid);
       }
     } else if (notification.type == 'event' && notification.relatedEventId != null && mounted) {
       final event = await _getEventById(notification.relatedEventId!);
       if (event != null && mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => EventDetailPage(event: event),
-          ),
-        );
+        AppNavigation.toEventDetail(context: context, event: event);
       }
     } else if (['message', 'message_request'].contains(notification.type) && notification.relatedChatId != null && mounted) {
-      // Chat bilgilerini çek
-      final chatDoc = await FirebaseFirestore.instance
-          .collection('chats')
-          .doc(notification.relatedChatId!)
-          .get();
+      // Clean Architecture: ChatViewModel üzerinden chat bilgilerini çek
+      final chatViewModel = Provider.of<ChatViewModel>(context, listen: false);
+      final chat = await chatViewModel.getChatById(notification.relatedChatId!);
       
-      if (chatDoc.exists && mounted) {
-        final chatData = chatDoc.data()!;
-        final participants = List<String>.from(chatData['participants'] ?? []);
+      if (chat != null && mounted) {
+        final participants = chat.participants;
         final otherUserId = participants.firstWhere(
           (id) => id != currentUserId,
           orElse: () => '',
@@ -117,15 +89,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
           final currentUser = authViewModel.user;
           
           if (otherUser != null && currentUser != null && mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PrivateChatPage(
-                  currentUserId: currentUserId,
-                  currentUserName: currentUser.displayName ?? currentUser.email,
-                  otherUserId: otherUser.uid,
-                  otherUserName: otherUser.displayName ?? otherUser.email,
-                ),
-              ),
+            AppNavigation.toChat(
+              context: context,
+              currentUserId: currentUserId,
+              currentUserName: currentUser.displayName ?? currentUser.email,
+              otherUserId: otherUser.uid,
+              otherUserName: otherUser.displayName ?? otherUser.email,
             );
           }
         }
@@ -148,7 +117,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
 
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -166,7 +134,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
-            StreamBuilder<List<NotificationModel>>(
+            StreamBuilder<List<NotificationEntity>>(
               stream: _getNotificationsStream(currentUser.uid),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox.shrink();
@@ -177,14 +145,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   tooltip: l10n.markAllAsRead,
                   onPressed: () async {
                     if (!mounted) return;
-                    final currentContext = context;
                     await _userService.markAllNotificationsAsRead(currentUser.uid);
-                    if (!mounted) return;
-                    // ignore: use_build_context_synchronously
-                    ModernSnackbar.showSuccess(
-                      currentContext,
-                      l10n.allNotificationsRead,
-                    );
+                    if (mounted) {
+                      ModernSnackbar.showSuccess(
+                        context,
+                        l10n.allNotificationsRead,
+                      );
+                    }
                   },
                 );
               },
@@ -194,15 +161,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
         body: SafeArea(
           top: false,
           bottom: false,
-          child: StreamBuilder<List<NotificationModel>>(
+          child: StreamBuilder<List<NotificationEntity>>(
             stream: _getNotificationsStream(currentUser.uid),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: ModernLoadingWidget(
-                    message: l10n.loadingNotifications,
-                  ),
-                );
+                return const NotificationListSkeleton();
               }
 
               if (snapshot.hasError) {
@@ -232,7 +195,21 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 itemCount: notifications.length,
                 itemBuilder: (context, index) {
                   final notification = notifications[index];
-                  return _buildNotificationItem(notification, theme, currentUser.uid);
+                  return FutureBuilder<UserEntity?>(
+                    future: notification.relatedUserId != null
+                        ? _getUserById(notification.relatedUserId!)
+                        : Future.value(null),
+                    builder: (context, userSnapshot) {
+                      return NotificationItem(
+                        notification: notification,
+                        user: userSnapshot.data,
+                        currentUserId: currentUser.uid,
+                        onTap: _handleNotificationTap,
+                        onAcceptFollowRequest: _acceptFollowRequest,
+                        onRejectFollowRequest: _rejectFollowRequest,
+                      );
+                    },
+                  );
                 },
               );
             },
@@ -242,162 +219,53 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
-  Widget _buildNotificationItem(
-    NotificationModel notification,
-    ThemeData theme,
-    String currentUserId,
-  ) {
-    return FutureBuilder<UserModel?>(
-      future: notification.relatedUserId != null
-          ? _getUserById(notification.relatedUserId!)
-          : Future.value(null),
-      builder: (context, userSnapshot) {
-        final user = userSnapshot.data;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
-          elevation: 0,
-          color: notification.isRead
-              ? theme.colorScheme.surface
-              : AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            side: BorderSide(
-              color: notification.isRead
-                  ? Colors.transparent
-                  : AppColorConfig.primaryColor.withAlpha(AppTheme.alphaMedium),
-              width: 1,
-            ),
-          ),
-          child: InkWell(
-            onTap: () => _handleNotificationTap(notification),
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            child: Padding(
-              padding: const EdgeInsets.all(AppTheme.spacingMd),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Avatar
-                  if (user != null)
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
-                      backgroundImage: user.photoUrl != null && user.photoUrl!.isNotEmpty
-                          ? CachedNetworkImageProvider(user.photoUrl!)
-                          : null,
-                      child: user.photoUrl == null || user.photoUrl!.isEmpty
-                          ? Icon(
-                              Icons.person,
-                              color: AppColorConfig.primaryColor,
-                              size: 24,
-                            )
-                          : null,
-                    )
-                  else
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColorConfig.primaryColor.withAlpha(AppTheme.alphaVeryLight),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _getNotificationIcon(notification.type),
-                        color: AppColorConfig.primaryColor,
-                        size: 24,
-                      ),
-                    ),
-                  const SizedBox(width: AppTheme.spacingMd),
-                  // Content
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          notification.title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: notification.isRead
-                                ? theme.colorScheme.onSurface
-                                : AppColorConfig.primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: AppTheme.spacingXs),
-                        Text(
-                          notification.body,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: AppTheme.spacingXs),
-                        Builder(
-                          builder: (context) {
-                            final l10n = AppLocalizations.of(context)!;
-                            return Text(
-                              _formatDate(notification.createdAt, l10n),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant.withAlpha(AppTheme.alphaMedium),
-                              ),
-                            );
-                          }
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!notification.isRead)
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppColorConfig.primaryColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  IconData _getNotificationIcon(String type) {
-    switch (type) {
-      case 'follow':
-      case 'follow_request':
-        return Icons.person_add_alt_1_rounded;
-      case 'follow_request_accepted':
-        return Icons.check_circle_rounded;
-      case 'event':
-        return Icons.event_note_rounded;
-      case 'message':
-      case 'message_request':
-        return Icons.chat_bubble_outline_rounded;
-      default:
-        return Icons.notifications_none_rounded;
-    }
-  }
-
-  String _formatDate(DateTime date, AppLocalizations l10n) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      if (difference.inHours == 0) {
-        if (difference.inMinutes == 0) {
-          return l10n.justNow;
-        }
-        return '${difference.inMinutes} ${l10n.minutesAgo}';
+  /// Takip isteğini kabul et
+  Future<void> _acceptFollowRequest(String currentUserId, NotificationEntity notification) async {
+    if (!mounted) return;
+    final currentContext = context;
+    
+    try {
+      await _userService.acceptFollowRequest(
+        currentUserId,
+        notification.relatedUserId!,
+      );
+      
+      // Bildirimi sil ve yenisini ekle (type'ı değiştirmek yerine)
+      await _userService.markNotificationAsRead(notification.id);
+      
+      if (!mounted) return;
+      final authVM = Provider.of<AuthViewModel>(currentContext, listen: false);
+      await authVM.refreshUserProfile();
+      if (mounted) {
+        ModernSnackbar.showSuccess(currentContext, 'Takip isteği kabul edildi ✓');
       }
-      return '${difference.inHours} ${l10n.hoursAgo}';
-    } else if (difference.inDays == 1) {
-      return l10n.yesterday;
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} ${l10n.daysAgo}';
-    } else {
-      return DateFormat('dd MMM yyyy').format(date);
+    } catch (e) {
+      if (!mounted) return;
+      ModernSnackbar.showError(currentContext, 'Hata: ${e.toString()}');
     }
   }
+
+  /// Takip isteğini reddet
+  Future<void> _rejectFollowRequest(String currentUserId, NotificationEntity notification) async {
+    if (!mounted) return;
+    final currentContext = context;
+    
+    try {
+      await _userService.rejectFollowRequest(
+        currentUserId,
+        notification.relatedUserId!,
+      );
+      await _userService.markNotificationAsRead(notification.id);
+      
+      if (mounted) {
+        ModernSnackbar.showSuccess(currentContext, 'Takip isteği reddedildi');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ModernSnackbar.showError(currentContext, 'Hata: ${e.toString()}');
+    }
+  }
+
 }
 

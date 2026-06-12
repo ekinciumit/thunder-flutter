@@ -1,8 +1,13 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../models/user_model.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import '../../../user/data/models/user_model.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/utils/image_compressor.dart';
 
 /// Remote data source interface for authentication
 /// 
@@ -47,6 +52,18 @@ abstract class AuthRemoteDataSource {
   /// 
   /// Returns: UserModel if logged in, null otherwise
   UserModel? getCurrentUser();
+  
+  /// Profil fotoğrafını yükler ve download URL'ini döndürür
+  Future<String> uploadProfilePhoto(File photoFile, String userId);
+  
+  /// Tüm kullanıcıları stream olarak getir
+  Stream<List<UserModel>> getAllUsersStream();
+
+  /// Şifre sıfırlama email'i gönder
+  Future<void> sendPasswordResetEmail(String email);
+
+  /// Hesabı ve ilişkili verileri kalıcı olarak sil
+  Future<void> deleteAccount({required String password});
 }
 
 /// Firebase implementation of AuthRemoteDataSource
@@ -56,12 +73,15 @@ abstract class AuthRemoteDataSource {
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
   
   AuthRemoteDataSourceImpl({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
   }) : _auth = auth ?? FirebaseAuth.instance,
-       _firestore = firestore ?? FirebaseFirestore.instance;
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance;
 
   @override
   Future<UserModel> signIn(String email, String password) async {
@@ -115,11 +135,33 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> saveUserProfile(UserModel user) async {
     try {
+      if (kDebugMode) {
+        debugPrint('✅ [AUTH_DS] saveUserProfile başlatıldı: uid=${user.uid}, displayName=${user.displayName}');
+      }
+      
+      final userMap = user.toMap();
+      if (kDebugMode) {
+        debugPrint('✅ [AUTH_DS] Firestore\'a yazılacak data: $userMap');
+      }
+      
       await _firestore
           .collection('users')
           .doc(user.uid)
-          .set(user.toMap(), SetOptions(merge: true));
-    } catch (e) {
+          .set(userMap, SetOptions(merge: true));
+      
+      if (kDebugMode) {
+        debugPrint('✅ [AUTH_DS] saveUserProfile başarılı: uid=${user.uid}');
+      }
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [AUTH_DS] FirebaseException: ${e.code} - ${e.message}');
+      }
+      throw ServerException('Profil kaydedilirken Firestore hatası: ${e.code} - ${e.message}');
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('❌ [AUTH_DS] saveUserProfile genel hata: $e');
+        debugPrint('❌ [AUTH_DS] Stack trace: $stackTrace');
+      }
       throw ServerException('Profil kaydedilirken bir hata oluştu: ${e.toString()}');
     }
   }
@@ -134,7 +176,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return null;
     } catch (e) {
       // Mevcut kodda null döndürülüyor, aynı mantığı koruyoruz
-      // Ama exception da fırlatabiliriz, şimdilik null döndürelim
+      // Ama hatayı logla
+      if (kDebugMode) {
+        debugPrint('❌ [AUTH_DS] fetchUserProfile hatası: $e');
+      }
       return null;
     }
   }
@@ -165,7 +210,101 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       return null;
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [AUTH_DS] getCachedToken hatası: $e');
+      }
       return null;
+    }
+  }
+
+  @override
+  Future<String> uploadProfilePhoto(File photoFile, String userId) async {
+    try {
+      if (!await photoFile.exists()) {
+        throw ServerException('Fotoğraf dosyası bulunamadı');
+      }
+
+      // Cost Optimization: Compress image before upload (70-80% storage savings)
+      final compressedFile = await ImageCompressor.compressProfilePhoto(photoFile);
+
+      // Güvenlik: UID bazlı path yapısı - sadece kendi klasörüne yazabilir
+      final fileId = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef = _storage.ref().child('profile_photos').child(userId).child(fileId);
+
+      final uploadTask = storageRef.putFile(compressedFile);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      // Clean up temporary compressed file
+      try {
+        if (compressedFile.path != photoFile.path) {
+          await compressedFile.delete();
+        }
+      } catch (_) {
+        // Ignore cleanup errors
+      }
+      
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Profil fotoğrafı yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Stream<List<UserModel>> getAllUsersStream() {
+    try {
+      return _firestore
+          .collection('users')
+          .snapshots()
+          .map((snapshot) => snapshot.docs
+              .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+              .toList());
+    } catch (e) {
+      throw ServerException('Kullanıcılar getirilirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw ServerException(ErrorMapper.mapFirebaseAuthException(e));
+    } catch (e) {
+      throw ServerException('Şifre sıfırlama emaili gönderilirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> deleteAccount({required String password}) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw ServerException('Oturum açık değil');
+      }
+      final email = user.email;
+      if (email == null || email.isEmpty) {
+        throw ServerException('E-posta adresi bulunamadı');
+      }
+
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      final callable = FirebaseFunctions.instance.httpsCallable('deleteUserAccount');
+      await callable.call();
+
+      await _auth.signOut();
+    } on FirebaseAuthException catch (e) {
+      throw ServerException(ErrorMapper.mapFirebaseAuthException(e));
+    } on FirebaseFunctionsException catch (e) {
+      throw ServerException(e.message ?? 'Hesap silinirken bir hata oluştu');
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Hesap silinirken hata oluştu: ${e.toString()}');
     }
   }
 }

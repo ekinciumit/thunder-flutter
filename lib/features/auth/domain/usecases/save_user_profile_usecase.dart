@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/user_model.dart';
+import '../../../user/domain/entities/user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 /// Save User Profile Use Case
@@ -17,7 +17,7 @@ class SaveUserProfileUseCase {
   /// Kullanıcı profilini kaydet
   /// 
   /// Returns: `Either<Failure, void>`
-  Future<Either<Failure, void>> call(UserModel user) async {
+  Future<Either<Failure, void>> call(UserEntity user) async {
     // Business logic: User validation
     if (user.uid.isEmpty) {
       return Either.left(ValidationFailure('Kullanıcı ID boş olamaz'));

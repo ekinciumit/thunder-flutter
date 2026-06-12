@@ -9,10 +9,11 @@ import 'package:mockito/mockito.dart' as _i1;
 import 'package:thunder/core/errors/failures.dart' as _i2;
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart'
     as _i6;
+import 'package:thunder/features/event/domain/entities/event_entity.dart'
+    as _i5;
 import 'package:thunder/features/event/domain/repositories/event_repository.dart'
     as _i3;
-import 'package:thunder/models/event_model.dart' as _i5;
-import 'package:thunder/models/user_model.dart' as _i7;
+import 'package:thunder/features/user/domain/entities/user_entity.dart' as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -27,6 +28,7 @@ import 'package:thunder/models/user_model.dart' as _i7;
 // ignore_for_file: unnecessary_parenthesis
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
+// ignore_for_file: invalid_use_of_internal_member
 
 class _FakeEither_0<L, R> extends _i1.SmartFake implements _i2.Either<L, R> {
   _FakeEither_0(Object parent, Invocation parentInvocation)
@@ -42,7 +44,7 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
   }
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, void>> addEvent(_i5.EventModel? event) =>
+  _i4.Future<_i2.Either<_i2.Failure, void>> addEvent(_i5.EventEntity? event) =>
       (super.noSuchMethod(
             Invocation.method(#addEvent, [event]),
             returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
@@ -55,23 +57,23 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
   @override
-  _i4.Stream<List<_i5.EventModel>> getEventsStream() =>
+  _i4.Stream<List<_i5.EventEntity>> getEventsStream() =>
       (super.noSuchMethod(
             Invocation.method(#getEventsStream, []),
-            returnValue: _i4.Stream<List<_i5.EventModel>>.empty(),
+            returnValue: _i4.Stream<List<_i5.EventEntity>>.empty(),
           )
-          as _i4.Stream<List<_i5.EventModel>>);
+          as _i4.Stream<List<_i5.EventEntity>>);
 
   @override
-  _i4.Stream<List<_i5.EventModel>> getUserEventsStream(String? userId) =>
+  _i4.Stream<List<_i5.EventEntity>> getUserEventsStream(String? userId) =>
       (super.noSuchMethod(
             Invocation.method(#getUserEventsStream, [userId]),
-            returnValue: _i4.Stream<List<_i5.EventModel>>.empty(),
+            returnValue: _i4.Stream<List<_i5.EventEntity>>.empty(),
           )
-          as _i4.Stream<List<_i5.EventModel>>);
+          as _i4.Stream<List<_i5.EventEntity>>);
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventModel>>> fetchNextEvents({
+  _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventEntity>>> fetchNextEvents({
     DateTime? startAfter,
     int? limit = 50,
   }) =>
@@ -81,8 +83,10 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
               #limit: limit,
             }),
             returnValue:
-                _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventModel>>>.value(
-                  _FakeEither_0<_i2.Failure, List<_i5.EventModel>>(
+                _i4.Future<
+                  _i2.Either<_i2.Failure, List<_i5.EventEntity>>
+                >.value(
+                  _FakeEither_0<_i2.Failure, List<_i5.EventEntity>>(
                     this,
                     Invocation.method(#fetchNextEvents, [], {
                       #startAfter: startAfter,
@@ -91,11 +95,11 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
                   ),
                 ),
           )
-          as _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventModel>>>);
+          as _i4.Future<_i2.Either<_i2.Failure, List<_i5.EventEntity>>>);
 
   @override
   _i4.Future<_i2.Either<_i2.Failure, void>> updateEvent(
-    _i5.EventModel? event,
+    _i5.EventEntity? event,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#updateEvent, [event]),
@@ -216,6 +220,139 @@ class MockEventRepository extends _i1.Mock implements _i3.EventRepository {
             ),
           )
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> removeParticipant(
+    String? eventId,
+    String? userId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeParticipant, [eventId, userId]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#removeParticipant, [eventId, userId]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> cancelEvent(
+    String? eventId,
+    String? cancellationReason,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#cancelEvent, [eventId, cancellationReason]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#cancelEvent, [eventId, cancellationReason]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, String>> uploadEventCoverPhoto(
+    String? photoFilePath, {
+    String? eventId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #uploadEventCoverPhoto,
+              [photoFilePath],
+              {#eventId: eventId},
+            ),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+              _FakeEither_0<_i2.Failure, String>(
+                this,
+                Invocation.method(
+                  #uploadEventCoverPhoto,
+                  [photoFilePath],
+                  {#eventId: eventId},
+                ),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, String>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, String>> uploadEventPhoto(
+    String? photoFilePath,
+    String? eventId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#uploadEventPhoto, [photoFilePath, eventId]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+              _FakeEither_0<_i2.Failure, String>(
+                this,
+                Invocation.method(#uploadEventPhoto, [photoFilePath, eventId]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, String>>);
+
+  @override
+  _i4.Stream<_i5.EventEntity?> getEventStream(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getEventStream, [eventId]),
+            returnValue: _i4.Stream<_i5.EventEntity?>.empty(),
+          )
+          as _i4.Stream<_i5.EventEntity?>);
+
+  @override
+  _i4.Stream<List<Map<String, dynamic>>> getEventCommentsStream(
+    String? eventId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getEventCommentsStream, [eventId]),
+            returnValue: _i4.Stream<List<Map<String, dynamic>>>.empty(),
+          )
+          as _i4.Stream<List<Map<String, dynamic>>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> addEventComment(
+    String? eventId,
+    String? text,
+    String? userId,
+    String? userName,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#addEventComment, [
+              eventId,
+              text,
+              userId,
+              userName,
+            ]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#addEventComment, [
+                  eventId,
+                  text,
+                  userId,
+                  userName,
+                ]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> deleteEventComments(
+    String? eventId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteEventComments, [eventId]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#deleteEventComments, [eventId]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
 }
 
 /// A class which mocks [AuthRepository].
@@ -227,38 +364,38 @@ class MockAuthRepository extends _i1.Mock implements _i6.AuthRepository {
   }
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, _i7.UserModel>> signIn(
+  _i4.Future<_i2.Either<_i2.Failure, _i7.UserEntity>> signIn(
     String? email,
     String? password,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#signIn, [email, password]),
             returnValue:
-                _i4.Future<_i2.Either<_i2.Failure, _i7.UserModel>>.value(
-                  _FakeEither_0<_i2.Failure, _i7.UserModel>(
+                _i4.Future<_i2.Either<_i2.Failure, _i7.UserEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i7.UserEntity>(
                     this,
                     Invocation.method(#signIn, [email, password]),
                   ),
                 ),
           )
-          as _i4.Future<_i2.Either<_i2.Failure, _i7.UserModel>>);
+          as _i4.Future<_i2.Either<_i2.Failure, _i7.UserEntity>>);
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, _i7.UserModel>> signUp(
+  _i4.Future<_i2.Either<_i2.Failure, _i7.UserEntity>> signUp(
     String? email,
     String? password,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#signUp, [email, password]),
             returnValue:
-                _i4.Future<_i2.Either<_i2.Failure, _i7.UserModel>>.value(
-                  _FakeEither_0<_i2.Failure, _i7.UserModel>(
+                _i4.Future<_i2.Either<_i2.Failure, _i7.UserEntity>>.value(
+                  _FakeEither_0<_i2.Failure, _i7.UserEntity>(
                     this,
                     Invocation.method(#signUp, [email, password]),
                   ),
                 ),
           )
-          as _i4.Future<_i2.Either<_i2.Failure, _i7.UserModel>>);
+          as _i4.Future<_i2.Either<_i2.Failure, _i7.UserEntity>>);
 
   @override
   _i4.Future<_i2.Either<_i2.Failure, void>> signOut() =>
@@ -275,7 +412,7 @@ class MockAuthRepository extends _i1.Mock implements _i6.AuthRepository {
 
   @override
   _i4.Future<_i2.Either<_i2.Failure, void>> saveUserProfile(
-    _i7.UserModel? user,
+    _i7.UserEntity? user,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#saveUserProfile, [user]),
@@ -289,20 +426,20 @@ class MockAuthRepository extends _i1.Mock implements _i6.AuthRepository {
           as _i4.Future<_i2.Either<_i2.Failure, void>>);
 
   @override
-  _i4.Future<_i2.Either<_i2.Failure, _i7.UserModel?>> fetchUserProfile(
+  _i4.Future<_i2.Either<_i2.Failure, _i7.UserEntity?>> fetchUserProfile(
     String? uid,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#fetchUserProfile, [uid]),
             returnValue:
-                _i4.Future<_i2.Either<_i2.Failure, _i7.UserModel?>>.value(
-                  _FakeEither_0<_i2.Failure, _i7.UserModel?>(
+                _i4.Future<_i2.Either<_i2.Failure, _i7.UserEntity?>>.value(
+                  _FakeEither_0<_i2.Failure, _i7.UserEntity?>(
                     this,
                     Invocation.method(#fetchUserProfile, [uid]),
                   ),
                 ),
           )
-          as _i4.Future<_i2.Either<_i2.Failure, _i7.UserModel?>>);
+          as _i4.Future<_i2.Either<_i2.Failure, _i7.UserEntity?>>);
 
   @override
   _i4.Future<_i2.Either<_i2.Failure, void>> saveUserToken(String? token) =>
@@ -312,6 +449,60 @@ class MockAuthRepository extends _i1.Mock implements _i6.AuthRepository {
               _FakeEither_0<_i2.Failure, void>(
                 this,
                 Invocation.method(#saveUserToken, [token]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, String>> uploadProfilePhoto(
+    String? photoFilePath,
+    String? userId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#uploadProfilePhoto, [photoFilePath, userId]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, String>>.value(
+              _FakeEither_0<_i2.Failure, String>(
+                this,
+                Invocation.method(#uploadProfilePhoto, [photoFilePath, userId]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, String>>);
+
+  @override
+  _i4.Stream<List<_i7.UserEntity>> getAllUsersStream() =>
+      (super.noSuchMethod(
+            Invocation.method(#getAllUsersStream, []),
+            returnValue: _i4.Stream<List<_i7.UserEntity>>.empty(),
+          )
+          as _i4.Stream<List<_i7.UserEntity>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> sendPasswordResetEmail(
+    String? email,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendPasswordResetEmail, [email]),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#sendPasswordResetEmail, [email]),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.Either<_i2.Failure, void>>);
+
+  @override
+  _i4.Future<_i2.Either<_i2.Failure, void>> deleteAccount({
+    required String? password,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteAccount, [], {#password: password}),
+            returnValue: _i4.Future<_i2.Either<_i2.Failure, void>>.value(
+              _FakeEither_0<_i2.Failure, void>(
+                this,
+                Invocation.method(#deleteAccount, [], {#password: password}),
               ),
             ),
           )

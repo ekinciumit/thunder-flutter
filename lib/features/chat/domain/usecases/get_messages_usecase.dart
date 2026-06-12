@@ -1,4 +1,4 @@
-import '../../../../models/message_model.dart';
+import '../entities/message_entity.dart';
 import '../repositories/chat_repository.dart';
 
 /// Get Messages Use Case
@@ -12,8 +12,8 @@ class GetMessagesUseCase {
 
   /// Mesajları stream olarak getir
   /// 
-  /// Returns: ``Stream<List<MessageModel>>``
-  Stream<List<MessageModel>> call(String chatId, {int limit = 50}) {
+  /// Returns: ``Stream<List<MessageEntity>>``
+  Stream<List<MessageEntity>> call(String chatId, {int limit = 50}) {
     return _repository.getMessagesStream(chatId, limit: limit);
   }
 }

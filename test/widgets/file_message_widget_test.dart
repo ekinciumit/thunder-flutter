@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:thunder/views/widgets/file_message_widget.dart';
+import 'package:thunder/features/chat/presentation/widgets/file_message_widget.dart';
 
 void main() {
   group('FileMessageWidget Widget Tests', () {

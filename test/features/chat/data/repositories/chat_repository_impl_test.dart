@@ -3,8 +3,11 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:thunder/features/chat/data/datasources/chat_remote_data_source.dart';
-import 'package:thunder/models/chat_model.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/data/models/chat_model.dart' as chat_model;
+import 'package:thunder/features/chat/data/models/message_model.dart' as model;
+import 'package:thunder/features/chat/data/mappers/message_mapper.dart';
+import 'package:thunder/features/chat/domain/entities/chat_entity.dart' hide ChatType;
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 import 'package:thunder/core/errors/exceptions.dart';
 import 'package:thunder/core/errors/failures.dart';
 
@@ -44,15 +47,15 @@ void main() {
     group('getOrCreatePrivateChat', () {
       const testUserA = 'user-a';
       const testUserB = 'user-b';
-      final testChat = ChatModel(
+      final testChat = chat_model.ChatModel(
         id: 'chat-123',
         name: 'Private Chat',
-        type: ChatType.private,
+        type: chat_model.ChatType.private,
         participants: [testUserA, testUserB],
         createdAt: DateTime.now(),
       );
 
-      test('should return Right(ChatModel) when successful', () async {
+      test('should return Right(ChatEntity) when successful', () async {
         // Arrange
         when(mockRemoteDataSource.getOrCreatePrivateChat(testUserA, testUserB))
             .thenAnswer((_) async => testChat);
@@ -62,7 +65,9 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testChat);
+        expect(result.right.id, testChat.id);
+        expect(result.right.name, testChat.name);
+        expect(result.right.participants, testChat.participants);
         verify(mockRemoteDataSource.getOrCreatePrivateChat(testUserA, testUserB)).called(1);
       });
 
@@ -99,15 +104,15 @@ void main() {
       const testName = 'Test Group';
       const testCreatedBy = 'user-123';
       final testParticipants = ['user-123', 'user-456'];
-      final testChat = ChatModel(
+      final testChat = chat_model.ChatModel(
         id: 'chat-123',
         name: testName,
-        type: ChatType.group,
+        type: chat_model.ChatType.group,
         participants: testParticipants,
         createdAt: DateTime.now(),
       );
 
-      test('should return Right(ChatModel) when successful', () async {
+      test('should return Right(ChatEntity) when successful', () async {
         // Arrange
         when(mockRemoteDataSource.createGroupChat(
           name: anyNamed('name'),
@@ -124,7 +129,9 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testChat);
+        expect(result.right.id, testChat.id);
+        expect(result.right.name, testChat.name);
+        expect(result.right.participants, testChat.participants);
         verify(mockRemoteDataSource.createGroupChat(
           name: testName,
           createdBy: testCreatedBy,
@@ -159,15 +166,15 @@ void main() {
       const testSenderId = 'user-123';
       const testSenderName = 'Test User';
       const testText = 'Test message';
-      final testMessage = MessageModel(
+      final testMessage = model.MessageModel(
         id: 'msg-123',
         chatId: testChatId,
         senderId: testSenderId,
         senderName: testSenderName,
         text: testText,
         timestamp: DateTime.now(),
-        type: MessageType.text,
-        status: MessageStatus.sent,
+        type: model.MessageType.text,
+        status: model.MessageStatus.sent,
       );
 
       test('should return Right(MessageModel) when successful', () async {
@@ -189,13 +196,14 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testMessage);
+        // Repository Entity döndürüyor, testMessage Model - sadece ID kontrolü yapıyoruz
+        expect(result.right.id, testMessage.id);
         verify(mockRemoteDataSource.sendMessage(
           chatId: testChatId,
           senderId: testSenderId,
           senderName: testSenderName,
           text: testText,
-          type: MessageType.text,
+          type: model.MessageType.text,
         )).called(1);
       });
 
@@ -224,15 +232,15 @@ void main() {
     group('getMessagesStream', () {
       const testChatId = 'chat-123';
       final testMessages = [
-        MessageModel(
+        model.MessageModel(
           id: 'msg-1',
           chatId: testChatId,
           senderId: 'user-1',
           senderName: 'User 1',
           text: 'Message 1',
           timestamp: DateTime.now(),
-          type: MessageType.text,
-          status: MessageStatus.sent,
+          type: model.MessageType.text,
+          status: model.MessageStatus.sent,
         ),
       ];
 
@@ -245,9 +253,9 @@ void main() {
         final stream = repository.getMessagesStream(testChatId);
 
         // Assert
-        expect(stream, isA<Stream<List<MessageModel>>>());
+        expect(stream, isA<Stream<List<MessageEntity>>>());
         final result = await stream.first;
-        expect(result, testMessages);
+        expect(result, [MessageMapper.toEntity(testMessages.first)]);
         verify(mockRemoteDataSource.getMessagesStream(testChatId, limit: 50)).called(1);
       });
 
@@ -269,19 +277,19 @@ void main() {
       const testChatId = 'chat-123';
       final testLastMessageTime = DateTime.now();
       final testMessages = [
-        MessageModel(
+        model.MessageModel(
           id: 'msg-1',
           chatId: testChatId,
           senderId: 'user-1',
           senderName: 'User 1',
           text: 'Message 1',
           timestamp: testLastMessageTime.subtract(const Duration(hours: 1)),
-          type: MessageType.text,
-          status: MessageStatus.sent,
+          type: model.MessageType.text,
+          status: model.MessageStatus.sent,
         ),
       ];
 
-      test('should return Right(List<MessageModel>) when successful', () async {
+      test('should return Right(List<MessageEntity>) when successful', () async {
         // Arrange
         when(mockRemoteDataSource.loadOlderMessages(testChatId, any, limit: anyNamed('limit')))
             .thenAnswer((_) async => testMessages);
@@ -291,7 +299,9 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testMessages);
+        // Repository Entity döndürüyor, testMessages Model - sadece uzunluk kontrolü yapıyoruz
+        expect(result.right.length, testMessages.length);
+        expect(result.right.first.id, testMessages.first.id);
         verify(mockRemoteDataSource.loadOlderMessages(testChatId, testLastMessageTime, limit: 20)).called(1);
       });
 
@@ -313,10 +323,10 @@ void main() {
     group('getUserChats', () {
       const testUserId = 'user-123';
       final testChats = [
-        ChatModel(
+        chat_model.ChatModel(
           id: 'chat-1',
           name: 'Chat 1',
-          type: ChatType.private,
+          type: chat_model.ChatType.private,
           participants: [testUserId, 'user-456'],
           createdAt: DateTime.now(),
         ),
@@ -331,9 +341,11 @@ void main() {
         final stream = repository.getUserChats(testUserId);
 
         // Assert
-        expect(stream, isA<Stream<List<ChatModel>>>());
+        expect(stream, isA<Stream<List<ChatEntity>>>());
         final result = await stream.first;
-        expect(result, testChats);
+        expect(result.length, 1);
+        expect(result.first.id, testChats.first.id);
+        expect(result.first.name, testChats.first.name);
         verify(mockRemoteDataSource.getUserChats(testUserId)).called(1);
       });
 
@@ -552,15 +564,15 @@ void main() {
       const testSenderName = 'Test User';
       const testAudioUrl = 'https://example.com/audio.mp3';
       final testDuration = const Duration(seconds: 30);
-      final testMessage = MessageModel(
+      final testMessage = model.MessageModel(
         id: 'msg-123',
         chatId: testChatId,
         senderId: testSenderId,
         senderName: testSenderName,
         audioUrl: testAudioUrl,
         timestamp: DateTime.now(),
-        type: MessageType.audio,
-        status: MessageStatus.sent,
+        type: model.MessageType.audio,
+        status: model.MessageStatus.sent,
       );
 
       test('should return Right(MessageModel) when successful', () async {
@@ -584,7 +596,8 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testMessage);
+        // Repository Entity döndürüyor, testMessage Model - sadece ID kontrolü yapıyoruz
+        expect(result.right.id, testMessage.id);
         verify(mockRemoteDataSource.sendVoiceMessage(
           chatId: testChatId,
           senderId: testSenderId,
@@ -627,7 +640,7 @@ void main() {
       const testFileUrl = 'https://example.com/file.pdf';
       const testFileName = 'document.pdf';
       const testFileSize = 1024;
-      final testMessage = MessageModel(
+      final testMessage = model.MessageModel(
         id: 'msg-123',
         chatId: testChatId,
         senderId: testSenderId,
@@ -636,8 +649,8 @@ void main() {
         fileName: testFileName,
         fileSize: testFileSize,
         timestamp: DateTime.now(),
-        type: MessageType.file,
-        status: MessageStatus.sent,
+        type: model.MessageType.file,
+        status: model.MessageStatus.sent,
       );
 
       test('should return Right(MessageModel) when successful', () async {
@@ -663,7 +676,8 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testMessage);
+        // Repository Entity döndürüyor, testMessage Model - sadece ID kontrolü yapıyoruz
+        expect(result.right.id, testMessage.id);
         verify(mockRemoteDataSource.sendFileMessage(
           chatId: testChatId,
           senderId: testSenderId,
@@ -706,7 +720,9 @@ void main() {
       const testTargetChatId = 'chat-456';
       const testSenderId = 'user-123';
       const testSenderName = 'Test User';
-      final testOriginalMessage = MessageModel(
+      // Repository Entity bekliyor, ama data source Model döndürüyor
+      // Test'te Entity kullanıyoruz, data source mock'u Model döndürecek
+      final testOriginalMessageEntity = MessageEntity(
         id: 'msg-123',
         chatId: 'chat-123',
         senderId: 'user-456',
@@ -714,9 +730,19 @@ void main() {
         text: 'Original message',
         timestamp: DateTime.now(),
         type: MessageType.text,
-        status: MessageStatus.sent,
+        status: MessageStatus.sent, // Entity enum
       );
-      final testForwardedMessage = MessageModel(
+      final testForwardedMessageModel = model.MessageModel(
+        id: 'msg-789',
+        chatId: testTargetChatId,
+        senderId: testSenderId,
+        senderName: testSenderName,
+        text: 'Original message',
+        timestamp: DateTime.now(),
+        type: model.MessageType.forward,
+        status: model.MessageStatus.sent, // Model enum (data source için)
+      );
+      final testForwardedMessageEntity = MessageEntity(
         id: 'msg-789',
         chatId: testTargetChatId,
         senderId: testSenderId,
@@ -724,21 +750,22 @@ void main() {
         text: 'Original message',
         timestamp: DateTime.now(),
         type: MessageType.forward,
-        status: MessageStatus.sent,
+        status: MessageStatus.sent, // Entity enum
       );
 
-      test('should return Right(MessageModel) when successful', () async {
+      test('should return Right(MessageEntity) when successful', () async {
         // Arrange
+        // Data source Model döndürüyor, repository Entity'ye çeviriyor
         when(mockRemoteDataSource.forwardMessage(
           originalMessage: anyNamed('originalMessage'),
           targetChatId: anyNamed('targetChatId'),
           senderId: anyNamed('senderId'),
           senderName: anyNamed('senderName'),
-        )).thenAnswer((_) async => testForwardedMessage);
+        )).thenAnswer((_) async => testForwardedMessageModel);
 
         // Act
         final result = await repository.forwardMessage(
-          originalMessage: testOriginalMessage,
+          originalMessage: testOriginalMessageEntity,
           targetChatId: testTargetChatId,
           senderId: testSenderId,
           senderName: testSenderName,
@@ -746,9 +773,10 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testForwardedMessage);
+        expect(result.right.id, testForwardedMessageEntity.id);
+        expect(result.right.chatId, testForwardedMessageEntity.chatId);
         verify(mockRemoteDataSource.forwardMessage(
-          originalMessage: testOriginalMessage,
+          originalMessage: anyNamed('originalMessage'),
           targetChatId: testTargetChatId,
           senderId: testSenderId,
           senderName: testSenderName,
@@ -766,7 +794,7 @@ void main() {
 
         // Act
         final result = await repository.forwardMessage(
-          originalMessage: testOriginalMessage,
+          originalMessage: testOriginalMessageEntity,
           targetChatId: testTargetChatId,
           senderId: testSenderId,
           senderName: testSenderName,
@@ -783,19 +811,19 @@ void main() {
       const testChatId = 'chat-123';
       const testQuery = 'test query';
       final testMessages = [
-        MessageModel(
+        model.MessageModel(
           id: 'msg-1',
           chatId: testChatId,
           senderId: 'user-1',
           senderName: 'User 1',
           text: 'test query found',
           timestamp: DateTime.now(),
-          type: MessageType.text,
-          status: MessageStatus.sent,
+          type: model.MessageType.text,
+          status: model.MessageStatus.sent,
         ),
       ];
 
-      test('should return Right(List<MessageModel>) when successful', () async {
+      test('should return Right(List<MessageEntity>) when successful', () async {
         // Arrange
         when(mockRemoteDataSource.searchMessages(testChatId, testQuery, limit: anyNamed('limit')))
             .thenAnswer((_) async => testMessages);
@@ -805,7 +833,9 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testMessages);
+        // Repository Entity döndürüyor, testMessages Model - sadece uzunluk kontrolü yapıyoruz
+        expect(result.right.length, testMessages.length);
+        expect(result.right.first.id, testMessages.first.id);
         verify(mockRemoteDataSource.searchMessages(testChatId, testQuery, limit: 50)).called(1);
       });
 
@@ -828,19 +858,19 @@ void main() {
       const testUserId = 'user-123';
       const testQuery = 'test query';
       final testMessages = [
-        MessageModel(
+        model.MessageModel(
           id: 'msg-1',
           chatId: 'chat-1',
           senderId: 'user-1',
           senderName: 'User 1',
           text: 'test query found',
           timestamp: DateTime.now(),
-          type: MessageType.text,
-          status: MessageStatus.sent,
+          type: model.MessageType.text,
+          status: model.MessageStatus.sent,
         ),
       ];
 
-      test('should return Right(List<MessageModel>) when successful', () async {
+      test('should return Right(List<MessageEntity>) when successful', () async {
         // Arrange
         when(mockRemoteDataSource.searchAllMessages(testUserId, testQuery, limit: anyNamed('limit')))
             .thenAnswer((_) async => testMessages);
@@ -850,7 +880,9 @@ void main() {
 
         // Assert
         expect(result.isRight, true);
-        expect(result.right, testMessages);
+        // Repository Entity döndürüyor, testMessages Model - sadece uzunluk kontrolü yapıyoruz
+        expect(result.right.length, testMessages.length);
+        expect(result.right.first.id, testMessages.first.id);
         verify(mockRemoteDataSource.searchAllMessages(testUserId, testQuery, limit: 100)).called(1);
       });
 

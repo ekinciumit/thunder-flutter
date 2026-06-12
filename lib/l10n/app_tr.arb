@@ -547,6 +547,18 @@
   "selectPhoto": "Fotoğraf Seç",
   "cropPhoto": "Fotoğrafı Kırp",
   "uploading": "Yükleniyor...",
+  "compressingImage": "Resim sıkıştırılıyor...",
+  "preparingVideo": "Video hazırlanıyor...",
+  "uploadError": "Yükleme hatası",
+  "videoUpload": "Video Yükleme",
+  "photoUpload": "Fotoğraf Yükleme",
+  "videoSent": "Video gönderildi",
+  "photoSent": "Fotoğraf gönderildi",
+  "uploadCancelled": "Yükleme iptal edildi",
+  "voiceRecordingCancelled": "Ses kaydı iptal edildi",
+  "slideToCancel": "◀ Kaydır iptal",
+  "releaseToCancel": "Bırak ve iptal et",
+  "releaseToSend": "Bırak → Gönder",
   "editEvent": "Etkinliği Düzenle",
   "user": "Kullanıcı",
   "createRoute": "Rota Oluştur",
@@ -560,6 +572,8 @@
   "accept": "Kabul Et",
   "reject": "Reddet",
   "commentsChat": "Yorumlar / Sohbet",
+  "goToGroupChat": "Grup Sohbetine Git",
+  "createGroupChat": "Yeni Grup Oluştur",
   "mustJoinToChat": "Sohbeti görmek ve katılmak için etkinliğe katılmalısınız.",
   "noComments": "Henüz yorum yok. İlk yorumu sen yaz!",
   "writeComment": "Yorum yaz...",
@@ -682,6 +696,282 @@
   "gallery": "Galeri",
   "camera": "Kamera",
   "unknownFile": "Bilinmeyen dosya",
-  "fileOpenSoon": "Dosya açma özelliği yakında eklenecek"
+  "fileOpenSoon": "Dosya açma özelliği yakında eklenecek",
+  "deleteEvent": "Etkinliği Sil",
+  "deleteEventConfirm": "Bu etkinliği silmek istediğinize emin misiniz?",
+  "deleteEventWarning": "Bu işlem geri alınamaz. Etkinliğe ait tüm mesajlar ve medyalar silinecektir.",
+  "eventDeleted": "Etkinlik başarıyla silindi",
+  "removeParticipant": "Katılımcıyı Çıkar",
+  "@removeParticipant": {
+    "description": "Katılımcı çıkarma dialog başlığı"
+  },
+  "remove": "Çıkar",
+  "@remove": {
+    "description": "Çıkar butonu"
+  },
+  "participantRemoved": "Katılımcı çıkarıldı",
+  "@participantRemoved": {
+    "description": "Katılımcı çıkarıldı mesajı"
+  },
+  "participantManagement": "Katılımcı Yönetimi",
+  "@participantManagement": {
+    "description": "Katılımcı yönetimi başlığı"
+  },
+  "notLoggedIn": "Kullanıcı giriş yapmamış",
+  "groupChatNotFound": "Grup sohbeti bulunamadı",
+  "groupInfo": "Grup Bilgileri",
+  "noDescription": "Açıklama yok",
+  "noParticipantsFound": "Katılımcı bulunamadı",
+  "unnamed": "İsimsiz",
+  "creator": "Oluşturan",
+  "admin": "Yönetici",
+  "you": "Sen",
+  "demoteAdmin": "Yöneticilikten Çıkar",
+  "promoteAdmin": "Yönetici Yap",
+  "adminPromoted": "{name} yönetici yapıldı",
+  "@adminPromoted": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "adminDemoted": "{name} yöneticilikten çıkarıldı",
+  "@adminDemoted": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "groupPhotoUpdated": "Grup fotoğrafı güncellendi",
+  "groupPhotoUploadError": "Fotoğraf yüklenirken hata oluştu: {error}",
+  "@groupPhotoUploadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "editGroupName": "Grup Adını Düzenle",
+  "groupName": "Grup Adı",
+  "groupNameHint": "Grup adını girin",
+  "groupNameUpdated": "Grup adı güncellendi",
+  "groupNameUpdateError": "Grup adı güncellenirken hata oluştu: {error}",
+  "@groupNameUpdateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "editDescription": "Açıklamayı Düzenle",
+  "descriptionHint": "Grup açıklamasını girin",
+  "descriptionUpdated": "Açıklama güncellendi",
+  "descriptionUpdateError": "Açıklama güncellenirken hata oluştu: {error}",
+  "@descriptionUpdateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "removeParticipantConfirm": "{name} etkinlikten çıkarılsın mı?",
+  "@removeParticipantConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "userLabel": "Kullanıcı: {id}",
+  "@userLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "view": "Görüntüle",
+  "manage": "Yönet",
+  "goToEventDetail": "Etkinlik Detayına Git",
+  "chatsLoadError": "Sohbetler yüklenirken hata: {error}",
+  "@chatsLoadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "messageForwardedSuccess": "Mesaj başarıyla iletildi",
+  "messageForwardFailed": "Mesaj iletilemedi: {error}",
+  "@messageForwardFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "commentSendFailed": "Yorum gönderilemedi: {error}",
+  "@commentSendFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "photoUploadFailed": "Fotoğraf yüklenemedi",
+  "photoUploaded": "Fotoğraf yüklendi",
+  "photoUploadError": "Fotoğraf yükleme hatası: {error}",
+  "@photoUploadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "filePickError": "Dosya seçme hatası: {error}",
+  "@filePickError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "logoutError": "Çıkış yapılırken bir hata oluştu: {error}",
+  "@logoutError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "themeSelection": "Tema Seçimi",
+  "lightMode": "Gündüz Modu",
+  "lightThemeSubtitle": "Açık renk teması",
+  "darkThemeSubtitle": "Koyu renk teması",
+  "systemMode": "Sistem",
+  "systemThemeSubtitle": "Sistem ayarına göre otomatik",
+  "turkish": "Türkçe",
+  "english": "English",
+  "crashTestTitle": "Test crash?",
+  "crashTestMessage": "Uygulama çökecek. Yalnızca Crashlytics testi için kullanın.",
+  "crashTestButton": "Çökert",
+  "crashlyticsTestTitle": "Crashlytics Test (crash)",
+  "crashlyticsTestSubtitle": "Uygulamayı bilinçli çökertir",
+  "bioOptional": "Biyografi (Opsiyonel)",
+  "completeProfileSubtitle": "Hesabınızı kişiselleştirmek için birkaç bilgi daha",
+  "nameHint": "Adınız ve soyadınız",
+  "bioHint": "Kendiniz hakkında kısa bir açıklama yazın",
+  "nameRequired": "İsim alanı boş olamaz",
+  "profileSaveFailed": "Profil kaydedilemedi: {error}",
+  "@profileSaveFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "devPreviewTitle": "📱 Ekran Önizlemeleri",
+  "screenPreviewsSubtitle": "Tüm ekranları mock data ile görüntüle",
+  "selectFile": "Dosya Seç",
+  "allFiles": "Tüm Dosyalar",
+  "fileTypeWord": "Word",
+  "fileTypeExcel": "Excel",
+  "fileTypePowerPoint": "PowerPoint",
+  "fileTypeArchive": "ZIP/RAR",
+  "errorWithDetails": "Hata: {error}",
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "fileSentSuccess": "Dosya gönderildi",
+  "myEvents": "Etkinliklerim",
+  "past": "Geçmiş",
+  "addMembers": "Üye Ekle",
+  "removeMember": "Gruptan Çıkar",
+  "removeMemberConfirm": "{name} gruptan çıkarılsın mı?",
+  "@removeMemberConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "membersAdded": "Üyeler eklendi",
+  "memberRemoved": "Üye gruptan çıkarıldı",
+  "leaveGroup": "Gruptan Ayrıl",
+  "leaveGroupConfirm": "Bu gruptan ayrılmak istediğinize emin misiniz?",
+  "leftGroup": "Gruptan ayrıldınız",
+  "creatorCannotLeave": "Grup oluşturan gruptan ayrılamaz",
+  "selectMembersToAdd": "Eklenecek kişileri seçin",
+  "deleteAccount": "Hesabı Sil",
+  "deleteAccountSubtitle": "Tüm verileriniz kalıcı olarak silinir",
+  "deleteAccountConfirm": "Hesabınızı silmek istediğinize emin misiniz?",
+  "deleteAccountWarning": "Bu işlem geri alınamaz. Profiliniz, mesajlarınız ve etkinlikleriniz silinir.",
+  "deleteAccountPasswordPrompt": "Onaylamak için şifrenizi girin",
+  "accountDeleted": "Hesabınız silindi",
+  "deleteAccountError": "Hesap silinirken hata oluştu: {error}",
+  "@deleteAccountError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "participantsCount": "Katılımcılar ({count})",
+  "@participantsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "fileUploadingNamed": "{fileName} yükleniyor...",
+  "@fileUploadingNamed": {
+    "placeholders": {
+      "fileName": {"type": "String"}
+    }
+  },
+  "create": "Oluştur",
+  "theme": "Tema",
+  "active": "Aktif",
+  "groupNameRequired": "Grup adı gereklidir",
+  "groupNameExampleHint": "Örn: Arkadaşlarım, İş Ekibi",
+  "groupDescriptionOptional": "Açıklama (Opsiyonel)",
+  "groupDescriptionShortHint": "Grup hakkında kısa bir açıklama",
+  "selectParticipants": "Katılımcılar Seçin *",
+  "participantsSelectedCount": "{count} kişi seçildi",
+  "@participantsSelectedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "selectAtLeastOneParticipant": "En az bir kişi seçmelisiniz",
+  "groupChatCreated": "Grup sohbeti oluşturuldu",
+  "groupChatCreateFailed": "Grup sohbeti oluşturulamadı",
+  "usersLoadFailed": "Kullanıcılar yüklenemedi",
+  "noOtherUsersYet": "Henüz başka kullanıcı yok",
+  "noSearchResults": "Arama sonucu bulunamadı",
+  "tryDifferentSearchTerm": "Farklı bir arama terimi deneyin",
+  "clusterEventsCount": "{count} etkinlik",
+  "@clusterEventsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "developerSection": "Geliştirici",
+  "crashlyticsNonFatalTest": "Crashlytics Test (non-fatal)",
+  "crashlyticsNonFatalSubtitle": "Firebase Console'da hata kaydı oluşturur",
+  "nonFatalTestSent": "Non-fatal test kaydı gönderildi",
+  "searchUsersShort": "Kullanıcı ara...",
+  "validationEmailRequired": "E-posta adresi zorunludur",
+  "validationEmailInvalid": "Geçerli bir e-posta adresi giriniz",
+  "validationPasswordRequired": "Şifre zorunludur",
+  "validationPasswordMinLength": "Şifre en az 6 karakter olmalıdır",
+  "validationPasswordStrength": "Şifre en az bir harf ve bir rakam içermelidir",
+  "validationNameRequired": "İsim zorunludur",
+  "validationNameMinLength": "İsim en az 2 karakter olmalıdır",
+  "validationNameInvalid": "İsim sadece harf ve boşluk içerebilir",
+  "validationBioMaxLength": "Biyografi en fazla 500 karakter olabilir",
+  "validationTitleRequired": "Başlık zorunludur",
+  "validationTitleMinLength": "Başlık en az 3 karakter olmalıdır",
+  "validationTitleMaxLength": "Başlık en fazla 100 karakter olabilir",
+  "validationDescriptionRequired": "Açıklama zorunludur",
+  "validationDescriptionMinLength": "Açıklama en az 10 karakter olmalıdır",
+  "validationDescriptionMaxLength": "Açıklama en fazla 2000 karakter olabilir",
+  "validationAddressRequired": "Adres zorunludur",
+  "validationAddressMinLength": "Adres en az 5 karakter olmalıdır",
+  "validationQuotaRequired": "Kota zorunludur",
+  "validationQuotaInvalid": "Geçerli bir sayı giriniz",
+  "validationQuotaMin": "Kota en az 1 olmalıdır",
+  "validationQuotaMax": "Kota en fazla 1000 olabilir",
+  "validationFieldRequired": "{fieldName} zorunludur",
+  "@validationFieldRequired": {
+    "placeholders": {
+      "fieldName": {"type": "String"}
+    }
+  },
+  "validationFieldMinLength": "{fieldName} en az {minLength} karakter olmalıdır",
+  "@validationFieldMinLength": {
+    "placeholders": {
+      "fieldName": {"type": "String"},
+      "minLength": {"type": "int"}
+    }
+  },
+  "validationFieldMaxLength": "{fieldName} en fazla {maxLength} karakter olabilir",
+  "@validationFieldMaxLength": {
+    "placeholders": {
+      "fieldName": {"type": "String"},
+      "maxLength": {"type": "int"}
+    }
+  }
 }
 

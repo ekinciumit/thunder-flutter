@@ -4,7 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/domain/usecases/get_messages_usecase.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 
 import 'get_messages_usecase_test.mocks.dart';
 
@@ -22,7 +22,7 @@ void main() {
   group('GetMessagesUseCase', () {
     const testChatId = 'chat-123';
     final testMessages = [
-      MessageModel(
+      MessageEntity(
         id: 'msg-1',
         chatId: testChatId,
         senderId: 'user-1',
@@ -34,9 +34,9 @@ void main() {
       ),
     ];
 
-    test('should return Stream<List<MessageModel>> when stream is successful', () async {
+    test('should return Stream<List<MessageEntity>> when stream is successful', () async {
       // Arrange
-      final streamController = StreamController<List<MessageModel>>();
+      final streamController = StreamController<List<MessageEntity>>();
       when(mockRepository.getMessagesStream(testChatId, limit: anyNamed('limit')))
           .thenAnswer((_) => streamController.stream);
 
@@ -45,7 +45,7 @@ void main() {
       streamController.add(testMessages);
 
       // Assert
-      expect(stream, isA<Stream<List<MessageModel>>>());
+      expect(stream, isA<Stream<List<MessageEntity>>>());
       final result = await stream.first;
       expect(result, testMessages);
       verify(mockRepository.getMessagesStream(testChatId, limit: 50)).called(1);
@@ -55,7 +55,7 @@ void main() {
 
     test('should return empty list when stream emits empty list', () async {
       // Arrange
-      final streamController = StreamController<List<MessageModel>>();
+      final streamController = StreamController<List<MessageEntity>>();
       when(mockRepository.getMessagesStream(testChatId, limit: anyNamed('limit')))
           .thenAnswer((_) => streamController.stream);
 

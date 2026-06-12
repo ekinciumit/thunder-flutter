@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/chat_model.dart';
+import '../entities/chat_entity.dart';
 import '../repositories/chat_repository.dart';
 
 /// Get Or Create Private Chat Use Case
@@ -13,8 +13,8 @@ class GetOrCreatePrivateChatUseCase {
 
   /// Özel sohbet oluştur veya getir
   /// 
-  /// Returns: ``Either<Failure, ChatModel>``
-  Future<Either<Failure, ChatModel>> call(String userA, String userB) async {
+  /// Returns: ``Either<Failure, ChatEntity>``
+  Future<Either<Failure, ChatEntity>> call(String userA, String userB) async {
     // Business logic: Validation
     if (userA.isEmpty || userB.isEmpty) {
       return Either.left(ValidationFailure('Kullanıcı ID\'leri boş olamaz'));

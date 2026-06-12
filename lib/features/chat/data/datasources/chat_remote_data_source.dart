@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
-import '../../../../models/chat_model.dart';
-import '../../../../models/message_model.dart';
+import '../models/chat_model.dart';
+import '../models/message_model.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../services/cache_service.dart';
+import '../../../../core/utils/image_compressor.dart';
 
 /// Chat Remote Data Source Interface
 /// 
@@ -12,6 +15,7 @@ import '../../../../services/cache_service.dart';
 abstract class ChatRemoteDataSource {
   String getChatId(String userA, String userB);
   Future<ChatModel?> getChatById(String chatId);
+  Stream<ChatModel?> getChatStream(String chatId);
   Future<ChatModel> getOrCreatePrivateChat(String userA, String userB);
   Future<ChatModel> createGroupChat({
     required String name,
@@ -75,6 +79,61 @@ abstract class ChatRemoteDataSource {
   });
   Future<List<MessageModel>> searchMessages(String chatId, String query, {int limit = 50});
   Future<List<MessageModel>> searchAllMessages(String userId, String query, {int limit = 100});
+  
+  /// Ses dosyasını Firebase Storage'a yükler ve download URL'ini döndürür
+  Future<String> uploadVoiceMessage(File audioFile, {required String chatId, required String senderId});
+  
+  /// Dosyayı Firebase Storage'a yükler ve download URL'ini döndürür
+  Future<String> uploadFileMessage(File file, String fileName, {required String chatId, required String senderId});
+  
+  /// Chat medya (image/video) dosyasını Firebase Storage'a yükler
+  /// Progress callback ile progress güncellemesi yapılabilir
+  Future<String> uploadChatMedia(File file, String storagePath, {String? contentType, void Function(double progress)? onProgress});
+  
+  /// Grup bilgilerini güncelle (sadece yöneticiler)
+  Future<void> updateGroupInfo({
+    required String chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  });
+  
+  /// Kullanıcıyı yönetici yap (sadece yöneticiler)
+  Future<void> addAdmin({
+    required String chatId,
+    required String userId,
+  });
+  
+  /// Kullanıcıyı yöneticilikten çıkar (sadece yöneticiler)
+  Future<void> removeAdmin({
+    required String chatId,
+    required String userId,
+  });
+
+  /// Gruba üye ekle (sadece yöneticiler)
+  Future<void> addGroupParticipants({
+    required String chatId,
+    required List<String> userIds,
+  });
+
+  /// Gruptan üye çıkar (yöneticiler veya kullanıcı kendisi)
+  Future<void> removeGroupParticipant({
+    required String chatId,
+    required String userId,
+  });
+  
+  /// Sohbeti sessize al (belirli bir süre için veya süresiz)
+  Future<void> muteChat({
+    required String chatId,
+    required String userId,
+    DateTime? muteUntil, // null = süresiz
+  });
+  
+  /// Sohbet sessize almayı kaldır
+  Future<void> unmuteChat({
+    required String chatId,
+    required String userId,
+  });
 }
 
 /// Chat Remote Data Source Implementation
@@ -83,11 +142,15 @@ abstract class ChatRemoteDataSource {
 /// Firebase Firestore işlemlerini yapar.
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
   final CollectionReference<Map<String, dynamic>> _chatsRef;
   final CollectionReference<Map<String, dynamic>> _messagesRef;
 
-  ChatRemoteDataSourceImpl({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
+  ChatRemoteDataSourceImpl({
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _storage = storage ?? FirebaseStorage.instance,
         _chatsRef = (firestore ?? FirebaseFirestore.instance).collection('chats'),
         _messagesRef = (firestore ?? FirebaseFirestore.instance).collection('messages');
 
@@ -105,6 +168,24 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       return ChatModel.fromMap(chatDoc.data()!, chatId);
     } catch (e) {
       throw ServerException('Chat getirilirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  /// Chat'i stream olarak getir
+  Stream<ChatModel?> getChatStream(String chatId) {
+    try {
+      return _chatsRef.doc(chatId).snapshots().map((snapshot) {
+        if (!snapshot.exists) return null;
+        return ChatModel.fromMap(snapshot.data()!, chatId);
+      }).handleError((error) {
+        if (kDebugMode) {
+          debugPrint('❌ [CHAT_DS] getChatStream error: $error');
+        }
+        return null;
+      });
+    } catch (e) {
+      throw ServerException('Chat stream getirilirken hata oluştu: ${e.toString()}');
     }
   }
 
@@ -285,10 +366,17 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Stream<List<MessageModel>> getMessagesStream(String chatId, {int limit = 50}) {
     try {
+      // Performance: Server-side orderBy + limit (Firestore maliyetini düşürür)
+      // En yeni mesajları al (descending: true), UI'da ters çevireceğiz
       return _messagesRef
           .where('chatId', isEqualTo: chatId)
+          .orderBy('timestamp', descending: true) // ✅ Server-side sorting
+          .limit(limit) // ✅ Server-side limit
           .snapshots()
           .handleError((error) {
+            if (kDebugMode) {
+              debugPrint('❌ [CHAT_DS] getMessagesStream error: $error');
+            }
             return <MessageModel>[]; // Hata durumunda boş liste döndür
           })
           .map((snapshot) {
@@ -306,22 +394,21 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
             return message;
           } catch (e) {
             // Parse hatası olan mesajları atla
+            if (kDebugMode) {
+              debugPrint('⚠️ [CHAT_DS] Message parse error: $e');
+            }
             return null;
           }
         }).whereType<MessageModel>().toList();
 
-        // Client-side sıralama (timestamp'e göre - en eski üstte, en yeni altta)
+        // Server'dan en yeni mesajlar geldi (descending: true)
+        // UI'da en eski üstte gösterilmeli, bu yüzden ters çevir
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-        // Limit uygula (en son N mesaj)
-        final limitedMessages = messages.length > limit
-            ? messages.sublist(messages.length - limit)
-            : messages;
-
         // Cache'e kaydet (async olarak)
-        CacheService.cacheMessages(chatId, limitedMessages);
+        CacheService.cacheMessages(chatId, messages);
 
-        return limitedMessages;
+        return messages;
       });
     } catch (e) {
       throw ServerException('Mesajlar getirilirken hata oluştu: ${e.toString()}');
@@ -333,21 +420,39 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       String chatId, DateTime lastMessageTime,
       {int limit = 20}) async {
     try {
+      // Performance: Server-side pagination (endBefore ile)
+      // En eski mesajları al (ascending: true, lastMessageTime'dan önceki)
+      // NOT: Index gerekiyor: chatId (ASC) + timestamp (ASC)
       final querySnapshot = await _messagesRef
           .where('chatId', isEqualTo: chatId)
-          .limit(limit * 2) // Daha fazla al, sonra filtrele
+          .orderBy('timestamp', descending: false) // En eski üstte
+          .endBefore([Timestamp.fromDate(lastMessageTime)]) // lastMessageTime'dan önceki mesajlar
+          .limit(limit) // ✅ Server-side limit
           .get();
 
       final messages = querySnapshot.docs.map((doc) {
-        return MessageModel.fromMap(doc.data(), doc.id);
-      }).toList();
+        try {
+          final message = MessageModel.fromMap(doc.data(), doc.id);
+          // Silinen mesajları filtrele
+          if (message.isDeleted) {
+            return null;
+          }
+          return message;
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('⚠️ [CHAT_DS] loadOlderMessages parse error: $e');
+          }
+          return null;
+        }
+      }).whereType<MessageModel>().toList();
 
-      // Timestamp'e göre filtrele ve sırala
-      messages.removeWhere((msg) => msg.timestamp.isAfter(lastMessageTime));
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-      return messages.take(limit).toList();
+      // Server'dan zaten ascending sırada geldi (en eski üstte)
+      // UI'da da aynı sırada gösterilmeli, sıralama gerekmez
+      return messages;
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [CHAT_DS] loadOlderMessages error: $e');
+      }
       throw ServerException('Eski mesajlar yüklenirken hata oluştu: ${e.toString()}');
     }
   }
@@ -451,34 +556,50 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<void> addReaction(String messageId, String userId, String emoji) async {
     try {
+      // ✅ Güvenlik: Sadece belirli messageId için reaction ekle
       final messageDoc = await _messagesRef.doc(messageId).get();
-      if (messageDoc.exists) {
-        final data = messageDoc.data()!;
-        final reactionsData = data['reactions'] ?? {};
-        final reactions = <String, List<String>>{};
-        
-        // Safely convert reactions map
-        if (reactionsData is Map) {
-          reactionsData.forEach((key, value) {
-            if (value is List) {
-              reactions[key.toString()] = value.map((e) => e.toString()).toList();
-            }
-          });
-        }
-        
-        if (reactions[userId] == null) {
-          reactions[userId] = [];
-        }
-        
-        if (!reactions[userId]!.contains(emoji)) {
-          reactions[userId]!.add(emoji);
-        }
-        
-        await _messagesRef.doc(messageId).update({
-          'reactions': reactions,
+      if (!messageDoc.exists) {
+        throw ServerException('Mesaj bulunamadı: $messageId');
+      }
+      
+      final data = messageDoc.data()!;
+      final reactionsData = data['reactions'] ?? {};
+      
+      // ✅ Yeni Map oluştur (referans paylaşımını önle)
+      final reactions = <String, List<String>>{};
+      
+      // Safely convert reactions map
+      if (reactionsData is Map) {
+        reactionsData.forEach((key, value) {
+          if (value is List) {
+            // ✅ Yeni List oluştur (referans paylaşımını önle)
+            reactions[key.toString()] = List<String>.from(value.map((e) => e.toString()));
+          }
         });
       }
+      
+      // ✅ Yeni List oluştur (referans paylaşımını önle)
+      if (reactions[userId] == null) {
+        reactions[userId] = <String>[];
+      }
+      
+      // ✅ Emoji yoksa ekle
+      if (!reactions[userId]!.contains(emoji)) {
+        reactions[userId] = List<String>.from(reactions[userId]!)..add(emoji);
+      }
+      
+      // ✅ Sadece bu messageId için update yap
+      await _messagesRef.doc(messageId).update({
+        'reactions': reactions,
+      });
+      
+      if (kDebugMode) {
+        debugPrint('✅ [CHAT_DS] Reaction added: messageId=$messageId, userId=$userId, emoji=$emoji');
+      }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [CHAT_DS] addReaction error: $e');
+      }
       throw ServerException('Tepki eklenirken hata oluştu: ${e.toString()}');
     }
   }
@@ -486,33 +607,49 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<void> removeReaction(String messageId, String userId, String emoji) async {
     try {
+      // ✅ Güvenlik: Sadece belirli messageId için reaction kaldır
       final messageDoc = await _messagesRef.doc(messageId).get();
-      if (messageDoc.exists) {
-        final data = messageDoc.data()!;
-        final reactionsData = data['reactions'] ?? {};
-        final reactions = <String, List<String>>{};
-        
-        // Safely convert reactions map
-        if (reactionsData is Map) {
-          reactionsData.forEach((key, value) {
-            if (value is List) {
-              reactions[key.toString()] = value.map((e) => e.toString()).toList();
-            }
-          });
-        }
-        
-        if (reactions[userId] != null) {
-          reactions[userId]!.remove(emoji);
-          if (reactions[userId]!.isEmpty) {
-            reactions.remove(userId);
+      if (!messageDoc.exists) {
+        throw ServerException('Mesaj bulunamadı: $messageId');
+      }
+      
+      final data = messageDoc.data()!;
+      final reactionsData = data['reactions'] ?? {};
+      
+      // ✅ Yeni Map oluştur (referans paylaşımını önle)
+      final reactions = <String, List<String>>{};
+      
+      // Safely convert reactions map
+      if (reactionsData is Map) {
+        reactionsData.forEach((key, value) {
+          if (value is List) {
+            // ✅ Yeni List oluştur (referans paylaşımını önle)
+            reactions[key.toString()] = List<String>.from(value.map((e) => e.toString()));
           }
-        }
-        
-        await _messagesRef.doc(messageId).update({
-          'reactions': reactions,
         });
       }
+      
+      // ✅ Emoji'yi kaldır
+      if (reactions[userId] != null) {
+        // ✅ Yeni List oluştur (referans paylaşımını önle)
+        reactions[userId] = List<String>.from(reactions[userId]!)..remove(emoji);
+        if (reactions[userId]!.isEmpty) {
+          reactions.remove(userId);
+        }
+      }
+      
+      // ✅ Sadece bu messageId için update yap
+      await _messagesRef.doc(messageId).update({
+        'reactions': reactions,
+      });
+      
+      if (kDebugMode) {
+        debugPrint('✅ [CHAT_DS] Reaction removed: messageId=$messageId, userId=$userId, emoji=$emoji');
+      }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [CHAT_DS] removeReaction error: $e');
+      }
       throw ServerException('Tepki kaldırılırken hata oluştu: ${e.toString()}');
     }
   }
@@ -705,22 +842,26 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<List<MessageModel>> searchMessages(String chatId, String query, {int limit = 50}) async {
     try {
+      // Cost Optimization: Use server-side orderBy + reasonable limit
+      // Note: Firestore doesn't support full-text search, so we still need client-side filtering
+      // But we limit the initial fetch to reduce read costs
       final querySnapshot = await _messagesRef
           .where('chatId', isEqualTo: chatId)
-          .limit(limit * 2) // Daha fazla al, sonra filtrele
+          .orderBy('timestamp', descending: true) // ✅ Server-side sorting
+          .limit(limit * 3) // Fetch 3x limit to account for filtering (reduced from unlimited)
           .get();
 
       final messages = querySnapshot.docs.map((doc) {
         return MessageModel.fromMap(doc.data(), doc.id);
       }).toList();
 
-      // Text'e göre filtrele
+      // Client-side text filtering (Firestore doesn't support contains)
+      final queryLower = query.toLowerCase();
       messages.removeWhere((msg) => 
-        msg.text == null || !msg.text!.toLowerCase().contains(query.toLowerCase())
+        msg.text == null || !msg.text!.toLowerCase().contains(queryLower)
       );
       
-      // Timestamp'e göre sıralama (en yeni mesajlar önce)
-      messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      // Already sorted by timestamp (descending) from server
       return messages.take(limit).toList();
     } catch (e) {
       throw ServerException('Mesajlar aranırken hata oluştu: ${e.toString()}');
@@ -730,7 +871,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<List<MessageModel>> searchAllMessages(String userId, String query, {int limit = 100}) async {
     try {
-      // Önce kullanıcının sohbetlerini al
+      // Cost Optimization: Optimized N-query method (instead of N+1)
+      // Step 1: Get user's chat IDs (single query)
       final chatsSnapshot = await _chatsRef
           .where('participants', arrayContains: userId)
           .get();
@@ -739,18 +881,283 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       
       if (chatIds.isEmpty) return [];
 
-      // Her sohbet için arama yap
+      // Step 2: Search in each chat using optimized searchMessages (server-side orderBy + limit)
+      // searchMessages already uses server-side orderBy and limit, reducing read costs
       final allResults = <MessageModel>[];
       for (final chatId in chatIds) {
-        final messages = await searchMessages(chatId, query, limit: 20);
+        final messages = await searchMessages(chatId, query, limit: 20); // Each chat: max 20 results
         allResults.addAll(messages);
       }
 
-      // Timestamp'e göre sıralama ve limit uygula
+      // Step 3: Sort all results by timestamp (descending) and return top N
       allResults.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return allResults.take(limit).toList();
     } catch (e) {
       throw ServerException('Tüm mesajlar aranırken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> uploadVoiceMessage(File audioFile, {required String chatId, required String senderId}) async {
+    try {
+      // Dosya kontrolü
+      if (!await audioFile.exists()) {
+        throw ServerException('Ses dosyası bulunamadı');
+      }
+
+      // Güvenlik: chatId ve senderId bazlı path yapısı
+      final fileId = '${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final storageRef = _storage
+          .ref()
+          .child('voice_messages')
+          .child(chatId)
+          .child(senderId)
+          .child(fileId);
+
+      // Dosyayı yükle
+      final uploadTask = storageRef.putFile(audioFile);
+      
+      // Upload tamamlanana kadar bekle
+      final snapshot = await uploadTask;
+      
+      // Download URL'ini al
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Ses dosyası yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> uploadFileMessage(File file, String fileName, {required String chatId, required String senderId}) async {
+    try {
+      // Dosya kontrolü
+      if (!await file.exists()) {
+        throw ServerException('Dosya bulunamadı');
+      }
+
+      // Güvenlik: chatId ve senderId bazlı path yapısı
+      final fileId = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final storageRef = _storage
+          .ref()
+          .child('chat_files')
+          .child(chatId)
+          .child(senderId)
+          .child(fileId);
+
+      // Dosyayı yükle
+      final uploadTask = storageRef.putFile(file);
+      
+      // Upload tamamlanana kadar bekle
+      final snapshot = await uploadTask;
+      
+      // Download URL'ini al
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Dosya yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> uploadChatMedia(File file, String storagePath, {String? contentType, void Function(double progress)? onProgress}) async {
+    try {
+      // Dosya kontrolü
+      if (!await file.exists()) {
+        throw ServerException('Medya dosyası bulunamadı');
+      }
+
+      // Cost Optimization: Compress image before upload (only for images, not videos)
+      File fileToUpload = file;
+      final isImage = contentType == null || 
+                      contentType.startsWith('image/') ||
+                      (!file.path.endsWith('.mp4') && !file.path.endsWith('.mov') && !file.path.endsWith('.m4a'));
+      
+      if (isImage) {
+        try {
+          fileToUpload = await ImageCompressor.compressChatMedia(file);
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('⚠️ [CHAT_DS] Image compression failed, using original: $e');
+          }
+          // If compression fails, use original file
+          fileToUpload = file;
+        }
+      }
+
+      // Firebase Storage path'i oluştur
+      final storageRef = _storage.ref().child(storagePath);
+
+      // Metadata oluştur
+      final metadata = SettableMetadata(
+        contentType: contentType ?? (file.path.endsWith('.mp4') || file.path.endsWith('.mov') ? 'video/mp4' : 'image/jpeg'),
+      );
+
+      // Dosyayı yükle (byte data olarak)
+      final fileBytes = await fileToUpload.readAsBytes();
+      final uploadTask = storageRef.putData(fileBytes, metadata);
+      
+      // Progress dinle (eğer callback verildiyse)
+      if (onProgress != null) {
+        uploadTask.snapshotEvents.listen((snapshot) {
+          final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          onProgress(progress);
+        });
+      }
+      
+      // Upload tamamlanana kadar bekle
+      final snapshot = await uploadTask;
+      
+      // Download URL'ini al
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      // Clean up temporary compressed file
+      try {
+        if (fileToUpload.path != file.path) {
+          await fileToUpload.delete();
+        }
+      } catch (_) {
+        // Ignore cleanup errors
+      }
+      
+      return downloadUrl;
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Medya dosyası yüklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> updateGroupInfo({
+    required String chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  }) async {
+    try {
+      final updateData = <String, dynamic>{};
+      
+      if (name != null) {
+        updateData['name'] = name;
+      }
+      if (description != null) {
+        updateData['description'] = description;
+      }
+      if (photoUrl != null) {
+        updateData['photoUrl'] = photoUrl;
+      }
+      
+      if (updateData.isEmpty) {
+        return; // Güncellenecek bir şey yok
+      }
+      
+      await _chatsRef.doc(chatId).update(updateData);
+    } catch (e) {
+      throw ServerException('Grup bilgileri güncellenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> addAdmin({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'admins': FieldValue.arrayUnion([userId]),
+      });
+    } catch (e) {
+      throw ServerException('Yönetici eklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> removeAdmin({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'admins': FieldValue.arrayRemove([userId]),
+      });
+    } catch (e) {
+      throw ServerException('Yönetici çıkarılırken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> addGroupParticipants({
+    required String chatId,
+    required List<String> userIds,
+  }) async {
+    if (userIds.isEmpty) return;
+
+    try {
+      final chatDoc = await _chatsRef.doc(chatId).get();
+      if (!chatDoc.exists) {
+        throw ServerException('Grup sohbeti bulunamadı');
+      }
+
+      final existing = List<String>.from(chatDoc.data()?['participants'] ?? []);
+      final newUserIds = userIds.where((id) => !existing.contains(id)).toList();
+      if (newUserIds.isEmpty) return;
+
+      await _chatsRef.doc(chatId).update({
+        'participants': FieldValue.arrayUnion(newUserIds),
+      });
+      await _updateParticipantDetails(chatId, newUserIds);
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException('Üye eklenirken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> removeGroupParticipant({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'participants': FieldValue.arrayRemove([userId]),
+        'admins': FieldValue.arrayRemove([userId]),
+        'participantDetails.$userId': FieldValue.delete(),
+      });
+    } catch (e) {
+      throw ServerException('Üye çıkarılırken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> muteChat({
+    required String chatId,
+    required String userId,
+    DateTime? muteUntil,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'mutedUntil.$userId': muteUntil != null ? Timestamp.fromDate(muteUntil) : null,
+        'mutedBy.$userId': true, // Eski sistemle uyumluluk için
+      });
+    } catch (e) {
+      throw ServerException('Sohbet sessize alınırken hata oluştu: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> unmuteChat({
+    required String chatId,
+    required String userId,
+  }) async {
+    try {
+      await _chatsRef.doc(chatId).update({
+        'mutedUntil.$userId': FieldValue.delete(),
+        'mutedBy.$userId': FieldValue.delete(),
+      });
+    } catch (e) {
+      throw ServerException('Sohbet sessize alma kaldırılırken hata oluştu: ${e.toString()}');
     }
   }
 }

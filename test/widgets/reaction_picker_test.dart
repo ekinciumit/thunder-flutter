@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:thunder/views/widgets/reaction_picker.dart';
+import 'package:thunder/features/chat/presentation/widgets/reaction_picker.dart';
 
 void main() {
   group('ReactionPicker Widget Tests', () {
     late String? selectedEmoji;
-    late bool closeCalled;
 
     setUp(() {
       selectedEmoji = null;
-      closeCalled = false;
     });
 
     testWidgets('ReactionPicker - Widget render ediliyor', (WidgetTester tester) async {
@@ -21,9 +19,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),
@@ -44,9 +40,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),
@@ -73,9 +67,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),
@@ -96,9 +88,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),
@@ -112,8 +102,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
+      // ✅ onReactionSelected çağrılmalı
       expect(selectedEmoji, '😀');
-      expect(closeCalled, true);
+      // ✅ onClose artık otomatik çağrılmıyor (onReactionSelected içinde Navigator.pop var)
+      // expect(closeCalled, true); // Kaldırıldı
     });
 
     testWidgets('ReactionPicker - Farklı emoji tıklanınca doğru callback çağrılıyor', (WidgetTester tester) async {
@@ -125,9 +117,7 @@ void main() {
               onReactionSelected: (emoji) {
                 selectedEmoji = emoji;
               },
-              onClose: () {
-                closeCalled = true;
-              },
+              onClose: () {},
             ),
           ),
         ),
@@ -142,9 +132,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // Assert
+        // ✅ onReactionSelected çağrılmalı
         expect(selectedEmoji, isNotNull);
         expect(selectedEmoji, '😀');
-        expect(closeCalled, true);
+        // ✅ onClose artık otomatik çağrılmıyor (onReactionSelected içinde Navigator.pop var)
+        // expect(closeCalled, true); // Kaldırıldı
       } else {
         // Emoji scroll içinde olabilir, bu test için widget'ın render edildiğini kontrol et yeterli
         expect(find.byType(ReactionPicker), findsOneWidget);

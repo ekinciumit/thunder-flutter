@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
-import 'package:thunder/models/user_model.dart';
+import 'package:thunder/features/user/domain/entities/user_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'auth_viewmodel_test.mocks.dart';
@@ -18,6 +18,12 @@ void main() {
     mockRepository = MockAuthRepository();
     // getCurrentUser her zaman çağrılıyor (constructor'da)
     when(mockRepository.getCurrentUser()).thenReturn(null);
+    when(mockRepository.fetchUserProfile(any)).thenAnswer(
+      (_) async => Either.left(ServerFailure('Profile not found')),
+    );
+    when(mockRepository.saveUserProfile(any)).thenAnswer(
+      (_) async => Either.right(null),
+    );
     viewModel = AuthViewModel(authRepository: mockRepository);
   });
 
@@ -29,9 +35,12 @@ void main() {
     group('Initialization', () {
       test('should initialize with current user from repository', () {
         // Arrange
-        final testUser = UserModel(uid: 'test-uid', email: 'test@test.com');
+        final testUser = UserEntity(uid: 'test-uid', email: 'test@test.com');
         final testMockRepository = MockAuthRepository();
         when(testMockRepository.getCurrentUser()).thenReturn(testUser);
+        when(testMockRepository.fetchUserProfile(any)).thenAnswer(
+          (_) async => Either.left(ServerFailure('Profile not found')),
+        );
 
         // Act
         final newViewModel = AuthViewModel(authRepository: testMockRepository);
@@ -62,8 +71,8 @@ void main() {
     group('signIn', () {
       const testEmail = 'test@example.com';
       const testPassword = 'password123';
-      final testUser = UserModel(uid: 'test-uid', email: testEmail);
-      final testFullUser = UserModel(
+      final testUser = UserEntity(uid: 'test-uid', email: testEmail);
+      final testFullUser = UserEntity(
         uid: 'test-uid',
         email: testEmail,
         displayName: 'Test User',
@@ -139,7 +148,7 @@ void main() {
     group('signUp', () {
       const testEmail = 'test@example.com';
       const testPassword = 'password123';
-      final testUser = UserModel(uid: 'test-uid', email: testEmail);
+      final testUser = UserEntity(uid: 'test-uid', email: testEmail);
 
       test('should sign up successfully and set flags', () async {
         // Arrange
@@ -177,7 +186,7 @@ void main() {
     });
 
     group('completeProfile', () {
-      final testUser = UserModel(
+      final testUser = UserEntity(
         uid: 'test-uid',
         email: 'test@test.com',
         username: 'testuser',
@@ -242,7 +251,7 @@ void main() {
 
     group('signOut', () {
       setUp(() {
-        viewModel.user = UserModel(uid: 'test-uid', email: 'test@test.com');
+        viewModel.user = UserEntity(uid: 'test-uid', email: 'test@test.com');
       });
 
       test('should sign out successfully', () async {
@@ -291,8 +300,8 @@ void main() {
     });
 
     group('loadUserProfile', () {
-      final testUser = UserModel(uid: 'test-uid', email: 'test@test.com');
-      final testFullUser = UserModel(
+      final testUser = UserEntity(uid: 'test-uid', email: 'test@test.com');
+      final testFullUser = UserEntity(
         uid: 'test-uid',
         email: 'test@test.com',
         displayName: 'Test User',
@@ -342,7 +351,7 @@ void main() {
 
     group('fetchUserProfile', () {
       const testUid = 'test-uid';
-      final testUser = UserModel(
+      final testUser = UserEntity(
         uid: testUid,
         email: 'test@test.com',
         displayName: 'Test User',

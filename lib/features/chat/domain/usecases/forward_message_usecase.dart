@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/message_model.dart';
+import '../entities/message_entity.dart';
 import '../repositories/chat_repository.dart';
 
 /// Forward Message Use Case
@@ -13,9 +13,9 @@ class ForwardMessageUseCase {
 
   /// Mesaj ilet
   /// 
-  /// Returns: ``Either<Failure, MessageModel>``
-  Future<Either<Failure, MessageModel>> call({
-    required MessageModel originalMessage,
+  /// Returns: ``Either<Failure, MessageEntity>``
+  Future<Either<Failure, MessageEntity>> call({
+    required MessageEntity originalMessage,
     required String targetChatId,
     required String senderId,
     required String senderName,

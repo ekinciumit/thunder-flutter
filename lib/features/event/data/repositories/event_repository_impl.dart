@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
-import '../../../../models/event_model.dart';
 import '../../domain/repositories/event_repository.dart';
+import '../../domain/entities/event_entity.dart';
+import '../mappers/event_mapper.dart';
 import '../datasources/event_remote_data_source.dart';
 
 /// Event Repository Implementation
@@ -17,9 +20,11 @@ class EventRepositoryImpl implements EventRepository {
   }) : _remoteDataSource = remoteDataSource;
 
   @override
-  Future<Either<Failure, void>> addEvent(EventModel event) async {
+  Future<Either<Failure, void>> addEvent(EventEntity event) async {
     try {
-      await _remoteDataSource.addEvent(event);
+      // Entity -> DTO dönüşümü
+      final eventModel = EventMapper.toModel(event);
+      await _remoteDataSource.addEvent(eventModel);
       return Either.right(null);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
@@ -29,36 +34,47 @@ class EventRepositoryImpl implements EventRepository {
   }
 
   @override
-  Stream<List<EventModel>> getEventsStream() {
+  Stream<List<EventEntity>> getEventsStream() {
     try {
-      return _remoteDataSource.getEventsStream();
+      // DTO stream'i -> Entity stream'e çevir
+      return _remoteDataSource.getEventsStream().map((eventModels) {
+        return EventMapper.toEntityList(eventModels);
+      });
     } catch (e) {
       // Stream'ler için hata durumunda boş stream döndür
-      return Stream.value(<EventModel>[]);
+      // Ama hatayı logla
+      if (kDebugMode) {
+        debugPrint('❌ [EVENT_REPO] getEventsStream hatası: $e');
+      }
+      return Stream.value(<EventEntity>[]);
     }
   }
 
   @override
-  Stream<List<EventModel>> getUserEventsStream(String userId) {
+  Stream<List<EventEntity>> getUserEventsStream(String userId) {
     try {
-      return _remoteDataSource.getUserEventsStream(userId);
+      // DTO stream'i -> Entity stream'e çevir
+      return _remoteDataSource.getUserEventsStream(userId).map((eventModels) {
+        return EventMapper.toEntityList(eventModels);
+      });
     } catch (e) {
       // Stream'ler için hata durumunda boş stream döndür
-      return Stream.value(<EventModel>[]);
+      return Stream.value(<EventEntity>[]);
     }
   }
 
   @override
-  Future<Either<Failure, List<EventModel>>> fetchNextEvents({
+  Future<Either<Failure, List<EventEntity>>> fetchNextEvents({
     DateTime? startAfter,
     int limit = 50,
   }) async {
     try {
-      final events = await _remoteDataSource.fetchNextEvents(
+      final eventModels = await _remoteDataSource.fetchNextEvents(
         startAfter: startAfter,
         limit: limit,
       );
-      return Either.right(events);
+      // DTO -> Entity dönüşümü
+      return Either.right(EventMapper.toEntityList(eventModels));
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
@@ -67,9 +83,11 @@ class EventRepositoryImpl implements EventRepository {
   }
 
   @override
-  Future<Either<Failure, void>> updateEvent(EventModel event) async {
+  Future<Either<Failure, void>> updateEvent(EventEntity event) async {
     try {
-      await _remoteDataSource.updateEvent(event);
+      // Entity -> DTO dönüşümü
+      final eventModel = EventMapper.toModel(event);
+      await _remoteDataSource.updateEvent(eventModel);
       return Either.right(null);
     } on ServerException catch (e) {
       return Either.left(ServerFailure(e.message));
@@ -159,6 +177,104 @@ class EventRepositoryImpl implements EventRepository {
       return Either.left(ServerFailure(e.message));
     } catch (e) {
       return Either.left(UnknownFailure('Katılma isteği iptal edilirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removeParticipant(String eventId, String userId) async {
+    try {
+      await _remoteDataSource.removeParticipant(eventId, userId);
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Katılımcı çıkarılırken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> cancelEvent(String eventId, String cancellationReason) async {
+    try {
+      await _remoteDataSource.cancelEvent(eventId, cancellationReason);
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Etkinlik iptal edilirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadEventCoverPhoto(String photoFilePath, {String? eventId}) async {
+    try {
+      final file = File(photoFilePath);
+      final url = await _remoteDataSource.uploadEventCoverPhoto(file, eventId: eventId);
+      return Either.right(url);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Event cover fotoğrafı yüklenirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadEventPhoto(String photoFilePath, String eventId) async {
+    try {
+      final file = File(photoFilePath);
+      final url = await _remoteDataSource.uploadEventPhoto(file, eventId);
+      return Either.right(url);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Event fotoğrafı yüklenirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Stream<EventEntity?> getEventStream(String eventId) {
+    try {
+      // DTO stream'i -> Entity stream'e çevir
+      return _remoteDataSource.getEventStream(eventId).map((eventModel) {
+        return eventModel != null ? EventMapper.toEntity(eventModel) : null;
+      });
+    } catch (e) {
+      // Stream'ler için hata durumunda boş stream döndür
+      return Stream.value(null);
+    }
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> getEventCommentsStream(String eventId) {
+    try {
+      return _remoteDataSource.getEventCommentsStream(eventId);
+    } catch (e) {
+      // Stream'ler için hata durumunda boş stream döndür
+      return Stream.value(<Map<String, dynamic>>[]);
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> addEventComment(String eventId, String text, String userId, String userName) async {
+    try {
+      await _remoteDataSource.addEventComment(eventId, text, userId, userName);
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      return Either.left(UnknownFailure('Yorum eklenirken bir hata oluştu: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteEventComments(String eventId) async {
+    try {
+      await _remoteDataSource.deleteEventComments(eventId);
+      return Either.right(null);
+    } on ServerException catch (e) {
+      return Either.left(ServerFailure(e.message));
+    } catch (e) {
+      // Comments silme hatası kritik değil, sessizce devam et
+      return Either.right(null);
     }
   }
 }

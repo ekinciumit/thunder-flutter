@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../models/user_model.dart';
+import '../../../user/data/models/user_model.dart';
 import '../../../../core/errors/exceptions.dart';
 import 'dart:convert';
 

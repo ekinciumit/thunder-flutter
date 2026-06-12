@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import '../models/event_model.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../features/event/presentation/viewmodels/event_viewmodel.dart';
-import 'event_detail_page.dart';
+import '../features/event/domain/entities/event_entity.dart';
 import 'dart:async';
-import 'widgets/app_gradient_container.dart';
-import 'widgets/modern_loading_widget.dart';
+import '../core/widgets/app_gradient_container.dart';
+import '../core/widgets/modern_loading_widget.dart';
 import 'package:flutter/foundation.dart';
 import '../core/widgets/modern_components.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_color_config.dart';
 import '../l10n/app_localizations.dart';
+import '../core/navigation/app_navigation.dart';
+import '../services/map_cache_service.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -26,8 +27,153 @@ class _MapViewState extends State<MapView> {
   GoogleMapController? mapController;
   bool iconsLoaded = false;
   double _currentZoom = 13;
+  int _clusterZoomBucket = 3;
+  
+  // Dark mode için Google Maps style JSON
+  static const String _darkMapStyle = '''
+  [
+    {
+      "elementType": "geometry",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#8ec3b9"}]
+    },
+    {
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1a3646"}]
+    },
+    {
+      "featureType": "administrative.country",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#4b6878"}]
+    },
+    {
+      "featureType": "administrative.land_parcel",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#64779e"}]
+    },
+    {
+      "featureType": "administrative.province",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#4b6878"}]
+    },
+    {
+      "featureType": "landscape.man_made",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#334e87"}]
+    },
+    {
+      "featureType": "landscape.natural",
+      "elementType": "geometry",
+      "stylers": [{"color": "#023e58"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "geometry",
+      "stylers": [{"color": "#283d6a"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#6f9ba5"}]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "geometry.fill",
+      "stylers": [{"color": "#023e58"}]
+    },
+    {
+      "featureType": "poi.park",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#3C7680"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry",
+      "stylers": [{"color": "#304a7d"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#98a5be"}]
+    },
+    {
+      "featureType": "road",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry",
+      "stylers": [{"color": "#2c6675"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "geometry.stroke",
+      "stylers": [{"color": "#255763"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#b0d5ce"}]
+    },
+    {
+      "featureType": "road.highway",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#023e58"}]
+    },
+    {
+      "featureType": "transit",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#98a5be"}]
+    },
+    {
+      "featureType": "transit",
+      "elementType": "labels.text.stroke",
+      "stylers": [{"color": "#1d2c4d"}]
+    },
+    {
+      "featureType": "transit.line",
+      "elementType": "geometry.fill",
+      "stylers": [{"color": "#283d6a"}]
+    },
+    {
+      "featureType": "transit.station",
+      "elementType": "geometry",
+      "stylers": [{"color": "#3a4762"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [{"color": "#0e1626"}]
+    },
+    {
+      "featureType": "water",
+      "elementType": "labels.text.fill",
+      "stylers": [{"color": "#4e6d70"}]
+    }
+  ]
+  ''';
 
-  List<Marker> _buildClusteredMarkers(List<EventModel> events) {
+  int _zoomBucket(double zoom) {
+    if (zoom >= 15) return 4;
+    if (zoom >= 13) return 3;
+    if (zoom >= 11) return 2;
+    if (zoom >= 9) return 1;
+    return 0;
+  }
+
+  List<Marker> _buildClusteredMarkers(
+    List<EventEntity> events,
+    AppLocalizations l10n,
+  ) {
     if (events.isEmpty) return [];
     // Basit grid tabanlı yaklaştırma: zoom seviyesine göre hücre boyutu
     double grid;
@@ -43,7 +189,7 @@ class _MapViewState extends State<MapView> {
       grid = 0.1; // ~10km
     }
 
-    final Map<String, List<EventModel>> cellToEvents = {};
+    final Map<String, List<EventEntity>> cellToEvents = {};
     for (final e in events) {
       if (e.location.latitude == 0 || e.location.longitude == 0) continue;
       final cellLat = (e.location.latitude / grid).floor();
@@ -74,7 +220,7 @@ class _MapViewState extends State<MapView> {
             markerId: MarkerId('cluster_$key'),
             position: LatLng(avgLat, avgLng),
             icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueMagenta),
-            infoWindow: InfoWindow(title: '${list.length} etkinlik'),
+            infoWindow: InfoWindow(title: l10n.clusterEventsCount(list.length)),
             consumeTapEvents: true,
             onTap: () {
               // Küme tıklanınca biraz yaklaştır
@@ -98,25 +244,37 @@ class _MapViewState extends State<MapView> {
     _loadCategoryIcons();
   }
 
+  @override
+  void dispose() {
+    mapController = null;
+    super.dispose();
+  }
 
   Future<void> _getUserLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
+      if (!serviceEnabled || !mounted) return;
       LocationPermission permission = await Geolocator.checkPermission();
+      if (!mounted) return;
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
+        if (permission == LocationPermission.denied || !mounted) return;
       }
-      if (permission == LocationPermission.deniedForever) return;
+      if (permission == LocationPermission.deniedForever || !mounted) return;
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
+      if (!mounted) return;
       setState(() { userPosition = pos; });
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ [MAP_VIEW] Konum alınırken hata: $e');
+      }
+    }
   }
 
   Future<void> _loadCategoryIcons() async {
+    if (!mounted) return;
     setState(() {
       iconsLoaded = true;
     });
@@ -129,7 +287,8 @@ class _MapViewState extends State<MapView> {
     // Web platformunda etkinlik listesi göster
     if (kIsWeb) {
       final eventViewModel = Provider.of<EventViewModel>(context);
-      final events = eventViewModel.events;
+      // ViewModel Entity döndürüyor, UI direkt Entity kullanıyor (Clean Architecture)
+      final eventEntities = eventViewModel.events;
       
       return Scaffold(
         appBar: AppBar(
@@ -137,7 +296,7 @@ class _MapViewState extends State<MapView> {
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
         ),
-        body: events.isEmpty
+        body: eventEntities.isEmpty
             ? EmptyStateWidget(
                 icon: Icons.map_outlined,
                 title: l10n.noData,
@@ -145,9 +304,9 @@ class _MapViewState extends State<MapView> {
               )
             : ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: events.length,
+                itemCount: eventEntities.length,
                 itemBuilder: (context, index) {
-                  final event = events[index];
+                  final event = eventEntities[index];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
@@ -162,11 +321,9 @@ class _MapViewState extends State<MapView> {
                       subtitle: Text(event.category),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EventDetailPage(event: event),
-                          ),
+                        AppNavigation.toEventDetail(
+                          context: context,
+                          event: event,
                         );
                       },
                     ),
@@ -177,8 +334,9 @@ class _MapViewState extends State<MapView> {
     }
 
     final eventViewModel = Provider.of<EventViewModel>(context);
-    final events = eventViewModel.events;
-    final markers = _buildClusteredMarkers(events);
+    // ViewModel Entity döndürüyor, UI direkt Entity kullanıyor (Clean Architecture)
+    final eventEntities = eventViewModel.events;
+    final markers = _buildClusteredMarkers(eventEntities, l10n);
 
     // Kullanıcı konumu markerı
     if (userPosition != null) {
@@ -196,8 +354,11 @@ class _MapViewState extends State<MapView> {
         ? CameraPosition(target: LatLng(userPosition!.latitude, userPosition!.longitude), zoom: 13)
         : const CameraPosition(target: LatLng(39.925533, 32.866287), zoom: 6); // Ankara default
 
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+
     return AppGradientContainer(
-      gradientColors: AppTheme.gradientPrimary,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBody: true,
@@ -210,11 +371,24 @@ class _MapViewState extends State<MapView> {
                     markers: Set.from(markers),
                     myLocationEnabled: userPosition != null,
                     myLocationButtonEnabled: false,
-                    onMapCreated: (controller) => mapController = controller,
+                    mapType: MapType.normal,
+                    style: isDark ? _darkMapStyle : null, // Dark mode için özel stil
+                    onMapCreated: (controller) {
+                      mapController = controller;
+                      // Cost Optimization: Cache map controller and position
+                      final position = userPosition != null
+                          ? LatLng(userPosition!.latitude, userPosition!.longitude)
+                          : const LatLng(39.925533, 32.866287); // Ankara default
+                      MapCacheService.cacheController(controller, position, zoom: _currentZoom);
+                    },
                     onCameraMove: (position) {
                       _currentZoom = position.zoom;
-                      // Zoom değiştikçe yeniden cluster
-                      setState(() {});
+                    },
+                    onCameraIdle: () {
+                      final bucket = _zoomBucket(_currentZoom);
+                      if (bucket != _clusterZoomBucket && mounted) {
+                        setState(() => _clusterZoomBucket = bucket);
+                      }
                     },
                     padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
                   ),
@@ -225,7 +399,9 @@ class _MapViewState extends State<MapView> {
                     child: Material(
                       elevation: 4,
                       borderRadius: BorderRadius.circular(28),
-                      color: AppColorConfig.secondaryColor,
+                      color: isDark 
+                          ? theme.colorScheme.primary 
+                          : AppColorConfig.secondaryColor,
                       child: InkWell(
                         onTap: () async {
                           if (userPosition == null) {
@@ -249,7 +425,13 @@ class _MapViewState extends State<MapView> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(28),
                           ),
-                          child: const Icon(Icons.my_location, size: 24, color: Colors.white),
+                          child: Icon(
+                            Icons.my_location, 
+                            size: 24, 
+                            color: isDark 
+                                ? theme.colorScheme.onPrimary 
+                                : Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -260,33 +442,18 @@ class _MapViewState extends State<MapView> {
     );
   }
 
-  void _showEventSheet(EventModel event) {
+  void _showEventSheet(EventEntity event) {
     final theme = Theme.of(context);
-    showModalBottomSheet(
+    GlassModalBottomSheet.show(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusRound),
-        ),
+      padding: EdgeInsets.only(
+        left: AppTheme.spacingXxl,
+        right: AppTheme.spacingXxl,
+        top: AppTheme.spacingXxl,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingXxl,
       ),
-      builder: (_) {
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(AppTheme.radiusRound),
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: AppTheme.spacingXxl,
-              right: AppTheme.spacingXxl,
-              top: AppTheme.spacingXxl,
-              bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingXxl,
-            ),
-          child: Column(
+      child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -349,14 +516,10 @@ class _MapViewState extends State<MapView> {
                   child: FilledButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => EventDetailPage(event: event),
-                        ),
-                    );
+                    AppNavigation.toEventDetail(context: context, event: event);
                   },
                   icon: const Icon(Icons.open_in_new),
-                  label: const Text('Etkinlik Detayına Git'),
+                  label: Text(AppLocalizations.of(context)!.goToEventDetail),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
                       shape: RoundedRectangleBorder(
@@ -366,10 +529,7 @@ class _MapViewState extends State<MapView> {
                 ),
               ),
             ],
-            ),
-          ),
-        );
-      },
+      ),
     );
   }
 } 

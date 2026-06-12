@@ -4,13 +4,14 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i6;
+import 'dart:io' as _i7;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i5;
 import 'package:thunder/features/chat/data/datasources/chat_remote_data_source.dart'
     as _i4;
-import 'package:thunder/models/chat_model.dart' as _i2;
-import 'package:thunder/models/message_model.dart' as _i3;
+import 'package:thunder/features/chat/data/models/chat_model.dart' as _i2;
+import 'package:thunder/features/chat/data/models/message_model.dart' as _i3;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -25,6 +26,7 @@ import 'package:thunder/models/message_model.dart' as _i3;
 // ignore_for_file: unnecessary_parenthesis
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
+// ignore_for_file: invalid_use_of_internal_member
 
 class _FakeChatModel_0 extends _i1.SmartFake implements _i2.ChatModel {
   _FakeChatModel_0(Object parent, Invocation parentInvocation)
@@ -63,6 +65,14 @@ class MockChatRemoteDataSource extends _i1.Mock
             returnValue: _i6.Future<_i2.ChatModel?>.value(),
           )
           as _i6.Future<_i2.ChatModel?>);
+
+  @override
+  _i6.Stream<_i2.ChatModel?> getChatStream(String? chatId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getChatStream, [chatId]),
+            returnValue: _i6.Stream<_i2.ChatModel?>.empty(),
+          )
+          as _i6.Stream<_i2.ChatModel?>);
 
   @override
   _i6.Future<_i2.ChatModel> getOrCreatePrivateChat(
@@ -421,4 +431,192 @@ class MockChatRemoteDataSource extends _i1.Mock
             ),
           )
           as _i6.Future<List<_i3.MessageModel>>);
+
+  @override
+  _i6.Future<String> uploadVoiceMessage(
+    _i7.File? audioFile, {
+    required String? chatId,
+    required String? senderId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #uploadVoiceMessage,
+              [audioFile],
+              {#chatId: chatId, #senderId: senderId},
+            ),
+            returnValue: _i6.Future<String>.value(
+              _i5.dummyValue<String>(
+                this,
+                Invocation.method(
+                  #uploadVoiceMessage,
+                  [audioFile],
+                  {#chatId: chatId, #senderId: senderId},
+                ),
+              ),
+            ),
+          )
+          as _i6.Future<String>);
+
+  @override
+  _i6.Future<String> uploadFileMessage(
+    _i7.File? file,
+    String? fileName, {
+    required String? chatId,
+    required String? senderId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #uploadFileMessage,
+              [file, fileName],
+              {#chatId: chatId, #senderId: senderId},
+            ),
+            returnValue: _i6.Future<String>.value(
+              _i5.dummyValue<String>(
+                this,
+                Invocation.method(
+                  #uploadFileMessage,
+                  [file, fileName],
+                  {#chatId: chatId, #senderId: senderId},
+                ),
+              ),
+            ),
+          )
+          as _i6.Future<String>);
+
+  @override
+  _i6.Future<String> uploadChatMedia(
+    _i7.File? file,
+    String? storagePath, {
+    String? contentType,
+    void Function(double)? onProgress,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #uploadChatMedia,
+              [file, storagePath],
+              {#contentType: contentType, #onProgress: onProgress},
+            ),
+            returnValue: _i6.Future<String>.value(
+              _i5.dummyValue<String>(
+                this,
+                Invocation.method(
+                  #uploadChatMedia,
+                  [file, storagePath],
+                  {#contentType: contentType, #onProgress: onProgress},
+                ),
+              ),
+            ),
+          )
+          as _i6.Future<String>);
+
+  @override
+  _i6.Future<void> updateGroupInfo({
+    required String? chatId,
+    String? name,
+    String? description,
+    String? photoUrl,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateGroupInfo, [], {
+              #chatId: chatId,
+              #name: name,
+              #description: description,
+              #photoUrl: photoUrl,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> addAdmin({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#addAdmin, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> removeAdmin({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeAdmin, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> addGroupParticipants({
+    required String? chatId,
+    required List<String>? userIds,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#addGroupParticipants, [], {
+              #chatId: chatId,
+              #userIds: userIds,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> removeGroupParticipant({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeGroupParticipant, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> muteChat({
+    required String? chatId,
+    required String? userId,
+    DateTime? muteUntil,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#muteChat, [], {
+              #chatId: chatId,
+              #userId: userId,
+              #muteUntil: muteUntil,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> unmuteChat({
+    required String? chatId,
+    required String? userId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteChat, [], {
+              #chatId: chatId,
+              #userId: userId,
+            }),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
 }

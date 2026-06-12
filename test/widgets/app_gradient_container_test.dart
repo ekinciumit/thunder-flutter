@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:thunder/views/widgets/app_gradient_container.dart';
+import 'package:thunder/core/widgets/app_gradient_container.dart';
 
 void main() {
   group('AppGradientContainer Widget Tests', () {

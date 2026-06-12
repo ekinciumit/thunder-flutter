@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/auth/domain/usecases/sign_in_usecase.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
-import 'package:thunder/models/user_model.dart';
+import 'package:thunder/features/user/domain/entities/user_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'sign_in_usecase_test.mocks.dart';
@@ -22,12 +22,12 @@ void main() {
   group('SignInUseCase', () {
     const testEmail = 'test@example.com';
     const testPassword = 'password123';
-    final testUser = UserModel(
+    final testUser = UserEntity(
       uid: 'test-uid-123',
       email: testEmail,
     );
 
-    test('should return Right(UserModel) when sign in is successful', () async {
+    test('should return Right(UserEntity) when sign in is successful', () async {
       // Arrange
       when(mockRepository.signIn(testEmail, testPassword))
           .thenAnswer((_) async => Either.right(testUser));

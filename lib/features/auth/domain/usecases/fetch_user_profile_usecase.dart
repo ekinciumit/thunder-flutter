@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/user_model.dart';
+import '../../../user/domain/entities/user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 /// Fetch User Profile Use Case
@@ -16,10 +16,10 @@ class FetchUserProfileUseCase {
 
   /// Kullanıcı profilini getir
   /// 
-  /// Returns: Either`<Failure, UserModel?>`
+  /// Returns: Either`<Failure, UserEntity?>`
   /// - Left: Failure if fetch fails
-  /// - Right: UserModel if found, null otherwise
-  Future<Either<Failure, UserModel?>> call(String uid) async {
+  /// - Right: UserEntity if found, null otherwise
+  Future<Either<Failure, UserEntity?>> call(String uid) async {
     // Business logic: UID validation
     if (uid.isEmpty) {
       return Either.left(ValidationFailure('Kullanıcı ID boş olamaz'));

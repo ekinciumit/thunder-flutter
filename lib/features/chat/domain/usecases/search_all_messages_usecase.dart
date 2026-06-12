@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/message_model.dart';
+import '../entities/message_entity.dart';
 import '../repositories/chat_repository.dart';
 
 /// Search All Messages Use Case
@@ -13,8 +13,8 @@ class SearchAllMessagesUseCase {
 
   /// Tüm sohbetlerde arama yap
   /// 
-  /// Returns: `Either<Failure, List<MessageModel>>`
-  Future<Either<Failure, List<MessageModel>>> call(
+  /// Returns: `Either<Failure, List<MessageEntity>>`
+  Future<Either<Failure, List<MessageEntity>>> call(
     String userId,
     String query, {
     int limit = 100,

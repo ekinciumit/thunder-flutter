@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/auth/domain/usecases/fetch_user_profile_usecase.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
-import 'package:thunder/models/user_model.dart';
+import 'package:thunder/features/user/domain/entities/user_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'fetch_user_profile_usecase_test.mocks.dart';
@@ -21,7 +21,7 @@ void main() {
 
   group('FetchUserProfileUseCase', () {
     const testUid = 'test-uid-123';
-    final testUser = UserModel(
+    final testUser = UserEntity(
       uid: testUid,
       email: 'test@example.com',
       displayName: 'Test User',

@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/message_model.dart';
+import '../entities/message_entity.dart';
 import '../repositories/chat_repository.dart';
 
 /// Send Message Use Case
@@ -13,8 +13,8 @@ class SendMessageUseCase {
 
   /// Mesaj gönder
   /// 
-  /// Returns: ``Either<Failure, MessageModel>``
-  Future<Either<Failure, MessageModel>> call({
+  /// Returns: ``Either<Failure, MessageEntity>``
+  Future<Either<Failure, MessageEntity>> call({
     required String chatId,
     required String senderId,
     required String senderName,

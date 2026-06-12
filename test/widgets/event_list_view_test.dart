@@ -5,7 +5,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:thunder/l10n/app_localizations.dart';
-import 'package:thunder/views/event_list_view.dart';
+import 'package:thunder/features/event/presentation/pages/event_list_view.dart';
 import 'package:thunder/features/event/presentation/viewmodels/event_viewmodel.dart';
 import 'package:thunder/features/event/domain/repositories/event_repository.dart';
 import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';

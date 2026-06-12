@@ -6,12 +6,13 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:thunder/l10n/app_localizations.dart';
-import 'package:thunder/views/chat_list_page.dart';
+import 'package:thunder/features/chat/presentation/pages/chat_list_page.dart';
 import 'package:thunder/features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
 import 'package:thunder/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:thunder/features/auth/domain/repositories/auth_repository.dart';
-import 'package:thunder/models/user_model.dart';
+import 'package:thunder/features/user/data/models/user_model.dart';
+import 'package:thunder/features/user/data/mappers/user_mapper.dart';
 
 import 'chat_list_page_test.mocks.dart';
 
@@ -69,7 +70,8 @@ void main() {
 
     testWidgets('ChatListPage - Kullanıcı varsa widget render ediliyor', (WidgetTester tester) async {
       // Arrange
-      final testUser = UserModel(uid: 'test-uid', email: 'test@test.com');
+      final testUserModel = UserModel(uid: 'test-uid', email: 'test@test.com');
+      final testUser = UserMapper.toEntity(testUserModel);
       when(mockAuthRepository.getCurrentUser()).thenReturn(testUser);
       authViewModel = AuthViewModel(authRepository: mockAuthRepository);
       
@@ -107,7 +109,8 @@ void main() {
 
     testWidgets('ChatListPage - AppBar görünür', (WidgetTester tester) async {
       // Arrange
-      final testUser = UserModel(uid: 'test-uid', email: 'test@test.com');
+      final testUserModel = UserModel(uid: 'test-uid', email: 'test@test.com');
+      final testUser = UserMapper.toEntity(testUserModel);
       when(mockAuthRepository.getCurrentUser()).thenReturn(testUser);
       authViewModel = AuthViewModel(authRepository: mockAuthRepository);
       

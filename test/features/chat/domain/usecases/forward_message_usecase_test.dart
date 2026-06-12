@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/domain/usecases/forward_message_usecase.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'forward_message_usecase_test.mocks.dart';
@@ -23,7 +23,7 @@ void main() {
     const testTargetChatId = 'chat-456';
     const testSenderId = 'user-123';
     const testSenderName = 'Test User';
-    final testOriginalMessage = MessageModel(
+    final testOriginalMessage = MessageEntity(
       id: 'msg-123',
       chatId: 'chat-123',
       senderId: 'user-456',
@@ -33,7 +33,7 @@ void main() {
       type: MessageType.text,
       status: MessageStatus.sent,
     );
-    final testForwardedMessage = MessageModel(
+    final testForwardedMessage = MessageEntity(
       id: 'msg-789',
       chatId: testTargetChatId,
       senderId: testSenderId,
@@ -46,7 +46,7 @@ void main() {
       forwardFromUserName: testOriginalMessage.senderName,
     );
 
-    test('should return Right(MessageModel) when message is forwarded successfully', () async {
+    test('should return Right(MessageEntity) when message is forwarded successfully', () async {
       // Arrange
       when(mockRepository.forwardMessage(
         originalMessage: anyNamed('originalMessage'),
@@ -108,7 +108,7 @@ void main() {
 
     test('should return Left(ValidationFailure) when originalMessage chatId equals targetChatId', () async {
       // Arrange
-      final sameChatMessage = MessageModel(
+      final sameChatMessage = MessageEntity(
         id: 'msg-123',
         chatId: testTargetChatId, // Aynı chat ID
         senderId: 'user-456',

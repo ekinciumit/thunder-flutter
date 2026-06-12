@@ -3,8 +3,8 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/presentation/viewmodels/chat_viewmodel.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/chat_model.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/domain/entities/chat_entity.dart';
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'chat_viewmodel_test.mocks.dart';
@@ -43,7 +43,7 @@ void main() {
     group('getOrCreatePrivateChat', () {
       const testUserA = 'user-a';
       const testUserB = 'user-b';
-      final testChat = ChatModel(
+      final testChat = ChatEntity(
         id: 'chat-123',
         name: 'Private Chat',
         type: ChatType.private,
@@ -51,7 +51,7 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      test('should return ChatModel when successful', () async {
+      test('should return ChatEntity when successful', () async {
         // Arrange
         when(mockRepository.getOrCreatePrivateChat(testUserA, testUserB))
             .thenAnswer((_) async => Either.right(testChat));
@@ -87,7 +87,7 @@ void main() {
       const testName = 'Test Group';
       const testCreatedBy = 'user-123';
       final testParticipants = ['user-123', 'user-456'];
-      final testChat = ChatModel(
+      final testChat = ChatEntity(
         id: 'chat-123',
         name: testName,
         type: ChatType.group,
@@ -95,7 +95,7 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      test('should return ChatModel when successful', () async {
+      test('should return ChatEntity when successful', () async {
         // Arrange
         when(mockRepository.createGroupChat(
           name: anyNamed('name'),
@@ -143,7 +143,7 @@ void main() {
       const testSenderId = 'user-123';
       const testSenderName = 'Test User';
       const testText = 'Test message';
-      final testMessage = MessageModel(
+      final testMessage = MessageEntity(
         id: 'msg-123',
         chatId: testChatId,
         senderId: testSenderId,
@@ -154,7 +154,7 @@ void main() {
         status: MessageStatus.sent,
       );
 
-      test('should return MessageModel when successful', () async {
+      test('should return MessageEntity when successful', () async {
         // Arrange
         when(mockRepository.sendMessage(
           chatId: anyNamed('chatId'),
@@ -203,7 +203,7 @@ void main() {
     group('getMessagesStream', () {
       const testChatId = 'chat-123';
       final testMessages = [
-        MessageModel(
+        MessageEntity(
           id: 'msg-1',
           chatId: testChatId,
           senderId: 'user-1',
@@ -224,7 +224,7 @@ void main() {
         final stream = viewModel.getMessagesStream(testChatId);
 
         // Assert
-        expect(stream, isA<Stream<List<MessageModel>>>());
+        expect(stream, isA<Stream<List<MessageEntity>>>());
         final result = await stream.first;
         expect(result, testMessages);
         verify(mockRepository.getMessagesStream(testChatId, limit: 50)).called(1);
@@ -235,7 +235,7 @@ void main() {
       const testChatId = 'chat-123';
       final testLastMessageTime = DateTime.now();
       final testMessages = [
-        MessageModel(
+        MessageEntity(
           id: 'msg-1',
           chatId: testChatId,
           senderId: 'user-1',
@@ -247,7 +247,7 @@ void main() {
         ),
       ];
 
-      test('should return List<MessageModel> when successful', () async {
+      test('should return List<MessageEntity> when successful', () async {
         // Arrange
         when(mockRepository.loadOlderMessages(testChatId, any, limit: anyNamed('limit')))
             .thenAnswer((_) async => Either.right(testMessages));
@@ -278,7 +278,7 @@ void main() {
     group('getUserChats', () {
       const testUserId = 'user-123';
       final testChats = [
-        ChatModel(
+        ChatEntity(
           id: 'chat-1',
           name: 'Chat 1',
           type: ChatType.private,
@@ -296,7 +296,7 @@ void main() {
         final stream = viewModel.getUserChats(testUserId);
 
         // Assert
-        expect(stream, isA<Stream<List<ChatModel>>>());
+        expect(stream, isA<Stream<List<ChatEntity>>>());
         final result = await stream.first;
         expect(result, testChats);
         verify(mockRepository.getUserChats(testUserId)).called(1);
@@ -459,7 +459,7 @@ void main() {
       const testSenderName = 'Test User';
       const testAudioUrl = 'https://example.com/audio.mp3';
       final testDuration = const Duration(seconds: 30);
-      final testMessage = MessageModel(
+      final testMessage = MessageEntity(
         id: 'msg-123',
         chatId: testChatId,
         senderId: testSenderId,
@@ -470,7 +470,7 @@ void main() {
         status: MessageStatus.sent,
       );
 
-      test('should return MessageModel when successful', () async {
+      test('should return MessageEntity when successful', () async {
         // Arrange
         when(mockRepository.sendVoiceMessage(
           chatId: anyNamed('chatId'),
@@ -502,7 +502,7 @@ void main() {
       const testFileUrl = 'https://example.com/file.pdf';
       const testFileName = 'document.pdf';
       const testFileSize = 1024;
-      final testMessage = MessageModel(
+      final testMessage = MessageEntity(
         id: 'msg-123',
         chatId: testChatId,
         senderId: testSenderId,
@@ -515,7 +515,7 @@ void main() {
         status: MessageStatus.sent,
       );
 
-      test('should return MessageModel when successful', () async {
+      test('should return MessageEntity when successful', () async {
         // Arrange
         when(mockRepository.sendFileMessage(
           chatId: anyNamed('chatId'),
@@ -546,7 +546,7 @@ void main() {
       const testTargetChatId = 'chat-456';
       const testSenderId = 'user-123';
       const testSenderName = 'Test User';
-      final testOriginalMessage = MessageModel(
+      final testOriginalMessage = MessageEntity(
         id: 'msg-123',
         chatId: 'chat-123',
         senderId: 'user-456',
@@ -556,7 +556,7 @@ void main() {
         type: MessageType.text,
         status: MessageStatus.sent,
       );
-      final testForwardedMessage = MessageModel(
+      final testForwardedMessage = MessageEntity(
         id: 'msg-789',
         chatId: testTargetChatId,
         senderId: testSenderId,
@@ -567,7 +567,7 @@ void main() {
         status: MessageStatus.sent,
       );
 
-      test('should return MessageModel when successful', () async {
+      test('should return MessageEntity when successful', () async {
         // Arrange
         when(mockRepository.forwardMessage(
           originalMessage: anyNamed('originalMessage'),
@@ -594,7 +594,7 @@ void main() {
       const testChatId = 'chat-123';
       const testQuery = 'test query';
       final testMessages = [
-        MessageModel(
+        MessageEntity(
           id: 'msg-1',
           chatId: testChatId,
           senderId: 'user-1',
@@ -606,7 +606,7 @@ void main() {
         ),
       ];
 
-      test('should return List<MessageModel> when successful', () async {
+      test('should return List<MessageEntity> when successful', () async {
         // Arrange
         when(mockRepository.searchMessages(testChatId, testQuery, limit: anyNamed('limit')))
             .thenAnswer((_) async => Either.right(testMessages));
@@ -624,7 +624,7 @@ void main() {
       const testUserId = 'user-123';
       const testQuery = 'test query';
       final testMessages = [
-        MessageModel(
+        MessageEntity(
           id: 'msg-1',
           chatId: 'chat-1',
           senderId: 'user-1',
@@ -636,7 +636,7 @@ void main() {
         ),
       ];
 
-      test('should return List<MessageModel> when successful', () async {
+      test('should return List<MessageEntity> when successful', () async {
         // Arrange
         when(mockRepository.searchAllMessages(testUserId, testQuery, limit: anyNamed('limit')))
             .thenAnswer((_) async => Either.right(testMessages));

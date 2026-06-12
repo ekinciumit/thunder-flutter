@@ -421,6 +421,42 @@ class AppLocalizationsTr extends AppLocalizations {
   String get uploading => 'Yükleniyor...';
 
   @override
+  String get compressingImage => 'Resim sıkıştırılıyor...';
+
+  @override
+  String get preparingVideo => 'Video hazırlanıyor...';
+
+  @override
+  String get uploadError => 'Yükleme hatası';
+
+  @override
+  String get videoUpload => 'Video Yükleme';
+
+  @override
+  String get photoUpload => 'Fotoğraf Yükleme';
+
+  @override
+  String get videoSent => 'Video gönderildi';
+
+  @override
+  String get photoSent => 'Fotoğraf gönderildi';
+
+  @override
+  String get uploadCancelled => 'Yükleme iptal edildi';
+
+  @override
+  String get voiceRecordingCancelled => 'Ses kaydı iptal edildi';
+
+  @override
+  String get slideToCancel => '◀ Kaydır iptal';
+
+  @override
+  String get releaseToCancel => 'Bırak ve iptal et';
+
+  @override
+  String get releaseToSend => 'Bırak → Gönder';
+
+  @override
   String get editEvent => 'Etkinliği Düzenle';
 
   @override
@@ -459,6 +495,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get commentsChat => 'Yorumlar / Sohbet';
+
+  @override
+  String get goToGroupChat => 'Grup Sohbetine Git';
+
+  @override
+  String get createGroupChat => 'Yeni Grup Oluştur';
 
   @override
   String get mustJoinToChat =>
@@ -835,4 +877,491 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get fileOpenSoon => 'Dosya açma özelliği yakında eklenecek';
+
+  @override
+  String get deleteEvent => 'Etkinliği Sil';
+
+  @override
+  String get deleteEventConfirm =>
+      'Bu etkinliği silmek istediğinize emin misiniz?';
+
+  @override
+  String get deleteEventWarning =>
+      'Bu işlem geri alınamaz. Etkinliğe ait tüm mesajlar ve medyalar silinecektir.';
+
+  @override
+  String get eventDeleted => 'Etkinlik başarıyla silindi';
+
+  @override
+  String get removeParticipant => 'Katılımcıyı Çıkar';
+
+  @override
+  String get remove => 'Çıkar';
+
+  @override
+  String get participantRemoved => 'Katılımcı çıkarıldı';
+
+  @override
+  String get participantManagement => 'Katılımcı Yönetimi';
+
+  @override
+  String get notLoggedIn => 'Kullanıcı giriş yapmamış';
+
+  @override
+  String get groupChatNotFound => 'Grup sohbeti bulunamadı';
+
+  @override
+  String get groupInfo => 'Grup Bilgileri';
+
+  @override
+  String get noDescription => 'Açıklama yok';
+
+  @override
+  String get noParticipantsFound => 'Katılımcı bulunamadı';
+
+  @override
+  String get unnamed => 'İsimsiz';
+
+  @override
+  String get creator => 'Oluşturan';
+
+  @override
+  String get admin => 'Yönetici';
+
+  @override
+  String get you => 'Sen';
+
+  @override
+  String get demoteAdmin => 'Yöneticilikten Çıkar';
+
+  @override
+  String get promoteAdmin => 'Yönetici Yap';
+
+  @override
+  String adminPromoted(String name) {
+    return '$name yönetici yapıldı';
+  }
+
+  @override
+  String adminDemoted(String name) {
+    return '$name yöneticilikten çıkarıldı';
+  }
+
+  @override
+  String get groupPhotoUpdated => 'Grup fotoğrafı güncellendi';
+
+  @override
+  String groupPhotoUploadError(String error) {
+    return 'Fotoğraf yüklenirken hata oluştu: $error';
+  }
+
+  @override
+  String get editGroupName => 'Grup Adını Düzenle';
+
+  @override
+  String get groupName => 'Grup Adı';
+
+  @override
+  String get groupNameHint => 'Grup adını girin';
+
+  @override
+  String get groupNameUpdated => 'Grup adı güncellendi';
+
+  @override
+  String groupNameUpdateError(String error) {
+    return 'Grup adı güncellenirken hata oluştu: $error';
+  }
+
+  @override
+  String get editDescription => 'Açıklamayı Düzenle';
+
+  @override
+  String get descriptionHint => 'Grup açıklamasını girin';
+
+  @override
+  String get descriptionUpdated => 'Açıklama güncellendi';
+
+  @override
+  String descriptionUpdateError(String error) {
+    return 'Açıklama güncellenirken hata oluştu: $error';
+  }
+
+  @override
+  String removeParticipantConfirm(String name) {
+    return '$name etkinlikten çıkarılsın mı?';
+  }
+
+  @override
+  String userLabel(String id) {
+    return 'Kullanıcı: $id';
+  }
+
+  @override
+  String get view => 'Görüntüle';
+
+  @override
+  String get manage => 'Yönet';
+
+  @override
+  String get goToEventDetail => 'Etkinlik Detayına Git';
+
+  @override
+  String chatsLoadError(String error) {
+    return 'Sohbetler yüklenirken hata: $error';
+  }
+
+  @override
+  String get messageForwardedSuccess => 'Mesaj başarıyla iletildi';
+
+  @override
+  String messageForwardFailed(String error) {
+    return 'Mesaj iletilemedi: $error';
+  }
+
+  @override
+  String commentSendFailed(String error) {
+    return 'Yorum gönderilemedi: $error';
+  }
+
+  @override
+  String get photoUploadFailed => 'Fotoğraf yüklenemedi';
+
+  @override
+  String get photoUploaded => 'Fotoğraf yüklendi';
+
+  @override
+  String photoUploadError(String error) {
+    return 'Fotoğraf yükleme hatası: $error';
+  }
+
+  @override
+  String filePickError(String error) {
+    return 'Dosya seçme hatası: $error';
+  }
+
+  @override
+  String logoutError(String error) {
+    return 'Çıkış yapılırken bir hata oluştu: $error';
+  }
+
+  @override
+  String get themeSelection => 'Tema Seçimi';
+
+  @override
+  String get lightMode => 'Gündüz Modu';
+
+  @override
+  String get lightThemeSubtitle => 'Açık renk teması';
+
+  @override
+  String get darkThemeSubtitle => 'Koyu renk teması';
+
+  @override
+  String get systemMode => 'Sistem';
+
+  @override
+  String get systemThemeSubtitle => 'Sistem ayarına göre otomatik';
+
+  @override
+  String get turkish => 'Türkçe';
+
+  @override
+  String get english => 'English';
+
+  @override
+  String get crashTestTitle => 'Test crash?';
+
+  @override
+  String get crashTestMessage =>
+      'Uygulama çökecek. Yalnızca Crashlytics testi için kullanın.';
+
+  @override
+  String get crashTestButton => 'Çökert';
+
+  @override
+  String get crashlyticsTestTitle => 'Crashlytics Test (crash)';
+
+  @override
+  String get crashlyticsTestSubtitle => 'Uygulamayı bilinçli çökertir';
+
+  @override
+  String get bioOptional => 'Biyografi (Opsiyonel)';
+
+  @override
+  String get completeProfileSubtitle =>
+      'Hesabınızı kişiselleştirmek için birkaç bilgi daha';
+
+  @override
+  String get nameHint => 'Adınız ve soyadınız';
+
+  @override
+  String get bioHint => 'Kendiniz hakkında kısa bir açıklama yazın';
+
+  @override
+  String get nameRequired => 'İsim alanı boş olamaz';
+
+  @override
+  String profileSaveFailed(String error) {
+    return 'Profil kaydedilemedi: $error';
+  }
+
+  @override
+  String get devPreviewTitle => '📱 Ekran Önizlemeleri';
+
+  @override
+  String get screenPreviewsSubtitle => 'Tüm ekranları mock data ile görüntüle';
+
+  @override
+  String get selectFile => 'Dosya Seç';
+
+  @override
+  String get allFiles => 'Tüm Dosyalar';
+
+  @override
+  String get fileTypeWord => 'Word';
+
+  @override
+  String get fileTypeExcel => 'Excel';
+
+  @override
+  String get fileTypePowerPoint => 'PowerPoint';
+
+  @override
+  String get fileTypeArchive => 'ZIP/RAR';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'Hata: $error';
+  }
+
+  @override
+  String get fileSentSuccess => 'Dosya gönderildi';
+
+  @override
+  String get myEvents => 'Etkinliklerim';
+
+  @override
+  String get past => 'Geçmiş';
+
+  @override
+  String get addMembers => 'Üye Ekle';
+
+  @override
+  String get removeMember => 'Gruptan Çıkar';
+
+  @override
+  String removeMemberConfirm(String name) {
+    return '$name gruptan çıkarılsın mı?';
+  }
+
+  @override
+  String get membersAdded => 'Üyeler eklendi';
+
+  @override
+  String get memberRemoved => 'Üye gruptan çıkarıldı';
+
+  @override
+  String get leaveGroup => 'Gruptan Ayrıl';
+
+  @override
+  String get leaveGroupConfirm =>
+      'Bu gruptan ayrılmak istediğinize emin misiniz?';
+
+  @override
+  String get leftGroup => 'Gruptan ayrıldınız';
+
+  @override
+  String get creatorCannotLeave => 'Grup oluşturan gruptan ayrılamaz';
+
+  @override
+  String get selectMembersToAdd => 'Eklenecek kişileri seçin';
+
+  @override
+  String get deleteAccount => 'Hesabı Sil';
+
+  @override
+  String get deleteAccountSubtitle => 'Tüm verileriniz kalıcı olarak silinir';
+
+  @override
+  String get deleteAccountConfirm =>
+      'Hesabınızı silmek istediğinize emin misiniz?';
+
+  @override
+  String get deleteAccountWarning =>
+      'Bu işlem geri alınamaz. Profiliniz, mesajlarınız ve etkinlikleriniz silinir.';
+
+  @override
+  String get deleteAccountPasswordPrompt => 'Onaylamak için şifrenizi girin';
+
+  @override
+  String get accountDeleted => 'Hesabınız silindi';
+
+  @override
+  String deleteAccountError(String error) {
+    return 'Hesap silinirken hata oluştu: $error';
+  }
+
+  @override
+  String participantsCount(int count) {
+    return 'Katılımcılar ($count)';
+  }
+
+  @override
+  String fileUploadingNamed(String fileName) {
+    return '$fileName yükleniyor...';
+  }
+
+  @override
+  String get create => 'Oluştur';
+
+  @override
+  String get theme => 'Tema';
+
+  @override
+  String get active => 'Aktif';
+
+  @override
+  String get groupNameRequired => 'Grup adı gereklidir';
+
+  @override
+  String get groupNameExampleHint => 'Örn: Arkadaşlarım, İş Ekibi';
+
+  @override
+  String get groupDescriptionOptional => 'Açıklama (Opsiyonel)';
+
+  @override
+  String get groupDescriptionShortHint => 'Grup hakkında kısa bir açıklama';
+
+  @override
+  String get selectParticipants => 'Katılımcılar Seçin *';
+
+  @override
+  String participantsSelectedCount(int count) {
+    return '$count kişi seçildi';
+  }
+
+  @override
+  String get selectAtLeastOneParticipant => 'En az bir kişi seçmelisiniz';
+
+  @override
+  String get groupChatCreated => 'Grup sohbeti oluşturuldu';
+
+  @override
+  String get groupChatCreateFailed => 'Grup sohbeti oluşturulamadı';
+
+  @override
+  String get usersLoadFailed => 'Kullanıcılar yüklenemedi';
+
+  @override
+  String get noOtherUsersYet => 'Henüz başka kullanıcı yok';
+
+  @override
+  String get noSearchResults => 'Arama sonucu bulunamadı';
+
+  @override
+  String get tryDifferentSearchTerm => 'Farklı bir arama terimi deneyin';
+
+  @override
+  String clusterEventsCount(int count) {
+    return '$count etkinlik';
+  }
+
+  @override
+  String get developerSection => 'Geliştirici';
+
+  @override
+  String get crashlyticsNonFatalTest => 'Crashlytics Test (non-fatal)';
+
+  @override
+  String get crashlyticsNonFatalSubtitle =>
+      'Firebase Console\'da hata kaydı oluşturur';
+
+  @override
+  String get nonFatalTestSent => 'Non-fatal test kaydı gönderildi';
+
+  @override
+  String get searchUsersShort => 'Kullanıcı ara...';
+
+  @override
+  String get validationEmailRequired => 'E-posta adresi zorunludur';
+
+  @override
+  String get validationEmailInvalid => 'Geçerli bir e-posta adresi giriniz';
+
+  @override
+  String get validationPasswordRequired => 'Şifre zorunludur';
+
+  @override
+  String get validationPasswordMinLength => 'Şifre en az 6 karakter olmalıdır';
+
+  @override
+  String get validationPasswordStrength =>
+      'Şifre en az bir harf ve bir rakam içermelidir';
+
+  @override
+  String get validationNameRequired => 'İsim zorunludur';
+
+  @override
+  String get validationNameMinLength => 'İsim en az 2 karakter olmalıdır';
+
+  @override
+  String get validationNameInvalid => 'İsim sadece harf ve boşluk içerebilir';
+
+  @override
+  String get validationBioMaxLength =>
+      'Biyografi en fazla 500 karakter olabilir';
+
+  @override
+  String get validationTitleRequired => 'Başlık zorunludur';
+
+  @override
+  String get validationTitleMinLength => 'Başlık en az 3 karakter olmalıdır';
+
+  @override
+  String get validationTitleMaxLength =>
+      'Başlık en fazla 100 karakter olabilir';
+
+  @override
+  String get validationDescriptionRequired => 'Açıklama zorunludur';
+
+  @override
+  String get validationDescriptionMinLength =>
+      'Açıklama en az 10 karakter olmalıdır';
+
+  @override
+  String get validationDescriptionMaxLength =>
+      'Açıklama en fazla 2000 karakter olabilir';
+
+  @override
+  String get validationAddressRequired => 'Adres zorunludur';
+
+  @override
+  String get validationAddressMinLength => 'Adres en az 5 karakter olmalıdır';
+
+  @override
+  String get validationQuotaRequired => 'Kota zorunludur';
+
+  @override
+  String get validationQuotaInvalid => 'Geçerli bir sayı giriniz';
+
+  @override
+  String get validationQuotaMin => 'Kota en az 1 olmalıdır';
+
+  @override
+  String get validationQuotaMax => 'Kota en fazla 1000 olabilir';
+
+  @override
+  String validationFieldRequired(String fieldName) {
+    return '$fieldName zorunludur';
+  }
+
+  @override
+  String validationFieldMinLength(String fieldName, int minLength) {
+    return '$fieldName en az $minLength karakter olmalıdır';
+  }
+
+  @override
+  String validationFieldMaxLength(String fieldName, int maxLength) {
+    return '$fieldName en fazla $maxLength karakter olabilir';
+  }
 }

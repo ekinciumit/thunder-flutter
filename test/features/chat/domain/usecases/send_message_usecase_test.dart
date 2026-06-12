@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/domain/usecases/send_message_usecase.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'send_message_usecase_test.mocks.dart';
@@ -24,7 +24,7 @@ void main() {
     const testSenderId = 'user-123';
     const testSenderName = 'Test User';
     const testText = 'Test message';
-    final testMessage = MessageModel(
+    final testMessage = MessageEntity(
       id: 'msg-123',
       chatId: testChatId,
       senderId: testSenderId,
@@ -35,7 +35,7 @@ void main() {
       status: MessageStatus.sent,
     );
 
-    test('should return Right(MessageModel) when message is sent successfully', () async {
+    test('should return Right(MessageEntity) when message is sent successfully', () async {
       // Arrange
       when(mockRepository.sendMessage(
         chatId: anyNamed('chatId'),
@@ -61,7 +61,7 @@ void main() {
         senderId: testSenderId,
         senderName: testSenderName,
         text: testText,
-        type: MessageType.text,
+        type: MessageType.text, // Entity enum
       )).called(1);
     });
 
@@ -120,7 +120,7 @@ void main() {
         senderId: testSenderId,
         senderName: testSenderName,
         text: '',
-        type: MessageType.text,
+        type: MessageType.text, // Entity enum
       );
 
       // Assert

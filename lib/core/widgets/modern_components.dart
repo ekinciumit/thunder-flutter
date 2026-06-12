@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_color_config.dart';
@@ -15,7 +16,11 @@ import '../theme/app_color_config.dart';
 class ModernSnackbar {
   /// Success Snackbar
   static void showSuccess(BuildContext context, String message) {
-    _show(context, message, AppColorConfig.successColor, Icons.check_circle);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    // Dark mode için beyaz, light mode için success color
+    final color = isDark ? Colors.white : AppColorConfig.successColor;
+    _show(context, message, color, Icons.check_circle);
   }
 
   /// Error Snackbar
@@ -34,17 +39,95 @@ class ModernSnackbar {
   }
 
   static void _show(BuildContext context, String message, Color color, IconData icon) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    // Dark mode'da beyaz arka plan için koyu metin, light mode'da beyaz metin
+    final textColor = isDark && color == Colors.white 
+        ? Colors.black 
+        : Colors.white;
+    final iconColor = isDark && color == Colors.white 
+        ? Colors.black 
+        : Colors.white;
+    
+    // ✅ Üstten göster: OverlayEntry kullanarak özel bir top snackbar
+    _showTopSnackbar(
+      context: context,
+      message: message,
+      color: color,
+      icon: icon,
+      textColor: textColor,
+      iconColor: iconColor,
+    );
+  }
+
+  /// Üstten gösterilen snackbar (basit slide-down animasyon ile)
+  static void _showTopSnackbar({
+    required BuildContext context,
+    required String message,
+    required Color color,
+    required IconData icon,
+    required Color textColor,
+    required Color iconColor,
+  }) {
+    try {
+      // ✅ Context kontrolü
+      if (!context.mounted) return;
+      
+      final overlay = Overlay.maybeOf(context);
+      if (overlay == null) {
+        // ✅ Fallback: Eğer Overlay bulunamazsa normal SnackBar kullan
+        _showFallbackSnackbar(context, message, color, icon, textColor, iconColor);
+        return;
+      }
+      
+      late OverlayEntry overlayEntry;
+      
+      overlayEntry = OverlayEntry(
+        builder: (context) => _TopSnackbarWidget(
+          message: message,
+          color: color,
+          icon: icon,
+          textColor: textColor,
+          iconColor: iconColor,
+          onDismiss: () {
+            try {
+              overlayEntry.remove();
+            } catch (_) {
+              // OverlayEntry zaten kaldırılmış, sessizce devam et
+            }
+          },
+        ),
+      );
+
+      overlay.insert(overlayEntry);
+    } catch (e) {
+      // ✅ Hata durumunda fallback kullan
+      if (context.mounted) {
+        _showFallbackSnackbar(context, message, color, icon, textColor, iconColor);
+      }
+    }
+  }
+
+  /// Fallback: Normal SnackBar (Overlay kullanılamazsa)
+  static void _showFallbackSnackbar(
+    BuildContext context,
+    String message,
+    Color color,
+    IconData icon,
+    Color textColor,
+    Color iconColor,
+  ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: iconColor, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: textColor,
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
                 ),
@@ -57,9 +140,145 @@ class ModernSnackbar {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
-        margin: const EdgeInsets.all(AppTheme.spacingLg),
+        margin: EdgeInsets.only(
+          left: AppTheme.spacingLg,
+          right: AppTheme.spacingLg,
+          top: MediaQuery.of(context).padding.top + AppTheme.spacingMd, // ✅ Üstten göster
+          bottom: 100.0 + AppTheme.spacingLg,
+        ),
         duration: const Duration(seconds: 3),
         elevation: 4,
+      ),
+    );
+  }
+}
+
+/// Üstten gösterilen snackbar widget (animasyon ile)
+class _TopSnackbarWidget extends StatefulWidget {
+  final String message;
+  final Color color;
+  final IconData icon;
+  final Color textColor;
+  final Color iconColor;
+  final VoidCallback onDismiss;
+
+  const _TopSnackbarWidget({
+    required this.message,
+    required this.color,
+    required this.icon,
+    required this.textColor,
+    required this.iconColor,
+    required this.onDismiss,
+  });
+
+  @override
+  State<_TopSnackbarWidget> createState() => _TopSnackbarWidgetState();
+}
+
+class _TopSnackbarWidgetState extends State<_TopSnackbarWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ Slide-down animasyon controller
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      reverseDuration: const Duration(milliseconds: 250),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, -1.5), // Üstten başla (görünmez)
+      end: Offset.zero, // Normal pozisyon
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic, // ✅ Smooth animasyon
+      reverseCurve: Curves.easeInCubic,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    ));
+
+    // ✅ Animasyonu başlat
+    _animationController.forward();
+
+    // ✅ 3 saniye sonra kapat (animasyon ile)
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && (_animationController.isAnimating || _animationController.isCompleted)) {
+        _animationController.reverse().then((_) {
+          if (mounted) {
+            widget.onDismiss();
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + AppTheme.spacingMd, // ✅ Status bar'dan hemen sonra
+      left: AppTheme.spacingLg,
+      right: AppTheme.spacingLg,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Material(
+            color: Colors.transparent,
+            elevation: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingMd,
+                vertical: AppTheme.spacingMd,
+              ),
+              decoration: BoxDecoration(
+                color: widget.color,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(widget.icon, color: widget.iconColor, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.message,
+                      style: TextStyle(
+                        color: widget.textColor,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -78,36 +297,64 @@ class ModernDialog {
     String confirmText = 'Tamam',
     Color? confirmColor,
   }) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    Widget dialog = AlertDialog(
+      backgroundColor: isDark ? Colors.transparent : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
         ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              confirmText,
-              style: TextStyle(
-                color: confirmColor ?? AppColorConfig.primaryColor,
-                fontWeight: FontWeight.w600,
-              ),
+      ),
+      content: Text(
+        message,
+        style: const TextStyle(fontSize: 14),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(
+            confirmText,
+            style: TextStyle(
+              color: confirmColor ?? AppColorConfig.primaryColor,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+    
+    // Dark mode'da glassmorphism ekle
+    if (isDark) {
+      dialog = ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1.0,
+              ),
+            ),
+            child: dialog,
+          ),
+        ),
+      );
+    }
+    
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => dialog,
     );
   }
 
@@ -120,46 +367,74 @@ class ModernDialog {
     String cancelText = 'İptal',
     Color? confirmColor,
   }) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    Widget dialog = AlertDialog(
+      backgroundColor: isDark ? Colors.transparent : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
         ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+      ),
+      content: Text(
+        message,
+        style: const TextStyle(fontSize: 14),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(
+            cancelText,
+            style: TextStyle(
+              color: AppColorConfig.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          style: FilledButton.styleFrom(
+            backgroundColor: confirmColor ?? AppColorConfig.primaryColor,
+          ),
+          child: Text(
+            confirmText,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              cancelText,
-              style: TextStyle(
-                color: AppColorConfig.textSecondary,
-                fontWeight: FontWeight.w500,
+      ],
+    );
+    
+    // Dark mode'da glassmorphism ekle
+    if (isDark) {
+      dialog = ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1.0,
               ),
             ),
+            child: dialog,
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: confirmColor ?? AppColorConfig.primaryColor,
-            ),
-            child: Text(
-              confirmText,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
+        ),
+      );
+    }
+    
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => dialog,
     );
   }
 
@@ -505,6 +780,82 @@ class ErrorStateWidget extends StatelessWidget {
 }
 
 // ============================================================================
+// 🎨 MODERN MODAL BOTTOM SHEET HELPER
+// ============================================================================
+
+/// Glassmorphism wrapper for modal bottom sheets in dark mode
+class GlassModalBottomSheet {
+  static Future<T?> show<T>({
+    required BuildContext context,
+    required Widget child,
+    bool isScrollControlled = false,
+    double? height,
+    EdgeInsetsGeometry? padding,
+  }) {
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    Widget content = Container(
+      constraints: height != null ? BoxConstraints(maxHeight: height) : null,
+      padding: padding ?? const EdgeInsets.all(AppTheme.spacingLg),
+      child: child,
+    );
+    
+    // Dark mode'da glassmorphism ekle
+    if (isDark) {
+      content = ClipRRect(
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusRound),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppTheme.radiusRound),
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  width: 1.0,
+                ),
+              ),
+            ),
+            child: content,
+          ),
+        ),
+      );
+    } else {
+      content = Container(
+        constraints: height != null ? BoxConstraints(maxHeight: height) : null,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppTheme.radiusRound),
+          ),
+        ),
+        padding: padding ?? const EdgeInsets.all(AppTheme.spacingLg),
+        child: child,
+      );
+    }
+    
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: isScrollControlled,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusRound),
+        ),
+      ),
+      builder: (context) => content,
+    );
+  }
+}
+
+// ============================================================================
 // 🎨 MODERN INPUT FIELD
 // ============================================================================
 
@@ -578,7 +929,10 @@ class _ModernInputFieldState extends State<ModernInputField> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Focus(
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
+    
+    final textField = Focus(
       onFocusChange: (focused) {
         setState(() {
           _isFocused = focused;
@@ -617,19 +971,25 @@ class _ModernInputFieldState extends State<ModernInputField> {
                 )
               : widget.suffixIcon,
           filled: true,
-          fillColor: _isFocused
-              ? theme.colorScheme.primaryContainer.withAlpha(AppTheme.alphaVeryLight)
-              : theme.colorScheme.surfaceContainerHighest,
+          fillColor: isDark
+              ? Colors.transparent // Dark mode'da şeffaf (glassmorphism için)
+              : (_isFocused
+                  ? theme.colorScheme.primaryContainer.withAlpha(AppTheme.alphaVeryLight)
+                  : theme.colorScheme.surfaceContainerHighest),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             borderSide: BorderSide(
-              color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             borderSide: BorderSide(
-              color: theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : theme.colorScheme.outline.withAlpha(AppTheme.alphaMedium),
             ),
           ),
           focusedBorder: OutlineInputBorder(
@@ -653,13 +1013,44 @@ class _ModernInputFieldState extends State<ModernInputField> {
               width: 2,
             ),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingLg,
-            vertical: AppTheme.spacingLg,
+          // Label kesilmesini önlemek için - label her zaman input içinde kalır
+          floatingLabelBehavior: FloatingLabelBehavior.never,
+          // Label'ın kesilmemesi için yeterli padding - prefix icon varsa daha fazla padding
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: widget.prefixIcon != null ? 16 : AppTheme.spacingLg,
+            vertical: widget.maxLines != null && widget.maxLines! > 1 
+                ? 20 
+                : 20, // Label için yeterli boşluk
           ),
+          isDense: false,
+          // Label'ın üstte görünmesi için hint text kullan
+          alignLabelWithHint: true,
         ),
       ),
     );
+    
+    // Dark mode'da glassmorphism ekle
+    if (isDark) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.15),
+                width: 1.0,
+              ),
+            ),
+            child: textField,
+          ),
+        ),
+      );
+    }
+    
+    return textField;
   }
 }
 

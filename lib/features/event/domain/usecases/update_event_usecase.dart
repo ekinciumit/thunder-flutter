@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/event_model.dart';
+import '../entities/event_entity.dart';
 import '../repositories/event_repository.dart';
 
 /// Update Event Use Case
@@ -14,7 +14,7 @@ class UpdateEventUseCase {
   /// Etkinlik güncelle
   /// 
   /// Returns: ``Either<Failure, void>``
-  Future<Either<Failure, void>> call(EventModel event) async {
+  Future<Either<Failure, void>> call(EventEntity event) async {
     // Business logic: Validation
     if (event.title.isEmpty) {
       return Either.left(ValidationFailure('Etkinlik başlığı boş olamaz'));

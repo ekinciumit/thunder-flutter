@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/domain/usecases/search_all_messages_usecase.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'search_all_messages_usecase_test.mocks.dart';
@@ -23,7 +23,7 @@ void main() {
     const testUserId = 'user-123';
     const testQuery = 'test query';
     final testMessages = [
-      MessageModel(
+      MessageEntity(
         id: 'msg-1',
         chatId: 'chat-1',
         senderId: 'user-1',
@@ -35,7 +35,7 @@ void main() {
       ),
     ];
 
-    test('should return Right(List<MessageModel>) when search is successful', () async {
+    test('should return Right(List<MessageEntity>) when search is successful', () async {
       // Arrange
       when(mockRepository.searchAllMessages(testUserId, testQuery, limit: anyNamed('limit')))
           .thenAnswer((_) async => Either.right(testMessages));

@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/domain/usecases/get_or_create_private_chat_usecase.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/chat_model.dart';
+import 'package:thunder/features/chat/domain/entities/chat_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'get_or_create_private_chat_usecase_test.mocks.dart';
@@ -22,7 +22,7 @@ void main() {
   group('GetOrCreatePrivateChatUseCase', () {
     const testUserA = 'user-a';
     const testUserB = 'user-b';
-    final testChat = ChatModel(
+    final testChat = ChatEntity(
       id: 'chat-123',
       name: 'Private Chat',
       type: ChatType.private,
@@ -30,7 +30,7 @@ void main() {
       createdAt: DateTime.now(),
     );
 
-    test('should return Right(ChatModel) when chat is created successfully', () async {
+    test('should return Right(ChatEntity) when chat is created successfully', () async {
       // Arrange
       when(mockRepository.getOrCreatePrivateChat(testUserA, testUserB))
           .thenAnswer((_) async => Either.right(testChat));

@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/domain/usecases/load_older_messages_usecase.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'load_older_messages_usecase_test.mocks.dart';
@@ -23,7 +23,7 @@ void main() {
     const testChatId = 'chat-123';
     final testLastMessageTime = DateTime.now();
     final testMessages = [
-      MessageModel(
+      MessageEntity(
         id: 'msg-1',
         chatId: testChatId,
         senderId: 'user-1',
@@ -35,7 +35,7 @@ void main() {
       ),
     ];
 
-    test('should return Right(List<MessageModel>) when messages are loaded successfully', () async {
+    test('should return Right(List<MessageEntity>) when messages are loaded successfully', () async {
       // Arrange
       when(mockRepository.loadOlderMessages(testChatId, any, limit: anyNamed('limit')))
           .thenAnswer((_) async => Either.right(testMessages));

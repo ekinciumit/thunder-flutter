@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:thunder/views/widgets/app_card.dart';
+import 'package:thunder/core/widgets/app_card.dart';
 
 void main() {
   group('AppCard Widget Tests', () {

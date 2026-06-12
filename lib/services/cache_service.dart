@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/message_model.dart';
+import '../features/chat/data/models/message_model.dart';
 
 class CacheService {
   static const String _messagesKey = 'cached_messages_';

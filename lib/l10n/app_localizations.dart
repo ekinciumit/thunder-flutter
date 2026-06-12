@@ -914,6 +914,78 @@ abstract class AppLocalizations {
   /// **'Yükleniyor...'**
   String get uploading;
 
+  /// No description provided for @compressingImage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Resim sıkıştırılıyor...'**
+  String get compressingImage;
+
+  /// No description provided for @preparingVideo.
+  ///
+  /// In tr, this message translates to:
+  /// **'Video hazırlanıyor...'**
+  String get preparingVideo;
+
+  /// No description provided for @uploadError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yükleme hatası'**
+  String get uploadError;
+
+  /// No description provided for @videoUpload.
+  ///
+  /// In tr, this message translates to:
+  /// **'Video Yükleme'**
+  String get videoUpload;
+
+  /// No description provided for @photoUpload.
+  ///
+  /// In tr, this message translates to:
+  /// **'Fotoğraf Yükleme'**
+  String get photoUpload;
+
+  /// No description provided for @videoSent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Video gönderildi'**
+  String get videoSent;
+
+  /// No description provided for @photoSent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Fotoğraf gönderildi'**
+  String get photoSent;
+
+  /// No description provided for @uploadCancelled.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yükleme iptal edildi'**
+  String get uploadCancelled;
+
+  /// No description provided for @voiceRecordingCancelled.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ses kaydı iptal edildi'**
+  String get voiceRecordingCancelled;
+
+  /// No description provided for @slideToCancel.
+  ///
+  /// In tr, this message translates to:
+  /// **'◀ Kaydır iptal'**
+  String get slideToCancel;
+
+  /// No description provided for @releaseToCancel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bırak ve iptal et'**
+  String get releaseToCancel;
+
+  /// No description provided for @releaseToSend.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bırak → Gönder'**
+  String get releaseToSend;
+
   /// No description provided for @editEvent.
   ///
   /// In tr, this message translates to:
@@ -991,6 +1063,18 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Yorumlar / Sohbet'**
   String get commentsChat;
+
+  /// No description provided for @goToGroupChat.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup Sohbetine Git'**
+  String get goToGroupChat;
+
+  /// No description provided for @createGroupChat.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni Grup Oluştur'**
+  String get createGroupChat;
 
   /// No description provided for @mustJoinToChat.
   ///
@@ -1729,6 +1813,858 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Dosya açma özelliği yakında eklenecek'**
   String get fileOpenSoon;
+
+  /// No description provided for @deleteEvent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Etkinliği Sil'**
+  String get deleteEvent;
+
+  /// No description provided for @deleteEventConfirm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu etkinliği silmek istediğinize emin misiniz?'**
+  String get deleteEventConfirm;
+
+  /// No description provided for @deleteEventWarning.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu işlem geri alınamaz. Etkinliğe ait tüm mesajlar ve medyalar silinecektir.'**
+  String get deleteEventWarning;
+
+  /// No description provided for @eventDeleted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Etkinlik başarıyla silindi'**
+  String get eventDeleted;
+
+  /// Katılımcı çıkarma dialog başlığı
+  ///
+  /// In tr, this message translates to:
+  /// **'Katılımcıyı Çıkar'**
+  String get removeParticipant;
+
+  /// Çıkar butonu
+  ///
+  /// In tr, this message translates to:
+  /// **'Çıkar'**
+  String get remove;
+
+  /// Katılımcı çıkarıldı mesajı
+  ///
+  /// In tr, this message translates to:
+  /// **'Katılımcı çıkarıldı'**
+  String get participantRemoved;
+
+  /// Katılımcı yönetimi başlığı
+  ///
+  /// In tr, this message translates to:
+  /// **'Katılımcı Yönetimi'**
+  String get participantManagement;
+
+  /// No description provided for @notLoggedIn.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kullanıcı giriş yapmamış'**
+  String get notLoggedIn;
+
+  /// No description provided for @groupChatNotFound.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup sohbeti bulunamadı'**
+  String get groupChatNotFound;
+
+  /// No description provided for @groupInfo.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup Bilgileri'**
+  String get groupInfo;
+
+  /// No description provided for @noDescription.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açıklama yok'**
+  String get noDescription;
+
+  /// No description provided for @noParticipantsFound.
+  ///
+  /// In tr, this message translates to:
+  /// **'Katılımcı bulunamadı'**
+  String get noParticipantsFound;
+
+  /// No description provided for @unnamed.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsimsiz'**
+  String get unnamed;
+
+  /// No description provided for @creator.
+  ///
+  /// In tr, this message translates to:
+  /// **'Oluşturan'**
+  String get creator;
+
+  /// No description provided for @admin.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yönetici'**
+  String get admin;
+
+  /// No description provided for @you.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sen'**
+  String get you;
+
+  /// No description provided for @demoteAdmin.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yöneticilikten Çıkar'**
+  String get demoteAdmin;
+
+  /// No description provided for @promoteAdmin.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yönetici Yap'**
+  String get promoteAdmin;
+
+  /// No description provided for @adminPromoted.
+  ///
+  /// In tr, this message translates to:
+  /// **'{name} yönetici yapıldı'**
+  String adminPromoted(String name);
+
+  /// No description provided for @adminDemoted.
+  ///
+  /// In tr, this message translates to:
+  /// **'{name} yöneticilikten çıkarıldı'**
+  String adminDemoted(String name);
+
+  /// No description provided for @groupPhotoUpdated.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup fotoğrafı güncellendi'**
+  String get groupPhotoUpdated;
+
+  /// No description provided for @groupPhotoUploadError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Fotoğraf yüklenirken hata oluştu: {error}'**
+  String groupPhotoUploadError(String error);
+
+  /// No description provided for @editGroupName.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup Adını Düzenle'**
+  String get editGroupName;
+
+  /// No description provided for @groupName.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup Adı'**
+  String get groupName;
+
+  /// No description provided for @groupNameHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup adını girin'**
+  String get groupNameHint;
+
+  /// No description provided for @groupNameUpdated.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup adı güncellendi'**
+  String get groupNameUpdated;
+
+  /// No description provided for @groupNameUpdateError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup adı güncellenirken hata oluştu: {error}'**
+  String groupNameUpdateError(String error);
+
+  /// No description provided for @editDescription.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açıklamayı Düzenle'**
+  String get editDescription;
+
+  /// No description provided for @descriptionHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup açıklamasını girin'**
+  String get descriptionHint;
+
+  /// No description provided for @descriptionUpdated.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açıklama güncellendi'**
+  String get descriptionUpdated;
+
+  /// No description provided for @descriptionUpdateError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açıklama güncellenirken hata oluştu: {error}'**
+  String descriptionUpdateError(String error);
+
+  /// No description provided for @removeParticipantConfirm.
+  ///
+  /// In tr, this message translates to:
+  /// **'{name} etkinlikten çıkarılsın mı?'**
+  String removeParticipantConfirm(String name);
+
+  /// No description provided for @userLabel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kullanıcı: {id}'**
+  String userLabel(String id);
+
+  /// No description provided for @view.
+  ///
+  /// In tr, this message translates to:
+  /// **'Görüntüle'**
+  String get view;
+
+  /// No description provided for @manage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yönet'**
+  String get manage;
+
+  /// No description provided for @goToEventDetail.
+  ///
+  /// In tr, this message translates to:
+  /// **'Etkinlik Detayına Git'**
+  String get goToEventDetail;
+
+  /// No description provided for @chatsLoadError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sohbetler yüklenirken hata: {error}'**
+  String chatsLoadError(String error);
+
+  /// No description provided for @messageForwardedSuccess.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesaj başarıyla iletildi'**
+  String get messageForwardedSuccess;
+
+  /// No description provided for @messageForwardFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesaj iletilemedi: {error}'**
+  String messageForwardFailed(String error);
+
+  /// No description provided for @commentSendFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yorum gönderilemedi: {error}'**
+  String commentSendFailed(String error);
+
+  /// No description provided for @photoUploadFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Fotoğraf yüklenemedi'**
+  String get photoUploadFailed;
+
+  /// No description provided for @photoUploaded.
+  ///
+  /// In tr, this message translates to:
+  /// **'Fotoğraf yüklendi'**
+  String get photoUploaded;
+
+  /// No description provided for @photoUploadError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Fotoğraf yükleme hatası: {error}'**
+  String photoUploadError(String error);
+
+  /// No description provided for @filePickError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dosya seçme hatası: {error}'**
+  String filePickError(String error);
+
+  /// No description provided for @logoutError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çıkış yapılırken bir hata oluştu: {error}'**
+  String logoutError(String error);
+
+  /// No description provided for @themeSelection.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tema Seçimi'**
+  String get themeSelection;
+
+  /// No description provided for @lightMode.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gündüz Modu'**
+  String get lightMode;
+
+  /// No description provided for @lightThemeSubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açık renk teması'**
+  String get lightThemeSubtitle;
+
+  /// No description provided for @darkThemeSubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Koyu renk teması'**
+  String get darkThemeSubtitle;
+
+  /// No description provided for @systemMode.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sistem'**
+  String get systemMode;
+
+  /// No description provided for @systemThemeSubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sistem ayarına göre otomatik'**
+  String get systemThemeSubtitle;
+
+  /// No description provided for @turkish.
+  ///
+  /// In tr, this message translates to:
+  /// **'Türkçe'**
+  String get turkish;
+
+  /// No description provided for @english.
+  ///
+  /// In tr, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// No description provided for @crashTestTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Test crash?'**
+  String get crashTestTitle;
+
+  /// No description provided for @crashTestMessage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uygulama çökecek. Yalnızca Crashlytics testi için kullanın.'**
+  String get crashTestMessage;
+
+  /// No description provided for @crashTestButton.
+  ///
+  /// In tr, this message translates to:
+  /// **'Çökert'**
+  String get crashTestButton;
+
+  /// No description provided for @crashlyticsTestTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Crashlytics Test (crash)'**
+  String get crashlyticsTestTitle;
+
+  /// No description provided for @crashlyticsTestSubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uygulamayı bilinçli çökertir'**
+  String get crashlyticsTestSubtitle;
+
+  /// No description provided for @bioOptional.
+  ///
+  /// In tr, this message translates to:
+  /// **'Biyografi (Opsiyonel)'**
+  String get bioOptional;
+
+  /// No description provided for @completeProfileSubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabınızı kişiselleştirmek için birkaç bilgi daha'**
+  String get completeProfileSubtitle;
+
+  /// No description provided for @nameHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Adınız ve soyadınız'**
+  String get nameHint;
+
+  /// No description provided for @bioHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kendiniz hakkında kısa bir açıklama yazın'**
+  String get bioHint;
+
+  /// No description provided for @nameRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsim alanı boş olamaz'**
+  String get nameRequired;
+
+  /// No description provided for @profileSaveFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Profil kaydedilemedi: {error}'**
+  String profileSaveFailed(String error);
+
+  /// No description provided for @devPreviewTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'📱 Ekran Önizlemeleri'**
+  String get devPreviewTitle;
+
+  /// No description provided for @screenPreviewsSubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tüm ekranları mock data ile görüntüle'**
+  String get screenPreviewsSubtitle;
+
+  /// No description provided for @selectFile.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dosya Seç'**
+  String get selectFile;
+
+  /// No description provided for @allFiles.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tüm Dosyalar'**
+  String get allFiles;
+
+  /// No description provided for @fileTypeWord.
+  ///
+  /// In tr, this message translates to:
+  /// **'Word'**
+  String get fileTypeWord;
+
+  /// No description provided for @fileTypeExcel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Excel'**
+  String get fileTypeExcel;
+
+  /// No description provided for @fileTypePowerPoint.
+  ///
+  /// In tr, this message translates to:
+  /// **'PowerPoint'**
+  String get fileTypePowerPoint;
+
+  /// No description provided for @fileTypeArchive.
+  ///
+  /// In tr, this message translates to:
+  /// **'ZIP/RAR'**
+  String get fileTypeArchive;
+
+  /// No description provided for @errorWithDetails.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hata: {error}'**
+  String errorWithDetails(String error);
+
+  /// No description provided for @fileSentSuccess.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dosya gönderildi'**
+  String get fileSentSuccess;
+
+  /// No description provided for @myEvents.
+  ///
+  /// In tr, this message translates to:
+  /// **'Etkinliklerim'**
+  String get myEvents;
+
+  /// No description provided for @past.
+  ///
+  /// In tr, this message translates to:
+  /// **'Geçmiş'**
+  String get past;
+
+  /// No description provided for @addMembers.
+  ///
+  /// In tr, this message translates to:
+  /// **'Üye Ekle'**
+  String get addMembers;
+
+  /// No description provided for @removeMember.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gruptan Çıkar'**
+  String get removeMember;
+
+  /// No description provided for @removeMemberConfirm.
+  ///
+  /// In tr, this message translates to:
+  /// **'{name} gruptan çıkarılsın mı?'**
+  String removeMemberConfirm(String name);
+
+  /// No description provided for @membersAdded.
+  ///
+  /// In tr, this message translates to:
+  /// **'Üyeler eklendi'**
+  String get membersAdded;
+
+  /// No description provided for @memberRemoved.
+  ///
+  /// In tr, this message translates to:
+  /// **'Üye gruptan çıkarıldı'**
+  String get memberRemoved;
+
+  /// No description provided for @leaveGroup.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gruptan Ayrıl'**
+  String get leaveGroup;
+
+  /// No description provided for @leaveGroupConfirm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu gruptan ayrılmak istediğinize emin misiniz?'**
+  String get leaveGroupConfirm;
+
+  /// No description provided for @leftGroup.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gruptan ayrıldınız'**
+  String get leftGroup;
+
+  /// No description provided for @creatorCannotLeave.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup oluşturan gruptan ayrılamaz'**
+  String get creatorCannotLeave;
+
+  /// No description provided for @selectMembersToAdd.
+  ///
+  /// In tr, this message translates to:
+  /// **'Eklenecek kişileri seçin'**
+  String get selectMembersToAdd;
+
+  /// No description provided for @deleteAccount.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabı Sil'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountSubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tüm verileriniz kalıcı olarak silinir'**
+  String get deleteAccountSubtitle;
+
+  /// No description provided for @deleteAccountConfirm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabınızı silmek istediğinize emin misiniz?'**
+  String get deleteAccountConfirm;
+
+  /// No description provided for @deleteAccountWarning.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu işlem geri alınamaz. Profiliniz, mesajlarınız ve etkinlikleriniz silinir.'**
+  String get deleteAccountWarning;
+
+  /// No description provided for @deleteAccountPasswordPrompt.
+  ///
+  /// In tr, this message translates to:
+  /// **'Onaylamak için şifrenizi girin'**
+  String get deleteAccountPasswordPrompt;
+
+  /// No description provided for @accountDeleted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabınız silindi'**
+  String get accountDeleted;
+
+  /// No description provided for @deleteAccountError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesap silinirken hata oluştu: {error}'**
+  String deleteAccountError(String error);
+
+  /// No description provided for @participantsCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'Katılımcılar ({count})'**
+  String participantsCount(int count);
+
+  /// No description provided for @fileUploadingNamed.
+  ///
+  /// In tr, this message translates to:
+  /// **'{fileName} yükleniyor...'**
+  String fileUploadingNamed(String fileName);
+
+  /// No description provided for @create.
+  ///
+  /// In tr, this message translates to:
+  /// **'Oluştur'**
+  String get create;
+
+  /// No description provided for @theme.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tema'**
+  String get theme;
+
+  /// No description provided for @active.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aktif'**
+  String get active;
+
+  /// No description provided for @groupNameRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup adı gereklidir'**
+  String get groupNameRequired;
+
+  /// No description provided for @groupNameExampleHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Örn: Arkadaşlarım, İş Ekibi'**
+  String get groupNameExampleHint;
+
+  /// No description provided for @groupDescriptionOptional.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açıklama (Opsiyonel)'**
+  String get groupDescriptionOptional;
+
+  /// No description provided for @groupDescriptionShortHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup hakkında kısa bir açıklama'**
+  String get groupDescriptionShortHint;
+
+  /// No description provided for @selectParticipants.
+  ///
+  /// In tr, this message translates to:
+  /// **'Katılımcılar Seçin *'**
+  String get selectParticipants;
+
+  /// No description provided for @participantsSelectedCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} kişi seçildi'**
+  String participantsSelectedCount(int count);
+
+  /// No description provided for @selectAtLeastOneParticipant.
+  ///
+  /// In tr, this message translates to:
+  /// **'En az bir kişi seçmelisiniz'**
+  String get selectAtLeastOneParticipant;
+
+  /// No description provided for @groupChatCreated.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup sohbeti oluşturuldu'**
+  String get groupChatCreated;
+
+  /// No description provided for @groupChatCreateFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup sohbeti oluşturulamadı'**
+  String get groupChatCreateFailed;
+
+  /// No description provided for @usersLoadFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kullanıcılar yüklenemedi'**
+  String get usersLoadFailed;
+
+  /// No description provided for @noOtherUsersYet.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz başka kullanıcı yok'**
+  String get noOtherUsersYet;
+
+  /// No description provided for @noSearchResults.
+  ///
+  /// In tr, this message translates to:
+  /// **'Arama sonucu bulunamadı'**
+  String get noSearchResults;
+
+  /// No description provided for @tryDifferentSearchTerm.
+  ///
+  /// In tr, this message translates to:
+  /// **'Farklı bir arama terimi deneyin'**
+  String get tryDifferentSearchTerm;
+
+  /// No description provided for @clusterEventsCount.
+  ///
+  /// In tr, this message translates to:
+  /// **'{count} etkinlik'**
+  String clusterEventsCount(int count);
+
+  /// No description provided for @developerSection.
+  ///
+  /// In tr, this message translates to:
+  /// **'Geliştirici'**
+  String get developerSection;
+
+  /// No description provided for @crashlyticsNonFatalTest.
+  ///
+  /// In tr, this message translates to:
+  /// **'Crashlytics Test (non-fatal)'**
+  String get crashlyticsNonFatalTest;
+
+  /// No description provided for @crashlyticsNonFatalSubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Firebase Console\'da hata kaydı oluşturur'**
+  String get crashlyticsNonFatalSubtitle;
+
+  /// No description provided for @nonFatalTestSent.
+  ///
+  /// In tr, this message translates to:
+  /// **'Non-fatal test kaydı gönderildi'**
+  String get nonFatalTestSent;
+
+  /// No description provided for @searchUsersShort.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kullanıcı ara...'**
+  String get searchUsersShort;
+
+  /// No description provided for @validationEmailRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'E-posta adresi zorunludur'**
+  String get validationEmailRequired;
+
+  /// No description provided for @validationEmailInvalid.
+  ///
+  /// In tr, this message translates to:
+  /// **'Geçerli bir e-posta adresi giriniz'**
+  String get validationEmailInvalid;
+
+  /// No description provided for @validationPasswordRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Şifre zorunludur'**
+  String get validationPasswordRequired;
+
+  /// No description provided for @validationPasswordMinLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'Şifre en az 6 karakter olmalıdır'**
+  String get validationPasswordMinLength;
+
+  /// No description provided for @validationPasswordStrength.
+  ///
+  /// In tr, this message translates to:
+  /// **'Şifre en az bir harf ve bir rakam içermelidir'**
+  String get validationPasswordStrength;
+
+  /// No description provided for @validationNameRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsim zorunludur'**
+  String get validationNameRequired;
+
+  /// No description provided for @validationNameMinLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsim en az 2 karakter olmalıdır'**
+  String get validationNameMinLength;
+
+  /// No description provided for @validationNameInvalid.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsim sadece harf ve boşluk içerebilir'**
+  String get validationNameInvalid;
+
+  /// No description provided for @validationBioMaxLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'Biyografi en fazla 500 karakter olabilir'**
+  String get validationBioMaxLength;
+
+  /// No description provided for @validationTitleRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başlık zorunludur'**
+  String get validationTitleRequired;
+
+  /// No description provided for @validationTitleMinLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başlık en az 3 karakter olmalıdır'**
+  String get validationTitleMinLength;
+
+  /// No description provided for @validationTitleMaxLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başlık en fazla 100 karakter olabilir'**
+  String get validationTitleMaxLength;
+
+  /// No description provided for @validationDescriptionRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açıklama zorunludur'**
+  String get validationDescriptionRequired;
+
+  /// No description provided for @validationDescriptionMinLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açıklama en az 10 karakter olmalıdır'**
+  String get validationDescriptionMinLength;
+
+  /// No description provided for @validationDescriptionMaxLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açıklama en fazla 2000 karakter olabilir'**
+  String get validationDescriptionMaxLength;
+
+  /// No description provided for @validationAddressRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Adres zorunludur'**
+  String get validationAddressRequired;
+
+  /// No description provided for @validationAddressMinLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'Adres en az 5 karakter olmalıdır'**
+  String get validationAddressMinLength;
+
+  /// No description provided for @validationQuotaRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kota zorunludur'**
+  String get validationQuotaRequired;
+
+  /// No description provided for @validationQuotaInvalid.
+  ///
+  /// In tr, this message translates to:
+  /// **'Geçerli bir sayı giriniz'**
+  String get validationQuotaInvalid;
+
+  /// No description provided for @validationQuotaMin.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kota en az 1 olmalıdır'**
+  String get validationQuotaMin;
+
+  /// No description provided for @validationQuotaMax.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kota en fazla 1000 olabilir'**
+  String get validationQuotaMax;
+
+  /// No description provided for @validationFieldRequired.
+  ///
+  /// In tr, this message translates to:
+  /// **'{fieldName} zorunludur'**
+  String validationFieldRequired(String fieldName);
+
+  /// No description provided for @validationFieldMinLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'{fieldName} en az {minLength} karakter olmalıdır'**
+  String validationFieldMinLength(String fieldName, int minLength);
+
+  /// No description provided for @validationFieldMaxLength.
+  ///
+  /// In tr, this message translates to:
+  /// **'{fieldName} en fazla {maxLength} karakter olabilir'**
+  String validationFieldMaxLength(String fieldName, int maxLength);
 }
 
 class _AppLocalizationsDelegate

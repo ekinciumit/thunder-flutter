@@ -3,7 +3,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:thunder/features/chat/domain/usecases/send_voice_message_usecase.dart';
 import 'package:thunder/features/chat/domain/repositories/chat_repository.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/domain/entities/message_entity.dart';
 import 'package:thunder/core/errors/failures.dart';
 
 import 'send_voice_message_usecase_test.mocks.dart';
@@ -25,7 +25,7 @@ void main() {
     const testSenderName = 'Test User';
     const testAudioUrl = 'https://example.com/audio.mp3';
     final testDuration = const Duration(seconds: 30);
-    final testMessage = MessageModel(
+    final testMessage = MessageEntity(
       id: 'msg-123',
       chatId: testChatId,
       senderId: testSenderId,
@@ -36,7 +36,7 @@ void main() {
       status: MessageStatus.sent,
     );
 
-    test('should return Right(MessageModel) when voice message is sent successfully', () async {
+    test('should return Right(MessageEntity) when voice message is sent successfully', () async {
       // Arrange
       when(mockRepository.sendVoiceMessage(
         chatId: anyNamed('chatId'),

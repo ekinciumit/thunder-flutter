@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import 'app_permission_service.dart';
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
@@ -25,7 +26,9 @@ class NotificationService {
       }
       return;
     }
-    // 1. İzinleri iste
+    // 1. İzinleri iste (Android 13+ POST_NOTIFICATIONS)
+    await AppPermissionService.requestNotificationPermission();
+
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       announcement: false,

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thunder/services/cache_service.dart';
-import 'package:thunder/models/message_model.dart';
+import 'package:thunder/features/chat/data/models/message_model.dart';
 
 void main() {
   group('CacheService Tests', () {

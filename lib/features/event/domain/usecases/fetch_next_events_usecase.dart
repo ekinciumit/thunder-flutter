@@ -1,5 +1,5 @@
 import '../../../../core/errors/failures.dart';
-import '../../../../models/event_model.dart';
+import '../entities/event_entity.dart';
 import '../repositories/event_repository.dart';
 
 /// Fetch Next Events Use Case
@@ -13,8 +13,8 @@ class FetchNextEventsUseCase {
 
   /// Daha fazla etkinlik getir
   /// 
-  /// Returns: ``Either<Failure, List<EventModel>>``
-  Future<Either<Failure, List<EventModel>>> call({
+  /// Returns: ``Either<Failure, List<EventEntity>>``
+  Future<Either<Failure, List<EventEntity>>> call({
     DateTime? startAfter,
     int limit = 50,
   }) async {

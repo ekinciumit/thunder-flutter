@@ -1,30 +1,159 @@
 rules_version = '2';
 
-// Firebase Storage Security Rules
 service firebase.storage {
   match /b/{bucket}/o {
-    // Profil fotoğrafları - sadece kendi fotoğrafını yükleyebilir
-    match /profile_photos/{fileName} {
-      allow read: if true; // Herkes okuyabilir
-      allow write: if request.auth != null; // Giriş yapmış kullanıcılar
+
+    function isSignedIn() {
+      return request.auth != null;
     }
-    
-    // Etkinlik kapak fotoğrafları - sadece etkinlik sahibi yükleyebilir
-    match /event_covers/{fileName} {
-      allow read: if true; // Herkes okuyabilir
-      allow write: if request.auth != null; // Giriş yapmış kullanıcılar
+
+    function isValidImageSize() {
+      return request.resource.size < 10 * 1024 * 1024;
     }
-    
-    // Sohbet medya dosyaları - sadece etkinlik katılımcıları
-    match /chat_media/{eventId}/{fileName} {
-      allow read: if request.auth != null; // Giriş yapmış kullanıcılar
-      allow write: if request.auth != null; // Giriş yapmış kullanıcılar
+
+    function isValidVideoSize() {
+      return request.resource.size < 50 * 1024 * 1024;
     }
-    
-    // Genel dosya erişimi - güvenlik için kısıtlı
+
+    function isValidAudioSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    function isValidFileSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isValidAudioType() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+
+    function isValidVideoType() {
+      return request.resource.contentType.matches('video/.*');
+    }
+
+    function chatDoc(chatId) {
+      return firestore.get(/databases/(default)/documents/chats/$(chatId));
+    }
+
+    function canAccessChat(chatId) {
+      return firestore.exists(/databases/(default)/documents/chats/$(chatId))
+        && (
+          request.auth.uid in chatDoc(chatId).data.participants
+          || chatId.matches('.*' + request.auth.uid + '.*')
+        );
+    }
+
+    function eventDoc(eventId) {
+      return firestore.get(/databases/(default)/documents/events/$(eventId));
+    }
+
+    function isEventOwner(eventId) {
+      return firestore.exists(/databases/(default)/documents/events/$(eventId))
+        && eventDoc(eventId).data.createdBy == request.auth.uid;
+    }
+
+    function isEventParticipant(eventId) {
+      return firestore.exists(/databases/(default)/documents/events/$(eventId))
+        && (
+          eventDoc(eventId).data.createdBy == request.auth.uid
+          || ('participants' in eventDoc(eventId).data
+              && request.auth.uid in eventDoc(eventId).data.participants)
+          || ('approvedParticipants' in eventDoc(eventId).data
+              && request.auth.uid in eventDoc(eventId).data.approvedParticipants)
+        );
+    }
+
+    function isTempEventCover(eventId) {
+      return eventId.matches('temp_.*');
+    }
+
+    // Profil fotoğrafları
+    match /profile_photos/{userId}/{fileId} {
+      allow read: if true;
+      allow write: if isSignedIn()
+        && request.auth.uid == userId
+        && isValidImageSize()
+        && isValidImageType();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Etkinlik kapak fotoğrafları
+    match /event_covers/{eventId}/{fileId} {
+      allow read: if true;
+      allow write: if isSignedIn()
+        && isValidImageSize()
+        && isValidImageType()
+        && (isTempEventCover(eventId) || isEventOwner(eventId));
+      allow delete: if isSignedIn()
+        && (isTempEventCover(eventId) || isEventOwner(eventId));
+    }
+
+    // Etkinlik galeri fotoğrafları
+    match /event_photos/{eventId}/{fileId} {
+      allow read: if true;
+      allow write: if isSignedIn()
+        && isEventParticipant(eventId)
+        && isValidImageSize()
+        && isValidImageType();
+      allow delete: if isSignedIn() && isEventOwner(eventId);
+    }
+
+    // Eski düz event_photos path'i (mevcut URL'ler için salt okunur)
+    match /event_photos/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Sohbet medya dosyaları (görsel/video)
+    match /chat_media/{chatId}/{fileId} {
+      allow read: if isSignedIn() && canAccessChat(chatId);
+      allow write: if isSignedIn()
+        && canAccessChat(chatId)
+        && (
+          (isValidImageType() && isValidImageSize())
+          || (isValidVideoType() && isValidVideoSize())
+        );
+      allow delete: if isSignedIn() && canAccessChat(chatId);
+    }
+
+    // Eski düz chat_media path'i (mevcut URL'ler için salt okunur)
+    match /chat_media/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Sesli mesajlar
+    match /voice_messages/{chatId}/{senderId}/{fileId} {
+      allow read: if isSignedIn() && canAccessChat(chatId);
+      allow write: if isSignedIn()
+        && request.auth.uid == senderId
+        && canAccessChat(chatId)
+        && isValidAudioSize()
+        && isValidAudioType();
+      allow delete: if isSignedIn()
+        && request.auth.uid == senderId
+        && canAccessChat(chatId);
+    }
+
+    // Sohbet dosyaları
+    match /chat_files/{chatId}/{senderId}/{fileId} {
+      allow read: if isSignedIn() && canAccessChat(chatId);
+      allow write: if isSignedIn()
+        && request.auth.uid == senderId
+        && canAccessChat(chatId)
+        && isValidFileSize();
+      allow delete: if isSignedIn()
+        && request.auth.uid == senderId
+        && canAccessChat(chatId);
+    }
+
+    // Tanımsız path'ler kapalı
     match /{allPaths=**} {
-      allow read: if request.auth != null; // Sadece giriş yapmış kullanıcılar
-      allow write: if request.auth != null; // Sadece giriş yapmış kullanıcılar
+      allow read, write: if false;
     }
   }
 }
